@@ -1,0 +1,30 @@
+{
+  "name": "website-generator",
+  "version": "1.0.0",
+  "description": "Dynamic website generator with content/composition separation and flow-based layout primitives",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts dev",
+    "generate": "tsx src/cli.ts generate",
+    "preview": "tsx src/cli.ts preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": ["website-generator", "layout-orchestration"],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2",
+    "openai": "^4.77.0",
+    "playwright": "^1.49.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

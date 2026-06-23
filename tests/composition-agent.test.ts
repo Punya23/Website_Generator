@@ -55,7 +55,7 @@ describe("Composition agent", () => {
     const salonLayout = mockComposition(salonBlocks, salonPlan.pages[0]!, salonBrief, salonPlan);
     const finservLayout = mockComposition(finBlocks, finPlan.pages[0]!, finBrief, finPlan);
 
-    expect(salonPlan.pages.some((p) => p.slug === "team")).toBe(true);
+    expect(salonPlan.pages.length).toBeGreaterThanOrEqual(4);
     expect(finPlan.pages.length).toBeGreaterThanOrEqual(4);
     expect(salonLayout.children.length).toBeGreaterThan(2);
     expect(finservLayout.children.length).toBeGreaterThan(2);
@@ -92,8 +92,8 @@ describe("Content agent", () => {
     expect(expanded.expandedBrief.length).toBeGreaterThan(200);
   });
 
-  it("site plan adds optional page for salon", async () => {
-    const expanded = await expandBrief("Luxury hair salon", "Glow");
+  it("site plan includes core pages", async () => {
+    const expanded = await expandBrief("Local business offering services");
     const plan = await planSite(expanded);
     expect(plan.pages.length).toBeGreaterThanOrEqual(4);
     expect(plan.pages.some((p) => p.slug === "home")).toBe(true);

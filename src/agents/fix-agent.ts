@@ -1,95 +1,78 @@
-import type { ContentBlock, LayoutNode, QAIssue } from "../types.js";
+import type { ContentBlock, LayoutNode, QAIssue, SiteContext } from "../types.js";
 import { LayoutNodeSchema } from "../types.js";
 import { llm } from "../llm/client.js";
-import { mockComposition } from "./composition-agent.js";
-import { normalizeLayoutNode, repairLayoutCoverage } from "./layout-normalize.js";
+import { pipelineLog } from "../util/pipeline-log.js";
+import { normalizeLayoutNode } from "./layout-normalize.js";
+import { serializeContextForFix } from "../site-context/assemble.js";
+import { requireLlm } from "../util/llm-required.js";
 
-const FIX_SYSTEM = `You are a layout fix agent. QA found visual/layout issues — apply MINIMAL targeted fixes.
+const FIX_SYSTEM = `You are a layout fix agent. QA found issues — apply minimal surgical fixes.
 
-Output valid JSON: { "layout": { ... }, "contentPatches": [ { "id": "...", "field": "...", "value": "..." } ] }
+Output JSON: { "layout": { ... }, "contentPatches": [ { "id", "field", "value" } ] }
 
-Primitives: Stack, Row, Grid, Section (with fullBleed boolean)
-- children are block id STRINGS or nested nodes — never block objects
+Primitives: Stack, Row, Grid, Section (fullBleed optional, columns optional).
+Children are block id strings or nested nodes — never block objects.
 
-QA fix recipes:
-- HORIZONTAL_OVERFLOW: widen Grid minColumnWidth (+40), or convert overflowing Row to Stack
-- GRID_ORPHAN: single item in wide Grid → change Grid to Stack or merge into parent Stack
-- TEXT_OVERFLOW: shorten via contentPatches (headline/text/quote fields, max 120 chars)
-- BROKEN_IMAGE: contentPatches { field: "src", value: "" }
-
-Do NOT regenerate layout from scratch. Preserve overall structure and archetype rhythm.`;
+Think about the issue — fix structure (Row→Stack, Grid columns, remove duplicate imagery), never truncate text.
+Do NOT regenerate from scratch.`;
 
 export interface FixResult {
   layout: LayoutNode;
   contentPatches: Array<{ id: string; field: string; value: string }>;
 }
 
-export async function applyFixes(
-  layout: LayoutNode,
-  content: ContentBlock[],
-  issues: QAIssue[],
-  businessBrief: string,
-  pageKind: string
-): Promise<FixResult> {
-  if (issues.length === 0) {
-    return { layout, contentPatches: [] };
-  }
+export interface ApplyFixesOptions {
+  ctx: SiteContext;
+  pageSlug: string;
+  layout: LayoutNode;
+  content: ContentBlock[];
+  issues: QAIssue[];
+}
+
+export async function applyFixes(options: ApplyFixesOptions): Promise<FixResult> {
+  const { layout, content, issues, ctx, pageSlug } = options;
+  if (issues.length === 0) return { layout, contentPatches: [] };
 
   const autoFix = tryAutoFix(layout, content, issues);
   if (autoFix) {
-    console.log(
-      `[fix] Auto-fixed ${pageKind}: ${issues.map((i) => i.code).join(", ")}`
-    );
+    pipelineLog(`[fix] Auto-fixed ${pageSlug}: ${issues.map((i) => i.code).join(", ")}`);
     return autoFix;
   }
 
-  if (llm.isAvailable) {
-    const hard = issues.filter((i) => i.severity === "hard");
-    const raw = await llm.chat(
-      FIX_SYSTEM,
-      `PAGE: ${pageKind}
+  requireLlm("layout fix");
+
+  const raw = await llm.chat(
+    FIX_SYSTEM,
+    `PAGE: ${pageSlug}
 ISSUES:
-${JSON.stringify(hard.length ? hard : issues, null, 2)}
+${JSON.stringify(issues, null, 2)}
+
+SITE CONTEXT:
+${serializeContextForFix(ctx, pageSlug)}
 
 CURRENT LAYOUT:
 ${JSON.stringify(layout, null, 2)}
 
-BLOCK IDS: ${content.map((c) => c.id).join(", ")}
-Business context: ${businessBrief.slice(0, 200)}`,
-      { jsonMode: true, temperature: 0.2, model: llm.getCompositionModel(), maxTokens: 2048 }
-    );
-    const parsed = JSON.parse(raw) as FixResult;
-    const blockIds = content.map((c) => c.id);
-    const normalized =
-      normalizeLayoutNode(parsed.layout, blockIds) ??
-      repairLayoutCoverage(layout, blockIds);
-    return {
-      layout: LayoutNodeSchema.parse(normalized),
-      contentPatches: parsed.contentPatches ?? [],
-    };
-  }
-
-  return (
-    tryAutoFix(layout, content, issues) ?? {
-      layout: mockComposition(
-        content,
-        { slug: pageKind, title: pageKind, goal: "", minBlocks: 12, layoutHint: "", contentFocus: [] },
-        {
-          businessName: "",
-          tagline: "",
-          elevatorPitch: "",
-          expandedBrief: businessBrief,
-          targetAudience: "",
-          services: [],
-          differentiators: [],
-          tone: "",
-          primaryCta: "",
-        },
-        { pages: [], compositionStrategy: "", avoidPatterns: [] }
-      ),
-      contentPatches: [],
+BLOCK IDS: ${content.map((c) => c.id).join(", ")}`,
+    {
+      jsonMode: true,
+      temperature: 0.2,
+      model: llm.getFixModel(),
+      maxTokens: 4096,
     }
   );
+
+  const parsed = JSON.parse(raw) as FixResult;
+  const blockIds = content.map((c) => c.id);
+  const normalized = normalizeLayoutNode(parsed.layout, blockIds);
+  if (!normalized) {
+    throw new Error("Fix agent returned invalid layout");
+  }
+
+  return {
+    layout: LayoutNodeSchema.parse(normalized),
+    contentPatches: parsed.contentPatches ?? [],
+  };
 }
 
 function tryAutoFix(
@@ -106,23 +89,21 @@ function tryAutoFix(
       patchedLayout = flattenGridOrphans(patchedLayout);
       changed = true;
     }
-    if (issue.code === "TEXT_OVERFLOW" && issue.targetId) {
-      const block = content.find((b) => b.id === issue.targetId);
-      if (block) {
-        const field = issue.suggestion?.includes("headline") ? "text" : "quote";
-        const val = String(block[field] ?? block.text ?? "");
-        if (val.length > 120) {
-          contentPatches.push({ id: issue.targetId, field, value: val.slice(0, 117) + "..." });
-          changed = true;
-        }
-      }
-    }
     if (issue.code === "HORIZONTAL_OVERFLOW") {
-      patchedLayout = widenGrids(patchedLayout);
+      patchedLayout = rowToStackWhereNeeded(patchedLayout);
       changed = true;
     }
     if (issue.code === "BROKEN_IMAGE" && issue.targetId) {
       contentPatches.push({ id: issue.targetId, field: "src", value: "" });
+      changed = true;
+    }
+    if (issue.code === "DUPLICATE_IMAGE" && issue.targetId) {
+      contentPatches.push({ id: issue.targetId, field: "src", value: "" });
+      contentPatches.push({ id: issue.targetId, field: "heroImage", value: "" });
+      changed = true;
+    }
+    if (issue.code === "CARD_HEIGHT_MISMATCH" && issue.targetId) {
+      patchedLayout = flattenRowWithImageAndText(patchedLayout, issue.targetId);
       changed = true;
     }
   }
@@ -139,24 +120,42 @@ function flattenGridOrphans(node: LayoutNode): LayoutNode {
   }
   return {
     ...node,
+    children: node.children.map((c) => (typeof c === "string" ? c : flattenGridOrphans(c))),
+  };
+}
+
+function rowToStackWhereNeeded(node: LayoutNode): LayoutNode {
+  if (node.type === "Row") {
+    return { type: "Stack", children: node.children };
+  }
+  return {
+    ...node,
+    children: node.children.map((c) => (typeof c === "string" ? c : rowToStackWhereNeeded(c))),
+  };
+}
+
+function flattenRowWithImageAndText(node: LayoutNode, targetId: string): LayoutNode {
+  if (node.type === "Row") {
+    const hasTarget = node.children.some(
+      (c) => c === targetId || (typeof c !== "string" && collectChildIds(c).includes(targetId))
+    );
+    if (hasTarget) return { type: "Stack", children: node.children };
+  }
+  return {
+    ...node,
     children: node.children.map((c) =>
-      typeof c === "string" ? c : flattenGridOrphans(c)
+      typeof c === "string" ? c : flattenRowWithImageAndText(c, targetId)
     ),
   };
 }
 
-function widenGrids(node: LayoutNode): LayoutNode {
-  if (node.type === "Grid") {
-    return {
-      ...node,
-      minColumnWidth: Math.min((node.minColumnWidth ?? 240) + 40, 360),
-      children: node.children.map((c) => (typeof c === "string" ? c : widenGrids(c))),
-    };
+function collectChildIds(node: LayoutNode): string[] {
+  const ids: string[] = [];
+  for (const c of node.children) {
+    if (typeof c === "string") ids.push(c);
+    else ids.push(...collectChildIds(c));
   }
-  return {
-    ...node,
-    children: node.children.map((c) => (typeof c === "string" ? c : widenGrids(c))),
-  };
+  return ids;
 }
 
 export function applyContentPatches(
@@ -168,9 +167,59 @@ export function applyContentPatches(
     const patch = patches.find((p) => p.id === block.id);
     if (!patch) return block;
     const next = { ...block, [patch.field]: patch.value };
-    if (patch.field === "src" && !patch.value) {
+    if ((patch.field === "src" || patch.field === "heroImage") && !patch.value) {
       delete next.src;
+      delete next.heroImage;
     }
     return next;
   });
+}
+
+export interface SectionFixResult {
+  sections: Array<{
+    sectionId: string;
+    layout: LayoutNode;
+    contentPatches: FixResult["contentPatches"];
+  }>;
+}
+
+export async function applySectionScopedFixes(options: {
+  ctx: SiteContext;
+  pageSlug: string;
+  sections: import("../types.js").PageSection[];
+  issues: QAIssue[];
+}): Promise<SectionFixResult | null> {
+  const { sections, issues, ctx, pageSlug } = options;
+  const sectionIds = new Set(
+    issues.map((i) => i.sectionId).filter((id): id is string => Boolean(id))
+  );
+  if (sectionIds.size === 0) return null;
+
+  const results: SectionFixResult["sections"] = [];
+
+  for (const sectionId of sectionIds) {
+    const section = sections.find((s) => s.id === sectionId);
+    if (!section) continue;
+
+    const sectionIssues = issues.filter(
+      (i) => i.sectionId === sectionId || section.blocks.some((b) => b.id === i.targetId)
+    );
+    if (sectionIssues.length === 0) continue;
+
+    const fix = await applyFixes({
+      ctx,
+      pageSlug,
+      layout: section.layout,
+      content: section.blocks,
+      issues: sectionIssues,
+    });
+
+    results.push({
+      sectionId,
+      layout: fix.layout,
+      contentPatches: fix.contentPatches,
+    });
+  }
+
+  return results.length > 0 ? { sections: results } : null;
 }

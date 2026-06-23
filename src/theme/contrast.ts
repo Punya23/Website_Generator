@@ -2,7 +2,7 @@ import type { SiteTheme } from "../types.js";
 
 type Rgb = { r: number; g: number; b: number };
 
-function parseColor(input: string): Rgb | null {
+export function parseColor(input: string): Rgb | null {
   const hex = input.trim();
   const m = hex.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
   if (!m?.[1]) return null;
@@ -20,20 +20,25 @@ function toHex({ r, g, b }: Rgb): string {
   return `#${c(r)}${c(g)}${c(b)}`;
 }
 
-function luminance({ r, g, b }: Rgb): number {
+function rgbLuminance(rgb: Rgb): number {
   const f = (v: number) => {
     const s = v / 255;
     return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
   };
-  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+  return 0.2126 * f(rgb.r) + 0.7152 * f(rgb.g) + 0.0722 * f(rgb.b);
 }
 
-function contrast(a: string, b: string): number {
+function luminance(hex: string): number {
+  const c = parseColor(hex);
+  return c ? rgbLuminance(c) : 0.5;
+}
+
+export function contrast(a: string, b: string): number {
   const ca = parseColor(a);
   const cb = parseColor(b);
   if (!ca || !cb) return 4.5;
-  const la = luminance(ca);
-  const lb = luminance(cb);
+  const la = rgbLuminance(ca);
+  const lb = rgbLuminance(cb);
   const lighter = Math.max(la, lb);
   const darker = Math.min(la, lb);
   return (lighter + 0.05) / (darker + 0.05);
@@ -61,7 +66,7 @@ function darken(hex: string, amount: number): string {
 
 function ensureContrast(fg: string, bg: string, min = 4.5): string {
   if (contrast(fg, bg) >= min) return fg;
-  const bgLum = luminance(parseColor(bg) ?? { r: 255, g: 255, b: 255 });
+  const bgLum = luminance(bg);
   let candidate = fg;
   for (let i = 0; i < 12; i++) {
     candidate = bgLum > 0.5 ? darken(candidate, 0.08) : lighten(candidate, 0.08);
@@ -70,35 +75,88 @@ function ensureContrast(fg: string, bg: string, min = 4.5): string {
   return bgLum > 0.5 ? "#0f172a" : "#f8fafc";
 }
 
-function isNear(a: string, b: string, threshold = 1.15): boolean {
-  return contrast(a, b) < threshold;
+export interface ThemeTokens {
+  navBg: string;
+  navText: string;
+  navMuted: string;
+  navActiveBg: string;
+  navActiveText: string;
+  bg: string;
+  surface: string;
+  text: string;
+  muted: string;
+  accent: string;
+  accentSoft: string;
+  gradientFrom: string;
+  gradientTo: string;
+  maxWidth: string;
+  gridColumns: number;
+  sectionGap: string;
+  cardMinHeight: string;
 }
 
-/** Deterministic contrast-safe palette — never rely on LLM for card/text pairs. */
-export function normalizeTheme(theme: SiteTheme): SiteTheme {
+const DEFAULT_LAYOUT = {
+  maxWidth: "1200px",
+  gridColumns: 3,
+  sectionGap: "3rem",
+  cardMinHeight: "200px",
+};
+
+/** Fill missing layout/nav fields — never override AI-chosen palette. */
+export function fillThemeDefaults(theme: SiteTheme): SiteTheme {
   const c = { ...theme.colors };
-  const bgLum = luminance(parseColor(c.bg) ?? { r: 248, g: 250, b: 252 });
-  const isDark = bgLum < 0.35;
-
-  if (isDark) {
-    if (isNear(c.bg, c.surface)) c.surface = lighten(c.bg, 0.12);
-    c.text = ensureContrast(c.text, c.surface, 7);
-    c.muted = ensureContrast(mix(c.text, c.surface, 0.45), c.surface, 4.5);
-    c.accentSoft = mix(c.accent, c.surface, 0.18);
-    c.navBg = c.navBg.startsWith("rgba") ? c.navBg : mix(c.bg, "#000000", 0.15);
-  } else {
-    if (isNear(c.bg, c.surface)) c.surface = "#ffffff";
-    c.text = ensureContrast(c.text, c.surface, 7);
-    c.muted = ensureContrast(mix(c.text, c.surface, 0.55), c.surface, 4.5);
-    c.accentSoft = mix(c.accent, c.surface, 0.12);
-    if (!c.navBg.includes("rgba")) c.navBg = mix(c.surface, c.bg, 0.5);
-  }
-
-  c.accent = ensureContrast(c.accent, c.surface, 3);
-  c.gradientFrom = c.gradientFrom || c.accent;
-  c.gradientTo = c.gradientTo || lighten(c.accent, 0.2);
-
-  return { ...theme, colors: c };
+  return {
+    ...theme,
+    layout: theme.layout ?? { ...DEFAULT_LAYOUT },
+    colors: c,
+  };
 }
 
-export { contrast, parseColor };
+/** Only nudge illegible text — preserve the AI's color choices. */
+export function ensureReadableTheme(theme: SiteTheme): SiteTheme {
+  const filled = fillThemeDefaults(theme);
+  const c = { ...filled.colors };
+  c.text = ensureContrast(c.text, c.surface, 4.5);
+  c.muted = ensureContrast(c.muted, c.surface, 3);
+  if (c.navText) c.navText = ensureContrast(c.navText, c.navBg, 4.5);
+  if (c.navMuted) c.navMuted = ensureContrast(c.navMuted, c.navBg, 3);
+  if (c.navActiveText && c.navActiveBg) {
+    c.navActiveText = ensureContrast(c.navActiveText, c.navActiveBg, 4.5);
+  }
+  return { ...filled, colors: c };
+}
+
+/** @deprecated use ensureReadableTheme */
+export const normalizeTheme = ensureReadableTheme;
+
+export function buildThemeTokens(theme: SiteTheme): ThemeTokens {
+  const t = fillThemeDefaults(theme);
+  const c = t.colors;
+  const layout = t.layout!;
+  const navIsDark = luminance(c.navBg.startsWith("rgba") ? c.bg : c.navBg) < 0.5;
+  const fallbackNavText = navIsDark ? "#fafafa" : "#0f172a";
+  const navText = c.navText ?? fallbackNavText;
+  const navMuted = c.navMuted ?? mix(navText, c.navBg, 0.4);
+  const navActiveBg = c.navActiveBg ?? mix(c.accent, c.navBg, 0.25);
+  const navActiveText = c.navActiveText ?? ensureContrast(c.accent, navActiveBg, 4.5);
+
+  return {
+    navBg: c.navBg,
+    navText,
+    navMuted,
+    navActiveBg,
+    navActiveText,
+    bg: c.bg,
+    surface: c.surface,
+    text: c.text,
+    muted: c.muted,
+    accent: c.accent,
+    accentSoft: c.accentSoft,
+    gradientFrom: c.gradientFrom,
+    gradientTo: c.gradientTo,
+    maxWidth: layout.maxWidth,
+    gridColumns: layout.gridColumns,
+    sectionGap: layout.sectionGap,
+    cardMinHeight: layout.cardMinHeight,
+  };
+}

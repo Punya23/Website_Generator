@@ -5,16 +5,24 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
+    "start": "tsx src/cli.ts playground",
     "build": "tsc",
     "dev": "tsx src/cli.ts dev",
+    "playground": "tsx src/cli.ts playground",
+    "ui": "tsx src/cli.ts playground",
     "generate": "tsx src/cli.ts generate",
     "preview": "tsx src/cli.ts preview",
     "test": "vitest run",
+    "test:mistral": "tsx scripts/test-mistral.ts",
     "test:watch": "vitest"
   },
-  "keywords": ["website-generator", "layout-orchestration"],
+  "keywords": [
+    "website-generator",
+    "layout-orchestration"
+  ],
   "license": "MIT",
   "dependencies": {
+    "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "openai": "^4.77.0",
     "playwright": "^1.49.1",

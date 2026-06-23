@@ -2,59 +2,32 @@ import { z } from "zod";
 import type { ContentBlock, ExpandedBrief, LayoutNode, PagePlan, SitePlan } from "../types.js";
 import { LayoutNodeSchema } from "../types.js";
 import { llm } from "../llm/client.js";
-import { detectVertical } from "./theme-agent.js";
+import { pipelineLog } from "../util/pipeline-log.js";
+import { allowMocks, requireLlm } from "../util/llm-required.js";
 import {
   collectIds,
   normalizeLayoutNode,
   repairLayoutCoverage,
 } from "./layout-normalize.js";
 
-const COMPOSITION_SYSTEM = `You are a senior layout architect. Design a UNIQUE page structure for this specific business.
+const COMPOSITION_SYSTEM = `You are the layout architect for one page of a marketing site. Design spatial rhythm that fits this business.
 
-STEP 1 — Think in "reasoning" (2-4 sentences): What layout personality fits this business and page?
+Think through:
+- What should command attention first? What deserves full width vs a contained column?
+- When should sections bleed edge-to-edge vs share the same content width?
+- How many columns keep cards aligned and uniform rather than a mismatched puzzle?
+- Where does vertical breathing room help hierarchy?
+- How does this page's layout relate to the site's overall composition strategy?
 
-STEP 2 — Output layout tree using ONLY these primitives:
+Layout primitives (children are block id STRINGS or nested nodes — never embed block objects):
 - Section: { "type": "Section", "fullBleed"?: boolean, "children": [...] }
 - Stack: { "type": "Stack", "children": [...] }
-- Row: { "type": "Row", "children": [...] }
-- Grid: { "type": "Grid", "children": [...], "minColumnWidth"?: number }
+- Row: { "type": "Row", "children": [...], "columns"?: number }
+- Grid: { "type": "Grid", "children": [...], "columns"?: number, "minColumnWidth"?: number }
 
-CRITICAL — children are ONLY:
-1) block id STRINGS (e.g. "home_headline", "home_feature_0") — NEVER embed block objects
-2) nested layout nodes with type Stack|Row|Grid|Section
+Every block id appears exactly once. No CSS. No absolute positioning.
 
-CORRECT example:
-{
-  "reasoning": "Salon home needs full-bleed hero then visual gallery grid.",
-  "layout": {
-    "type": "Stack",
-    "children": [
-      { "type": "Section", "fullBleed": true, "children": ["home_headline"] },
-      { "type": "Grid", "children": ["home_gallery_0", "home_gallery_1"], "minColumnWidth": 280 },
-      { "type": "Section", "fullBleed": true, "children": ["home_cta"] }
-    ]
-  }
-}
-
-WRONG — never do this:
-{ "children": [{ "id": "home_headline", "type": "headline", "title": "..." }] }
-
-RULES:
-- Every block id appears EXACTLY once
-- Heroes/CTAs in fullBleed Section
-- NO absolute positioning, NO CSS, NO pixel values
-
-LAYOUT PATTERNS (pick what fits the archetype):
-- editorial-magazine: fullBleed hero → contained text stack → 3-col gallery Grid (min 300) → testimonial Stack
-- trust-dashboard: fullBleed hero → stats Row (4 across) → 2-col feature Grid → text Stack
-- energy-bento: fullBleed hero → stats Row → asymmetric gallery Grid (min 280) + features Grid (min 340) → CTA fullBleed
-- Pair text+image in Row ONLY on about/contact — NEVER hero+image in same Row on home
-- Gallery/image blocks belong in Grid with minColumnWidth 280-360
-- Stats: Row with 3-4 items OR Grid minColumnWidth 180
-- Testimonials: Grid min 300 if 3+, else Stack
-- FAQ blocks: Stack inside contained Section
-
-Output JSON with "reasoning" and "layout" keys only.`;
+Output JSON with "reasoning" (your spatial thinking) and "layout" keys only.`;
 
 export async function composeLayout(
   blocks: ContentBlock[],
@@ -62,6 +35,7 @@ export async function composeLayout(
   brief: ExpandedBrief,
   sitePlan: SitePlan
 ): Promise<LayoutNode> {
+  requireLlm("composition");
   const blockIds = blocks.map((b) => b.id);
   const blockSummary = blocks.map((b) => ({
     id: b.id,
@@ -71,7 +45,7 @@ export async function composeLayout(
 
   if (llm.isAvailable) {
     try {
-      const layout = await requestLayoutFromLlm(
+      return await requestLayoutFromLlm(
         blocks,
         pagePlan,
         brief,
@@ -79,15 +53,19 @@ export async function composeLayout(
         blockSummary,
         blockIds
       );
-      return layout;
     } catch (err) {
-      console.warn(
-        `[composition] LLM layout failed for ${pagePlan.slug}, using deterministic fallback:`,
-        err instanceof Error ? err.message : err
+      if (!allowMocks()) {
+        throw err instanceof Error ? err : new Error(String(err));
+      }
+      pipelineLog(
+        `[composition] LLM layout failed for ${pagePlan.slug}, using mock: ${
+          err instanceof Error ? err.message : err
+        }`
       );
     }
   }
 
+  if (!allowMocks()) throw new Error("Composition requires LLM");
   return mockComposition(blocks, pagePlan, brief, sitePlan);
 }
 
@@ -100,23 +78,20 @@ async function requestLayoutFromLlm(
   blockIds: string[]
 ): Promise<LayoutNode> {
   const userPrompt = `BUSINESS: ${brief.businessName} (${brief.tone})
-VERTICAL STRATEGY: ${sitePlan.compositionStrategy}
-VISUAL ARCHETYPE: ${sitePlan.visualArchetype ?? "balanced"}
-MOTION STYLE: ${sitePlan.motionStyle ?? "staggered reveals"}
+COMPOSITION STRATEGY: ${sitePlan.compositionStrategy}
+VISUAL PERSONALITY: ${sitePlan.visualArchetype ?? "derive from the business"}
+MOTION: ${sitePlan.motionStyle ?? "your judgment"}
 AVOID: ${sitePlan.avoidPatterns.join("; ")}
 
 PAGE: ${pagePlan.slug} — ${pagePlan.title}
 Goal: ${pagePlan.goal}
-Layout hint: ${pagePlan.layoutHint}
+Spatial direction: ${pagePlan.layoutHint}
 
 BLOCK IDS (use these strings exactly in children):
 ${blockIds.join(", ")}
 
 BLOCKS (${blocks.length}):
-${JSON.stringify(blockSummary, null, 2)}
-
-Design a production-grade layout like a Framer template — varied rhythm, no uniform card rows.
-children must be block id strings or nested Stack/Row/Grid/Section nodes — never block objects.`;
+${JSON.stringify(blockSummary, null, 2)}`;
 
   const raw = await llm.chat(COMPOSITION_SYSTEM, userPrompt, {
     jsonMode: true,
@@ -160,10 +135,9 @@ function parseAndValidateLayout(raw: string, blockIds: string[]): LayoutNode {
 export function mockComposition(
   blocks: ContentBlock[],
   pagePlan: PagePlan,
-  brief: ExpandedBrief,
-  sitePlan: SitePlan
+  _brief: ExpandedBrief,
+  _sitePlan: SitePlan
 ): LayoutNode {
-  const v = detectVertical(brief.expandedBrief);
   const byType = (type: string) => blocks.filter((b) => b.type === type).map((b) => b.id);
   const headlines = byType("headline");
   const images = byType("image");
@@ -194,23 +168,22 @@ export function mockComposition(
       mark([headlines[0]!]);
     }
 
-    if (v === "finserv" && stats.length > 0) {
-      children.push(section(false, [{ type: "Row", children: stats }]));
+    if (stats.length > 0) {
+      const statsLayout =
+        stats.length <= 4
+          ? { type: "Row" as const, children: stats }
+          : { type: "Grid" as const, children: stats, minColumnWidth: 180 };
+      children.push(section(false, [statsLayout]));
       mark(stats);
-    } else if (v === "fitness" && stats.length > 0) {
-      children.push(section(false, [{ type: "Row", children: stats }]));
-      mark(stats);
-    } else if (v === "salon" && galleries.length > 0) {
-      children.push(section(true, [{ type: "Grid", children: galleries.slice(0, 3), minColumnWidth: 300 }]));
-      mark(galleries.slice(0, 3));
-    } else if (v === "fitness" && galleries.length > 0) {
-      children.push(section(true, [{ type: "Grid", children: galleries.slice(0, 4), minColumnWidth: 280 }]));
-      mark(galleries.slice(0, 4));
     }
 
-    if (stats.length > 0 && v !== "finserv" && v !== "fitness") {
-      children.push(section(false, [{ type: "Grid", children: stats, minColumnWidth: 180 }]));
-      mark(stats);
+    if (galleries.length > 0) {
+      children.push(
+        section(true, [
+          { type: "Grid", children: galleries.slice(0, Math.min(4, galleries.length)), minColumnWidth: 280 },
+        ])
+      );
+      mark(galleries.slice(0, Math.min(4, galleries.length)));
     }
 
     if (texts.length > 0) {
@@ -219,23 +192,18 @@ export function mockComposition(
     }
 
     if (features.length > 0) {
-      const layout =
-        v === "salon"
-          ? { type: "Grid" as const, children: features, minColumnWidth: 280 }
-          : v === "fitness"
-            ? { type: "Grid" as const, children: features, minColumnWidth: 340 }
-            : { type: "Grid" as const, children: features, minColumnWidth: 320 };
-      children.push(section(false, [layout]));
+      children.push(section(false, [{ type: "Grid", children: features, minColumnWidth: 300 }]));
       mark(features);
     }
 
-    if (galleries.length > 0 && v !== "salon" && v !== "fitness") {
-      children.push(section(true, [{ type: "Grid", children: galleries, minColumnWidth: 260 }]));
-      mark(galleries);
+    const remainingGalleries = galleries.filter((id) => !used.has(id));
+    if (remainingGalleries.length > 0) {
+      children.push(section(false, [{ type: "Grid", children: remainingGalleries, minColumnWidth: 260 }]));
+      mark(remainingGalleries);
     }
 
     if (images.length > 0) {
-      children.push(section(v === "salon", images.map((id) => id)));
+      children.push(section(false, images.map((id) => id)));
       mark(images);
     }
 
@@ -257,20 +225,18 @@ export function mockComposition(
     }
 
     for (const id of remaining()) children.push(id);
-
-    void sitePlan;
     return { type: "Stack", children };
   }
 
   const children: LayoutNode["children"] = [];
 
   if (headlines[0]) {
-    children.push(section(false, [headlines[0]!]));
+    children.push(section(pagePlan.slug === "home", [headlines[0]!]));
     mark([headlines[0]!]);
   }
 
-  if (pagePlan.slug === "services" && galleries.length > 0) {
-    children.push(section(true, [{ type: "Grid", children: galleries, minColumnWidth: 250 }]));
+  if (galleries.length > 0) {
+    children.push(section(pagePlan.slug === "services", [{ type: "Grid", children: galleries, minColumnWidth: 260 }]));
     mark(galleries);
   }
 
@@ -311,7 +277,6 @@ export function mockComposition(
   }
 
   for (const id of remaining()) children.push(id);
-
   return { type: "Stack", children };
 }
 

@@ -3,149 +3,138 @@ import { SitePlanSchema } from "../types.js";
 import { CORE_PAGE_KINDS } from "../types.js";
 import { llm } from "../llm/client.js";
 import { briefToContext } from "./expand-brief-agent.js";
-import { detectVertical } from "./theme-agent.js";
+import { allowMocks, requireLlm } from "../util/llm-required.js";
+import type { SectionArchetype } from "../components/archetypes.js";
 
-const PLANNER_SYSTEM = `You are a website information architect. Given an expanded business brief, design a UNIQUE site structure.
+const PLANNER_SYSTEM = `You are a website information architect. Design a unique site structure for this business.
+
+Think through what pages matter, what each page must accomplish, how navigation should read at a glance, and what overall visual/layout personality suits the brand.
 
 Output valid JSON:
 {
   "pages": [
     {
       "slug": "home|about|services|contact|team|pricing|faq|gallery",
-      "title": "Page title",
+      "title": "page heading for the page itself",
+      "navLabel": "short label for the navigation bar — clear and scannable",
       "goal": "what this page must accomplish",
-      "minBlocks": 18-30,
-      "layoutHint": "specific layout personality for THIS page — e.g. 'full-bleed hero alone, then asymmetric gallery, no card-wrapped headers'",
-      "contentFocus": ["3-6 topics this page must cover in depth"]
+      "minBlocks": number,
+      "layoutHint": "your creative direction for how this page should feel spatially",
+      "contentFocus": ["topics to cover in depth"],
+      "sections": [
+        { "id": "home_hero", "intent": "...", "blockTypes": ["headline"] },
+        { "id": "home_proof", "intent": "...", "blockTypes": ["stat"] }
+      ]
     }
   ],
-  "compositionStrategy": "1-2 sentences: how this site's layout should DIFFER from a generic template",
-  "avoidPatterns": ["patterns to avoid for this business e.g. 'stats grid on salon homepage'"],
-  "visualArchetype": "e.g. editorial-magazine | trust-dashboard | energy-bento | warm-storytelling",
-  "motionStyle": "e.g. staggered reveals + parallax hero | subtle fade | bold scale-in"
+  "compositionStrategy": "how layout rhythm should differ from a generic template",
+  "avoidPatterns": ["what to avoid for this specific business"],
+  "visualArchetype": "free-form name for the visual personality you envision",
+  "motionStyle": "how motion should feel on scroll"
 }
 
-RULES:
-- ALWAYS include: home, about, services, contact
-- ADD 0-2 optional pages (team, pricing, faq, gallery) only if the business needs them
-- Salon/beauty: prefer gallery page or team page, visual-first layouts, NEVER put hero headline inside a card row
-- Finserv: trust-first, lead with stats row after hero, long-form text sections, avoid heavy galleries
-- Restaurant: menu-focused services, warm imagery, alternating image+text rows
-- Fitness/gym: energy-bento archetype — asymmetric image mosaic, stats band, class cards in 2-col, dark cinematic hero
-- Each page needs minBlocks 18+ on home/services, 14+ on about/contact
-- layoutHint must be SPECIFIC and DIFFERENT per business — not copy-paste structures
-- motionStyle should match vertical (fitness=bold scale-in, finserv=subtle fade)`;
+Include home, about, services, and contact. Add optional pages only if genuinely needed.
+Derive everything from the business — not stereotypes.`;
 
-function mockPlan(brief: ExpandedBrief): SitePlan {
-  const v = detectVertical(`${brief.expandedBrief} ${brief.services.join(" ")}`);
-
-  const basePages = [
+function defaultSections(
+  slug: string,
+  layoutHint: string,
+  blockTypes: string[],
+  archetypes?: SectionArchetype[]
+) {
+  const archetypeList: SectionArchetype[] = archetypes ?? [
+    slug === "home" ? "split_hero" : "stats_row",
+    "feature_grid",
+    "cta_band",
+  ];
+  return [
     {
-      slug: "home",
-      title: "Home",
-      goal: "Convert visitors with emotional hook and clear CTA",
-      minBlocks: v === "finserv" ? 22 : 24,
-      layoutHint:
-        v === "salon"
-          ? "Full-bleed hero ONLY (no row). Gallery grid 3-col. Features as horizontal scroll feel via row. Testimonials stacked with large quotes. CTA full-bleed."
-          : v === "finserv"
-            ? "Full-bleed hero. Stats in tight Row immediately below. Two-column text+image for story. Feature grid 2-col. Testimonial band. CTA full-bleed."
-            : "Full-bleed hero. Alternating Section stacks. Mixed grid sizes.",
-      contentFocus: ["hero value prop", "social proof", "key services", "testimonials", "cta"],
+      id: `${slug}_hero`,
+      intent: "Opening hero",
+      blockTypes: ["headline", "text", "image"],
+      archetype: archetypeList[0],
     },
     {
-      slug: "about",
-      title: "About",
-      goal: "Build trust with story, team, values",
-      minBlocks: 16,
-      layoutHint:
-        v === "salon"
-          ? "Section headline (no card). Story text wide. Image gallery row. Team values grid."
-          : "Section headline. Timeline-style text stack. Credentials stats row. Image sidebar row.",
-      contentFocus: ["origin story", "mission", "team expertise", "values"],
+      id: `${slug}_main`,
+      intent: layoutHint,
+      blockTypes,
+      archetype: archetypeList[1] ?? "feature_grid",
     },
     {
-      slug: "services",
-      title: v === "finserv" ? "Services" : "Services",
-      goal: "Detail every offering with depth",
-      minBlocks: 20,
-      layoutHint:
-        v === "salon"
-          ? "No card headline. Service categories as feature grid. Large gallery section. Pricing hints as stats."
-          : v === "fitness"
-            ? "Bento mosaic: mix 2-col and 3-col gallery grids. Class features in wide grid. Stats in horizontal band Row."
-            : "Service pillars as 2-col grid. Each with detail text block. Process steps stack.",
-      contentFocus: brief.services.slice(0, 6),
-    },
-    {
-      slug: "contact",
-      title: "Contact",
-      goal: "Remove friction to reach out",
-      minBlocks: 14,
-      layoutHint: "Section headline. Contact block + map image row. FAQ text stack. Full-bleed CTA.",
-      contentFocus: ["contact info", "hours", "booking", "location"],
+      id: `${slug}_close`,
+      intent: "Conversion close",
+      blockTypes: ["cta", "contact"],
+      archetype: archetypeList[2] ?? "cta_band",
     },
   ];
+}
 
-  const optional =
-    v === "salon"
-      ? [
-          {
-            slug: "team",
-            title: "Our Team",
-            goal: "Showcase stylists and build personal connection",
-            minBlocks: 16,
-            layoutHint: "Gallery-forward grid of team members. No uniform card rows.",
-            contentFocus: ["lead stylists", "specialties", "awards"],
-          },
-        ]
-      : v === "finserv"
-        ? [
-            {
-              slug: "faq",
-              title: "FAQ",
-              goal: "Address objections and compliance questions",
-              minBlocks: 14,
-              layoutHint: "Stack of text Q&A blocks. Stats trust bar at top.",
-              contentFocus: ["fees", "fiduciary", "minimums", "process"],
-            },
-          ]
-        : [];
+function mockPlan(brief: ExpandedBrief): SitePlan {
+  const services = brief.services.slice(0, 6);
 
   return SitePlanSchema.parse({
-    pages: [...basePages, ...optional],
-    compositionStrategy:
-      v === "salon"
-        ? "Visual editorial magazine layout — heroes bleed edge-to-edge, headers never in cards, galleries dominate"
-        : v === "finserv"
-          ? "Institutional trust layout — data-forward, generous whitespace, narrative text columns, restrained imagery"
-          : v === "fitness"
-            ? "High-energy bento layout — cinematic full-bleed hero, stats band, asymmetric class/gallery mosaic, bold CTAs"
-            : "Balanced storytelling with alternating full-width and contained sections",
-    visualArchetype:
-      v === "salon"
-        ? "editorial-magazine"
-        : v === "finserv"
-          ? "trust-dashboard"
-          : v === "fitness"
-            ? "energy-bento"
-            : "warm-storytelling",
-    motionStyle:
-      v === "fitness"
-        ? "bold scale-in reveals, parallax hero, staggered grid cards"
-        : v === "finserv"
-          ? "subtle fade-up, minimal motion"
-          : "staggered reveals with soft ease",
-    avoidPatterns:
-      v === "salon"
-        ? ["hero in row with image", "identical 3-stat grid like finance site", "card-wrapped page titles"]
-        : v === "fitness"
-          ? ["uniform 3-col feature grid", "hero beside image in row", "tiny stat cards", "card-wrapped headers"]
-          : ["large image gallery grid", "casual testimonial tone", "card-wrapped headers"],
+    pages: [
+      {
+        slug: "home",
+        title: "Home",
+        navLabel: "Home",
+        goal: "Hook visitors and drive primary conversion",
+        minBlocks: 22,
+        layoutHint:
+          "Full-bleed hero alone. Stats or proof band. Mixed grid sizes for features/gallery. Testimonials with breathing room. Full-bleed CTA.",
+        contentFocus: ["value proposition", "proof", "services overview", "testimonials", "cta"],
+        sections: defaultSections(
+          "home",
+          "Proof and services overview",
+          ["headline", "stat", "feature", "testimonial", "gallery", "cta", "pricing", "bento"],
+          ["split_hero", "bento_grid", "pricing_table", "cta_band"]
+        ),
+      },
+      {
+        slug: "about",
+        title: "About",
+        navLabel: "About",
+        goal: "Build trust with story and credentials",
+        minBlocks: 16,
+        layoutHint: "Section headline (no card). Story text wide. Optional image row. Values/features grid.",
+        contentFocus: ["origin story", "mission", "team", "values"],
+        sections: defaultSections("about", "Story and values", ["headline", "text", "feature", "image"]),
+      },
+      {
+        slug: "services",
+        title: "Services",
+        navLabel: "Services",
+        goal: "Detail every offering with depth",
+        minBlocks: 20,
+        layoutHint: "Service features in varied grid. Gallery or image mosaic. Detail text blocks between grids.",
+        contentFocus: services.length ? services : ["core services", "process", "pricing hints"],
+        sections: defaultSections("services", "Service detail grid", ["headline", "feature", "gallery", "text"]),
+      },
+      {
+        slug: "contact",
+        title: "Contact",
+        navLabel: "Contact",
+        goal: "Remove friction to reach out",
+        minBlocks: 14,
+        layoutHint: "Headline. Contact + image row. FAQ stack if relevant. Full-bleed CTA.",
+        contentFocus: ["contact info", "hours", "location", "booking"],
+        sections: defaultSections("contact", "Contact and FAQ", ["headline", "contact", "faq", "cta"]),
+      },
+    ],
+    compositionStrategy: `Dynamic layout tailored to ${brief.businessName} — alternating full-bleed and contained sections, no uniform template rows`,
+    visualArchetype: "minimal-luxury",
+    motionStyle: "staggered reveals with soft ease",
+    avoidPatterns: [
+      "hero beside image in same row",
+      "card-wrapped page titles",
+      "identical 3-column card grid for everything",
+    ],
   });
 }
 
 export async function planSite(brief: ExpandedBrief): Promise<SitePlan> {
+  requireLlm("site planning");
+
   if (llm.isAvailable) {
     try {
       const raw = await llm.chat(
@@ -157,14 +146,17 @@ export async function planSite(brief: ExpandedBrief): Promise<SitePlan> {
       const slugs = new Set(plan.pages.map((p) => p.slug));
       for (const core of CORE_PAGE_KINDS) {
         if (!slugs.has(core)) {
+          if (!allowMocks()) throw new Error(`Site plan missing required page: ${core}`);
           return mockPlan(brief);
         }
       }
       return plan;
-    } catch {
-      // fallback
+    } catch (err) {
+      if (!allowMocks()) throw err instanceof Error ? err : new Error(String(err));
     }
   }
+
+  if (!allowMocks()) throw new Error("Site planning requires LLM");
   return mockPlan(brief);
 }
 

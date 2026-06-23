@@ -1,10 +1,31 @@
 import { z } from "zod";
 
+export const ThemeLayoutSchema = z.object({
+  maxWidth: z.string(),
+  gridColumns: z.number().min(1).max(6),
+  sectionGap: z.string(),
+  cardMinHeight: z.string(),
+});
+
+export const MotionPresetSchema = z.enum([
+  "fade-up",
+  "stagger",
+  "scale-in",
+  "slide-left",
+  "parallax-hero",
+  "none",
+]);
+
+export type MotionPreset = z.infer<typeof MotionPresetSchema>;
+
 export const SiteThemeSchema = z.object({
   vertical: z.string(),
   mood: z.string(),
   fontHeading: z.string(),
   fontBody: z.string(),
+  motionStyle: z.string().optional(),
+  motionPreset: MotionPresetSchema.optional(),
+  layout: ThemeLayoutSchema.optional(),
   colors: z.object({
     bg: z.string(),
     surface: z.string(),
@@ -15,6 +36,10 @@ export const SiteThemeSchema = z.object({
     gradientFrom: z.string(),
     gradientTo: z.string(),
     navBg: z.string(),
+    navText: z.string().optional(),
+    navMuted: z.string().optional(),
+    navActiveBg: z.string().optional(),
+    navActiveText: z.string().optional(),
   }),
 });
 
@@ -35,13 +60,35 @@ export const ExpandedBriefSchema = z.object({
 
 export type ExpandedBrief = z.infer<typeof ExpandedBriefSchema>;
 
+export const SectionPlanSchema = z.object({
+  id: z.string(),
+  intent: z.string(),
+  blockTypes: z.array(z.string()).min(1),
+  archetype: z
+    .enum([
+      "split_hero",
+      "logo_wall",
+      "pricing_table",
+      "bento_grid",
+      "stats_row",
+      "feature_grid",
+      "testimonial_band",
+      "cta_band",
+    ])
+    .optional(),
+});
+
+export type SectionPlan = z.infer<typeof SectionPlanSchema>;
+
 export const PagePlanSchema = z.object({
   slug: z.string(),
   title: z.string(),
+  navLabel: z.string().optional(),
   goal: z.string(),
   minBlocks: z.number().min(12),
   layoutHint: z.string(),
   contentFocus: z.array(z.string()),
+  sections: z.array(SectionPlanSchema).min(1).optional(),
 });
 
 export const SitePlanSchema = z.object({
@@ -71,16 +118,24 @@ export const LayoutNodeSchema: z.ZodType<LayoutNode> = z.lazy(() =>
     z.object({
       type: z.literal("Row"),
       children: z.array(LayoutChildSchema),
+      columns: z.number().min(1).max(6).optional(),
     }),
     z.object({
       type: z.literal("Grid"),
       children: z.array(LayoutChildSchema),
       minColumnWidth: z.number().optional(),
+      columns: z.number().min(1).max(6).optional(),
     }),
     z.object({
       type: z.literal("Section"),
+      id: z.string().optional(),
       fullBleed: z.boolean().optional(),
       children: z.array(LayoutChildSchema),
+    }),
+    z.object({
+      type: z.literal("Bento"),
+      children: z.array(LayoutChildSchema),
+      columns: z.number().min(2).max(6).optional(),
     }),
   ])
 );
@@ -93,9 +148,11 @@ export const LayoutChildSchema: z.ZodType<LayoutChild> = z.union([
 export type LayoutChild = string | LayoutNode;
 
 export interface LayoutNode {
-  type: "Stack" | "Row" | "Grid" | "Section";
+  type: "Stack" | "Row" | "Grid" | "Section" | "Bento";
+  id?: string;
   children: LayoutChild[];
   minColumnWidth?: number;
+  columns?: number;
   fullBleed?: boolean;
 }
 
@@ -104,7 +161,72 @@ export interface PageSpec {
   title: string;
   content: ContentBlock[];
   layout: LayoutNode;
+  sections?: PageSection[];
 }
+
+export const PageSectionSchema = z.object({
+  id: z.string(),
+  intent: z.string(),
+  archetype: SectionPlanSchema.shape.archetype,
+  blocks: z.array(ContentBlockSchema),
+  layout: LayoutNodeSchema,
+});
+
+export type PageSection = z.infer<typeof PageSectionSchema>;
+
+export const MediaRegistryEntrySchema = z.object({
+  url: z.string(),
+  query: z.string(),
+  blockId: z.string(),
+  sectionId: z.string().optional(),
+  pageSlug: z.string().optional(),
+});
+
+export type MediaRegistryEntry = z.infer<typeof MediaRegistryEntrySchema>;
+
+import { CmsCollectionSchema } from "./cms/types.js";
+
+export type { CmsCollection, CmsItem } from "./cms/types.js";
+export { CmsCollectionSchema } from "./cms/types.js";
+
+export const SiteContextSchema = z.object({
+  businessName: z.string(),
+  businessBrief: z.string(),
+  expandedBrief: ExpandedBriefSchema,
+  sitePlan: SitePlanSchema,
+  designSystem: SiteThemeSchema,
+  pages: z.record(
+    z.string(),
+    z.object({
+      slug: z.string(),
+      title: z.string(),
+      navLabel: z.string().optional(),
+      sections: z.array(PageSectionSchema),
+    })
+  ),
+  mediaRegistry: z.array(MediaRegistryEntrySchema).default([]),
+  cmsCollections: z.array(CmsCollectionSchema).default([]),
+  qaHistory: z
+    .array(
+      z.object({
+        pageSlug: z.string(),
+        iteration: z.number(),
+        issues: z.array(
+          z.object({
+            severity: z.enum(["hard", "soft"]),
+            code: z.string(),
+            message: z.string(),
+            targetId: z.string().optional(),
+            sectionId: z.string().optional(),
+            suggestion: z.string().optional(),
+          })
+        ),
+      })
+    )
+    .default([]),
+});
+
+export type SiteContext = z.infer<typeof SiteContextSchema>;
 
 export interface SiteSpec {
   businessName: string;
@@ -120,7 +242,9 @@ export interface QAIssue {
   code: string;
   message: string;
   targetId?: string;
+  sectionId?: string;
   suggestion?: string;
+  metric?: number;
 }
 
 export interface QAResult {
@@ -130,6 +254,7 @@ export interface QAResult {
 
 export interface GenerationResult {
   site: SiteSpec;
+  siteContext: SiteContext;
   htmlPages: Record<string, string>;
   qaResults: Record<string, QAResult>;
   timingMs: number;

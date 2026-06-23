@@ -1,46 +1,32 @@
+import "./load-env.js";
+import { activeImageProviders } from "./media/image-providers.js";
 import { generateSite, summarizeGeneration, waitForVisionPolish } from "./orchestrator/orchestrator.js";
 import { writeSiteOutput, startPreviewServer } from "./server/preview-server.js";
-import { detectVertical } from "./agents/theme-agent.js";
+import { startPlaygroundServer } from "./web/playground-server.js";
+import { extractBusinessName } from "./util/extract-name.js";
 import path from "path";
-
-function extractBusinessName(brief: string): string {
-  const quoted = brief.match(/(?:called|named)\s+["']([^"']+)["']/i);
-  if (quoted?.[1]) return quoted[1];
-
-  const beforeDash = brief.match(/^([A-Za-z0-9][A-Za-z0-9\s.'&]{1,40}?)\s*[-—:]/);
-  if (beforeDash?.[1]) return beforeDash[1].trim();
-
-  const patterns = [
-    /^([A-Z][A-Za-z0-9&'\s]{2,30}?)\s+(?:is|—|-|:)/,
-    /^([A-Z][A-Za-z0-9&'\s]{2,28})$/,
-  ];
-  for (const p of patterns) {
-    const m = brief.match(p);
-    if (m?.[1]) return m[1].trim();
-  }
-
-  const vertical = detectVertical(brief);
-  const labels: Record<string, string> = {
-    salon: "Studio",
-    finserv: "Capital",
-    restaurant: "Kitchen",
-    fitness: "Fitness",
-    default: "Co",
-  };
-  const words = brief.split(/\s+/).filter((w) => w.length > 3).slice(0, 2);
-  const base = words.map((w) => w[0]!.toUpperCase() + w.slice(1).toLowerCase()).join(" ");
-  return base ? `${base} ${labels[vertical] ?? "Co"}` : "My Business";
-}
 
 async function main() {
   const [command, ...args] = process.argv.slice(2);
   const cmd = command ?? "generate";
 
+  if (cmd === "playground" || cmd === "ui") {
+    const { url, close } = await startPlaygroundServer();
+    console.log(`Playground UI → ${url}`);
+    console.log("Pipeline logs stream in the browser terminal panel.");
+    console.log("Press Ctrl+C to stop.\n");
+    process.on("SIGINT", () => {
+      close();
+      process.exit(0);
+    });
+    return;
+  }
+
   if (cmd === "generate" || cmd === "dev") {
     const brief = args.join(" ").trim() || process.env.BUSINESS_BRIEF?.trim() || "";
     if (!brief) {
       console.error("Usage: npm run dev -- \"Your business in 1-2 lines\"");
-      console.error("Example: npm run dev -- \"Glow Salon — luxury hair salon in Austin, balayage & booking\"");
+      console.error("Example: npm run dev -- \"Your business name — what you do, where\"");
       process.exit(1);
     }
 
@@ -54,9 +40,9 @@ async function main() {
     if (llm.isAvailable) {
       console.log(`LLM: ${llm.provider} (${llm.getChatModel()})`);
     } else {
-      console.log("LLM: mock mode (set GROQ_API_KEY for live copy + layout)");
+      console.log("LLM: mock mode (set GROQ_API_KEY, MISTRAL_API_KEY, or OPENAI_API_KEY)");
     }
-    console.log("Media: Unsplash stock photos (curated, no API key needed)");
+    console.log(`Media: ${activeImageProviders().join(" → ")}`);
     console.log();
 
     const outputDir = path.resolve("output", name.toLowerCase().replace(/[^a-z0-9]+/g, "-"));
@@ -114,15 +100,16 @@ async function main() {
   }
 
   console.log(`Usage:
-  npm run dev -- "Glow Salon — luxury hair salon in Austin, balayage & online booking"
-  npm run generate -- "Meridian Wealth — finserv firm, retirement planning"
+  npm run playground              Minimal web UI with live pipeline logs
+  npm run dev -- "Your business — what you do"
+  npm run generate -- "Brief here"
 
-  Just 1-2 lines about your business. Name is auto-detected (override with BUSINESS_NAME).
-
-Environment:
-  GROQ_API_KEY / OPENAI_API_KEY   Live LLM copy + layout (mock works offline)
+Environment (set in .env — see .env.example):
+  GROQ_API_KEY / MISTRAL_API_KEY / OPENAI_API_KEY   Live LLM (mock works offline)
+  LLM_PROVIDER=mistral|groq|openai                  Force a provider when multiple keys set
+  PEXELS_API_KEY / PIXABAY_API_KEY  Optional extra image sources
   BUSINESS_NAME                   Optional override
-  SKIP_VISION=1                   Skip background vision polish
+  SKIP_VISION=1                   Skip vision polish (Gemini Flash later)
 `);
 }
 

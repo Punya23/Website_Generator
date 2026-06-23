@@ -1,6 +1,7 @@
 import type { ContentBlock, ExpandedBrief, PagePlan } from "../types.js";
 import { llm } from "../llm/client.js";
 import { briefToContext } from "./expand-brief-agent.js";
+import { allowMocks, requireLlm } from "../util/llm-required.js";
 
 const CONTENT_SYSTEM = `You are an expert website copywriter. Write rich, specific, conversion-focused content.
 You have ZERO layout awareness — never mention grids, columns, or placement.
@@ -34,6 +35,8 @@ export async function generateContent(
   brief: ExpandedBrief,
   pagePlan: PagePlan
 ): Promise<ContentBlock[]> {
+  requireLlm("content generation");
+
   if (llm.isAvailable) {
     const raw = await llm.chat(
       CONTENT_SYSTEM,
@@ -52,6 +55,7 @@ Generate ${pagePlan.minBlocks}+ content blocks. Be thorough and specific to ${br
     return parsed.blocks;
   }
 
+  if (!allowMocks()) throw new Error("Content generation requires LLM");
   return mockContent(brief, pagePlan);
 }
 

@@ -3,7 +3,7 @@ import type { ChatCompletionMessageParam } from "openai/resources/chat/completio
 import { llmQueue, sleep } from "./request-queue.js";
 import { isRateLimitError, parseRetryAfterMs } from "./rate-limit.js";
 
-export type LLMProvider = "groq" | "openai";
+export type LLMProvider = "groq" | "openai" | "mistral";
 
 export interface LLMOptions {
   model?: string;
@@ -13,6 +13,7 @@ export interface LLMOptions {
 }
 
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
+const MISTRAL_BASE_URL = "https://api.mistral.ai/v1";
 
 /** Groq-decommissioned IDs → current replacements (see console.groq.com/docs/deprecations) */
 export const GROQ_MODEL_MIGRATIONS: Record<string, string> = {
@@ -33,6 +34,11 @@ const DEFAULT_MODELS: Record<LLMProvider, { chat: string; composition: string; v
     composition: "gpt-4o-mini",
     vision: "gpt-4o-mini",
   },
+  mistral: {
+    chat: "mistral-medium-latest",
+    composition: "mistral-medium-latest",
+    vision: "mistral-medium-latest",
+  },
 };
 
 function resolveProvider(): LLMProvider | null {
@@ -44,8 +50,12 @@ function resolveProvider(): LLMProvider | null {
   if (explicit === "openai") {
     return process.env.OPENAI_API_KEY ? "openai" : null;
   }
+  if (explicit === "mistral") {
+    return process.env.MISTRAL_API_KEY ? "mistral" : null;
+  }
 
   if (process.env.GROQ_API_KEY) return "groq";
+  if (process.env.MISTRAL_API_KEY) return "mistral";
   if (process.env.OPENAI_API_KEY) return "openai";
   return null;
 }
@@ -56,6 +66,14 @@ function createClient(provider: LLMProvider): OpenAI {
     return new OpenAI({
       apiKey: process.env.GROQ_API_KEY,
       baseURL: GROQ_BASE_URL,
+      timeout: timeoutMs,
+      maxRetries: 0,
+    });
+  }
+  if (provider === "mistral") {
+    return new OpenAI({
+      apiKey: process.env.MISTRAL_API_KEY,
+      baseURL: MISTRAL_BASE_URL,
       timeout: timeoutMs,
       maxRetries: 0,
     });
@@ -95,6 +113,7 @@ export class LLMClient {
     if (!this.provider) return false;
     const visionModel =
       process.env.LLM_VISION_MODEL ??
+      process.env.MISTRAL_VISION_MODEL ??
       process.env.GROQ_VISION_MODEL ??
       process.env.OPENAI_VISION_MODEL ??
       this.models.vision;
@@ -103,29 +122,58 @@ export class LLMClient {
 
   getChatModel(): string {
     const raw =
-      process.env.LLM_MODEL ??
-      process.env.GROQ_MODEL ??
-      process.env.OPENAI_MODEL ??
-      this.models.chat;
+      this.provider === "mistral"
+        ? (process.env.LLM_MODEL ?? process.env.MISTRAL_MODEL ?? this.models.chat)
+        : this.provider === "groq"
+          ? (process.env.LLM_MODEL ?? process.env.GROQ_MODEL ?? this.models.chat)
+          : (process.env.LLM_MODEL ?? process.env.OPENAI_MODEL ?? this.models.chat);
     return resolveModel(this.provider, raw);
   }
 
   getCompositionModel(): string {
     const raw =
-      process.env.LLM_COMPOSITION_MODEL ??
-      process.env.GROQ_COMPOSITION_MODEL ??
-      process.env.OPENAI_COMPOSITION_MODEL ??
-      this.models.composition;
+      this.provider === "mistral"
+        ? (process.env.LLM_COMPOSITION_MODEL ??
+          process.env.MISTRAL_COMPOSITION_MODEL ??
+          this.models.composition)
+        : this.provider === "groq"
+          ? (process.env.LLM_COMPOSITION_MODEL ??
+            process.env.GROQ_COMPOSITION_MODEL ??
+            this.models.composition)
+          : (process.env.LLM_COMPOSITION_MODEL ??
+            process.env.OPENAI_COMPOSITION_MODEL ??
+            this.models.composition);
     return resolveModel(this.provider, raw);
   }
 
   getVisionModel(): string | null {
     return (
       process.env.LLM_VISION_MODEL ??
+      (this.provider === "mistral" ? process.env.MISTRAL_VISION_MODEL : undefined) ??
       process.env.GROQ_VISION_MODEL ??
       process.env.OPENAI_VISION_MODEL ??
       this.models.vision
     );
+  }
+
+  getSectionModel(): string {
+    const openai =
+      process.env.LLM_SECTION_MODEL ??
+      process.env.OPENAI_SECTION_MODEL ??
+      (process.env.OPENAI_API_KEY ? process.env.OPENAI_MODEL ?? "gpt-4o-mini" : undefined);
+    if (openai && (process.env.LLM_PROVIDER === "openai" || process.env.OPENAI_API_KEY)) {
+      return openai;
+    }
+    return resolveModel(this.provider, this.getCompositionModel());
+  }
+
+  getFixModel(): string {
+    const openaiFix =
+      process.env.LLM_FIX_MODEL ??
+      process.env.OPENAI_FIX_MODEL ??
+      (process.env.OPENAI_API_KEY ? process.env.OPENAI_MODEL ?? "gpt-4o-mini" : undefined);
+    if (openaiFix) return openaiFix;
+    return resolveModel(this.provider, this.getCompositionModel());
   }
 
   async chat(
@@ -135,7 +183,7 @@ export class LLMClient {
   ): Promise<string> {
     if (!this.client) {
       throw new Error(
-        "No LLM configured — set GROQ_API_KEY or OPENAI_API_KEY (mock mode works without either)"
+        "No LLM configured — set GROQ_API_KEY, MISTRAL_API_KEY, or OPENAI_API_KEY"
       );
     }
 
@@ -171,7 +219,7 @@ export class LLMClient {
       if (isRateLimitError(err) && attempt < MAX_RETRIES) {
         const waitMs = parseRetryAfterMs(err, attempt);
         console.warn(
-          `[llm] Groq rate limit — waiting ${(waitMs / 1000).toFixed(1)}s (retry ${attempt + 1}/${MAX_RETRIES})`
+          `[llm] Rate limit (${this.provider}) — waiting ${(waitMs / 1000).toFixed(1)}s (retry ${attempt + 1}/${MAX_RETRIES})`
         );
         await sleep(waitMs);
         return this.chatWithRetry(system, user, options, attempt + 1);
@@ -209,6 +257,49 @@ export class LLMClient {
             {
               type: "image_url",
               image_url: { url: `data:image/png;base64,${imageBase64}` },
+            },
+          ],
+        },
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    return response.choices[0]?.message?.content ?? "";
+  }
+
+  async chatWithVisionDual(
+    system: string,
+    userText: string,
+    desktopBase64: string,
+    mobileBase64: string,
+    options: LLMOptions = {}
+  ): Promise<string> {
+    if (!this.client) {
+      throw new Error("No LLM configured — vision QA requires an API key");
+    }
+
+    const visionModel = options.model ?? this.getVisionModel();
+    if (!visionModel) {
+      throw new Error(`Vision QA is not supported on provider "${this.provider}"`);
+    }
+
+    const response = await this.client.chat.completions.create({
+      model: visionModel,
+      temperature: options.temperature ?? 0.3,
+      messages: [
+        { role: "system", content: system },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: `${userText}\n\n[Desktop 1280px]` },
+            {
+              type: "image_url",
+              image_url: { url: `data:image/png;base64,${desktopBase64}` },
+            },
+            { type: "text", text: "[Mobile 390px]" },
+            {
+              type: "image_url",
+              image_url: { url: `data:image/png;base64,${mobileBase64}` },
             },
           ],
         },

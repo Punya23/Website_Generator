@@ -6,16 +6,22 @@ function parseConcurrency(): number {
     const n = Number.parseInt(raw, 10);
     if (Number.isFinite(n) && n > 0) return n;
   }
-  return process.env.GROQ_API_KEY && !process.env.OPENAI_API_KEY ? 1 : 4;
+  const provider = process.env.LLM_PROVIDER?.toLowerCase();
+  if (provider === "mistral" || provider === "groq") return 1;
+  if (process.env.MISTRAL_API_KEY && provider === "mistral") return 1;
+  if (process.env.GROQ_API_KEY && !process.env.OPENAI_API_KEY && provider !== "mistral") return 1;
+  return 4;
 }
 
-function parseGroqDelayMs(): number {
-  const raw = process.env.GROQ_REQUEST_DELAY_MS ?? process.env.LLM_REQUEST_DELAY_MS;
+function parseRequestDelayMs(): number {
+  const raw = process.env.MISTRAL_REQUEST_DELAY_MS ?? process.env.GROQ_REQUEST_DELAY_MS ?? process.env.LLM_REQUEST_DELAY_MS;
   if (raw) {
     const n = Number.parseInt(raw, 10);
     if (Number.isFinite(n) && n >= 0) return n;
   }
-  return process.env.GROQ_API_KEY ? 400 : 0;
+  if (process.env.LLM_PROVIDER?.toLowerCase() === "mistral") return 1000;
+  if (process.env.GROQ_API_KEY) return 400;
+  return 0;
 }
 
 export class LlmRequestQueue {
@@ -64,4 +70,4 @@ export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export const llmQueue = new LlmRequestQueue(parseConcurrency(), parseGroqDelayMs());
+export const llmQueue = new LlmRequestQueue(parseConcurrency(), parseRequestDelayMs());

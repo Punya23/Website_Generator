@@ -1,46 +1,75 @@
-import { describe, it, expect } from "vitest";
-import { enrichContentWithImages } from "../src/media/enrich-content.js";
-import { stockImageUrl } from "../src/media/stock-images.js";
-import { PRESETS } from "../src/agents/theme-agent.js";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { enrichContentWithImages, enrichSectionImages } from "../src/media/enrich-content.js";
+import { MediaRegistry } from "../src/media/media-registry.js";
+import { stockImageUrlSync } from "../src/media/stock-images.js";
+import { activeImageProviders } from "../src/media/image-providers.js";
+import { GENERIC_THEME } from "../src/agents/theme-agent.js";
 
 describe("Stock images", () => {
-  it("returns unsplash URLs for salon queries", () => {
-    const url = stockImageUrl("hair salon balayage", "test-seed", "salon");
-    expect(url).toContain("images.unsplash.com");
-    expect(url).toContain("w=1200");
+  it("returns https URLs for any query", () => {
+    const url = stockImageUrlSync("law firm office", "test-seed");
+    expect(url).toMatch(/^https:\/\//);
   });
 
-  it("enriches image blocks with src", () => {
-    const blocks = enrichContentWithImages(
-      [{ id: "img1", type: "image", alt: "Salon", imageQuery: "hair salon" }],
+  it("enriches image blocks with src", async () => {
+    const blocks = await enrichContentWithImages(
+      [{ id: "img1", type: "image", alt: "Office", imageQuery: "modern office" }],
       "home",
-      "Glow Salon",
-      "Luxury hair salon Austin",
-      PRESETS.salon
+      "Acme Co",
+      "Professional services firm",
+      GENERIC_THEME
     );
-    expect(blocks[0]?.src).toContain("images.unsplash.com");
+    expect(blocks[0]?.src).toMatch(/^https:\/\//);
   });
 
-  it("adds hero image to home headline", () => {
-    const blocks = enrichContentWithImages(
-      [{ id: "h", type: "headline", text: "Welcome", subtext: "Best cuts" }],
+  it("adds hero image to home headline", async () => {
+    const blocks = await enrichContentWithImages(
+      [{ id: "h", type: "headline", text: "Welcome", subtext: "We deliver" }],
       "home",
-      "Glow Salon",
-      "Luxury hair salon",
-      PRESETS.salon
+      "Acme Co",
+      "Business services",
+      GENERIC_THEME
     );
     const headline = blocks.find((b) => b.type === "headline");
-    expect(headline?.heroImage).toContain("images.unsplash.com");
+    expect(headline?.heroImage).toMatch(/^https:\/\//);
   });
 
-  it("adds gallery to services page", () => {
-    const blocks = enrichContentWithImages(
-      [{ id: "f1", type: "feature", title: "Cuts", description: "Great cuts" }],
+  it("enriches gallery blocks in a section without injecting extras", async () => {
+    const registry = new MediaRegistry();
+    const blocks = await enrichSectionImages(
+      [{ id: "g1", type: "gallery", caption: "Work", imageQuery: "salon interior" }],
       "services",
-      "Glow Salon",
-      "Hair salon",
-      PRESETS.salon
+      "Acme Co",
+      "Business",
+      GENERIC_THEME,
+      registry,
+      "services_main"
     );
-    expect(blocks.some((b) => b.type === "gallery")).toBe(true);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]?.type).toBe("gallery");
+    expect(blocks[0]?.src).toMatch(/^https:\/\//);
+    expect(registry.usedUrls.size).toBe(1);
+  });
+
+  describe("activeImageProviders", () => {
+    const env = process.env;
+
+    beforeEach(() => {
+      delete process.env.PEXELS_API_KEY;
+      delete process.env.PIXABAY_API_KEY;
+    });
+
+    afterEach(() => {
+      process.env = env;
+    });
+
+    it("prioritizes pexels when key is set", () => {
+      process.env.PEXELS_API_KEY = "test";
+      expect(activeImageProviders()).toEqual(["pexels", "openverse", "picsum"]);
+    });
+
+    it("omits pixabay when no key", () => {
+      expect(activeImageProviders()).toEqual(["openverse", "picsum"]);
+    });
   });
 });

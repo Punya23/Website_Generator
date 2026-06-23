@@ -16,6 +16,13 @@ function revealWrap(inner: string, extraClass = ""): string {
   return `<div class="reveal${extraClass ? ` ${extraClass}` : ""}">${inner}</div>`;
 }
 
+function featureList(items: unknown): string {
+  if (!Array.isArray(items)) return "";
+  return `<ul class="feature-list">${items
+    .map((item) => `<li>${escapeHtml(String(item))}</li>`)
+    .join("")}</ul>`;
+}
+
 export function renderContentBlock(block: ContentBlock): string {
   const id = escapeHtml(block.id);
   const type = block.type;
@@ -23,6 +30,19 @@ export function renderContentBlock(block: ContentBlock): string {
   switch (type) {
     case "headline": {
       const heroImage = str(block.heroImage);
+      const splitImage = str(block.splitImage);
+      if (splitImage) {
+        return revealWrap(`<section class="block-split-hero" data-block-id="${id}" data-block-type="${type}">
+  <div class="split-hero-text">
+    <h1>${escapeHtml(str(block.text))}</h1>
+    ${block.subtext ? `<p>${escapeHtml(str(block.subtext))}</p>` : ""}
+    ${block.buttonText ? `<a class="btn" href="${escapeHtml(str(block.buttonUrl, "#"))}">${escapeHtml(str(block.buttonText))}</a>` : ""}
+  </div>
+  <div class="split-hero-media">
+    <img src="${escapeHtml(splitImage)}" alt="${escapeHtml(str(block.text))}" loading="eager" />
+  </div>
+</section>`);
+      }
       if (heroImage) {
         const bg = escapeHtml(heroImage);
         return revealWrap(`<section class="block-hero" data-block-id="${id}" data-block-type="${type}" style="background-image: linear-gradient(to top, color-mix(in srgb, var(--gradient-from) 88%, black), transparent 70%), url('${bg}')">
@@ -104,6 +124,40 @@ export function renderContentBlock(block: ContentBlock): string {
   ${block.address ? `<p>📍 ${escapeHtml(str(block.address))}</p>` : ""}
   ${block.hours ? `<p>🕐 ${escapeHtml(str(block.hours))}</p>` : ""}
 </section>`);
+
+    case "pricing": {
+      const highlighted = Boolean(block.highlighted);
+      return revealWrap(`<section class="block block-pricing${highlighted ? " block-pricing--featured" : ""}" data-block-id="${id}" data-block-type="${type}">
+  <h3>${escapeHtml(str(block.title, "Plan"))}</h3>
+  <div class="price"><span class="amount">${escapeHtml(str(block.price))}</span>${block.period ? `<span class="period">/${escapeHtml(str(block.period))}</span>` : ""}</div>
+  ${block.description ? `<p class="pricing-desc">${escapeHtml(str(block.description))}</p>` : ""}
+  ${featureList(block.features)}
+  ${block.buttonText ? `<a class="btn btn-pricing" href="${escapeHtml(str(block.buttonUrl, "#"))}">${escapeHtml(str(block.buttonText))}</a>` : ""}
+</section>`);
+    }
+
+    case "logo":
+      return revealWrap(`<section class="block block-logo" data-block-id="${id}" data-block-type="${type}">
+  ${
+    block.src
+      ? `<img src="${escapeHtml(str(block.src))}" alt="${escapeHtml(str(block.name, "Partner"))}" loading="lazy" />`
+      : `<span class="logo-name">${escapeHtml(str(block.name, "Partner"))}</span>`
+  }
+</section>`);
+
+    case "bento": {
+      const span = str(block.span, "normal");
+      return revealWrap(
+        `<section class="block block-bento block-bento--${escapeHtml(span)}" data-block-id="${id}" data-block-type="${type}" data-bento-span="${escapeHtml(span)}">
+  ${block.src ? `<img src="${escapeHtml(str(block.src))}" alt="${escapeHtml(str(block.title, "Highlight"))}" loading="lazy" />` : ""}
+  <div class="bento-body">
+    ${block.title ? `<h3>${escapeHtml(str(block.title))}</h3>` : ""}
+    ${block.description ? `<p>${escapeHtml(str(block.description))}</p>` : ""}
+  </div>
+</section>`,
+        `bento-span-${span}`
+      );
+    }
 
     default:
       return revealWrap(`<section class="block" data-block-id="${id}" data-block-type="${escapeHtml(type)}">

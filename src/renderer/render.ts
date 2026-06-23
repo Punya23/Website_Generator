@@ -1,7 +1,8 @@
 import type { ContentBlock, LayoutChild, LayoutNode, SiteTheme } from "../types.js";
 import { renderContentBlock } from "./blocks.js";
 import { buildStyles } from "./styles.js";
-import { PAGE_SCRIPTS } from "./scripts.js";
+import { buildThemeTokens } from "../theme/contrast.js";
+import { resolveMotionPreset, buildMotionScript } from "../motion/presets.js";
 
 export function buildContentMap(blocks: ContentBlock[]): Map<string, ContentBlock> {
   return new Map(blocks.map((b) => [b.id, b]));
@@ -9,31 +10,41 @@ export function buildContentMap(blocks: ContentBlock[]): Map<string, ContentBloc
 
 export function renderLayoutNode(
   node: LayoutNode,
-  contentMap: Map<string, ContentBlock>
+  contentMap: Map<string, ContentBlock>,
+  defaultColumns: number
 ): string {
   const childrenHtml = node.children
-    .map((child) => renderLayoutChild(child, contentMap))
+    .map((child) => renderLayoutChild(child, contentMap, defaultColumns))
     .join("\n");
 
   switch (node.type) {
     case "Stack":
       return `<div class="layout-stack" data-layout="Stack">\n${childrenHtml}\n</div>`;
-    case "Row":
-      return `<div class="layout-row" data-layout="Row">\n${childrenHtml}\n</div>`;
+    case "Row": {
+      const cols = node.columns ?? defaultColumns;
+      return `<div class="layout-row" data-cols="${cols}" data-layout="Row" style="--grid-columns: ${cols}">\n${childrenHtml}\n</div>`;
+    }
     case "Grid": {
+      const cols = node.columns ?? defaultColumns;
       const min = node.minColumnWidth ?? 260;
-      return `<div class="layout-grid" data-layout="Grid" style="--grid-min: ${min}px">\n${childrenHtml}\n</div>`;
+      return `<div class="layout-grid" data-cols="${cols}" data-layout="Grid" style="--grid-columns: ${cols}; --grid-min: ${min}px">\n${childrenHtml}\n</div>`;
+    }
+    case "Bento": {
+      const cols = node.columns ?? 4;
+      return `<div class="layout-bento" data-cols="${cols}" data-layout="Bento" style="--bento-columns: ${cols}">\n${childrenHtml}\n</div>`;
     }
     case "Section": {
       const bleed = node.fullBleed ? "layout-section layout-section--bleed" : "layout-section layout-section--contained";
-      return `<div class="${bleed}" data-layout="Section">\n${childrenHtml}\n</div>`;
+      const sectionId = node.id ? ` data-section-id="${escapeAttr(node.id)}"` : "";
+      return `<div class="${bleed}" data-layout="Section"${sectionId}>\n${childrenHtml}\n</div>`;
     }
   }
 }
 
 function renderLayoutChild(
   child: LayoutChild,
-  contentMap: Map<string, ContentBlock>
+  contentMap: Map<string, ContentBlock>,
+  defaultColumns: number
 ): string {
   if (typeof child === "string") {
     const block = contentMap.get(child);
@@ -42,7 +53,7 @@ function renderLayoutChild(
     }
     return renderContentBlock(block);
   }
-  return renderLayoutNode(child, contentMap);
+  return renderLayoutNode(child, contentMap, defaultColumns);
 }
 
 export interface RenderPageOptions {
@@ -52,32 +63,26 @@ export interface RenderPageOptions {
   businessBrief: string;
   theme: SiteTheme;
   navLinks: Array<{ slug: string; label: string }>;
-  visualArchetype?: string;
+  motionStyle?: string;
   content: ContentBlock[];
   layout: LayoutNode;
 }
 
-function inferArchetype(vertical: string): string {
-  const map: Record<string, string> = {
-    salon: "editorial-magazine",
-    finserv: "trust-dashboard",
-    fitness: "energy-bento",
-    restaurant: "warm-storytelling",
-  };
-  return map[vertical] ?? "warm-storytelling";
-}
-
 export function renderPage(options: RenderPageOptions): string {
   const contentMap = buildContentMap(options.content);
-  const body = renderLayoutNode(options.layout, contentMap);
+  const tokens = buildThemeTokens(options.theme);
+  const body = renderLayoutNode(options.layout, contentMap, tokens.gridColumns);
   const styles = buildStyles(options.theme);
   const year = new Date().getFullYear();
-  const archetype = options.visualArchetype ?? inferArchetype(options.theme.vertical);
+  const motionPreset = resolveMotionPreset(
+    options.theme.motionPreset,
+    options.motionStyle ?? options.theme.motionStyle
+  );
 
   const nav = options.navLinks
     .map(
       (link) =>
-        `<a href="${link.slug}.html"${link.slug === options.slug ? ' class="active"' : ""}>${link.label}</a>`
+        `<a href="${link.slug}.html"${link.slug === options.slug ? ' class="active"' : ""}>${escapeAttr(link.label)}</a>`
     )
     .join("\n    ");
 
@@ -90,7 +95,7 @@ export function renderPage(options: RenderPageOptions): string {
   <title>${escapeAttr(options.title)} — ${escapeAttr(options.businessName)}</title>
   <style>${styles}</style>
 </head>
-<body data-vertical="${escapeAttr(options.theme.vertical)}" data-archetype="${escapeAttr(archetype)}" data-motion="${options.theme.vertical === "fitness" ? "bold" : "subtle"}">
+<body data-vertical="${escapeAttr(options.theme.vertical)}" data-motion-preset="${escapeAttr(motionPreset)}">
   <nav class="site-nav">
     <span class="brand">${escapeAttr(options.businessName)}</span>
     ${nav}
@@ -101,7 +106,7 @@ export function renderPage(options: RenderPageOptions): string {
   <footer class="site-footer">
     © ${year} ${escapeAttr(options.businessName)} · ${escapeAttr(options.theme.mood)}
   </footer>
-  ${PAGE_SCRIPTS}
+  ${buildMotionScript(motionPreset)}
 </body>
 </html>`;
 }
@@ -121,15 +126,18 @@ export function renderSite(
   pages: Array<{
     slug: string;
     title: string;
+    navLabel?: string;
     content: ContentBlock[];
     layout: LayoutNode;
   }>,
-  visualArchetype?: string
+  motionStyle?: string
 ): Record<string, string> {
   const navLinks = pages.map((p) => ({
     slug: p.slug,
-    label: p.title,
+    label: p.navLabel ?? p.title,
   }));
+
+  const resolvedMotion = motionStyle ?? theme.motionStyle ?? "subtle";
 
   const result: Record<string, string> = {};
   for (const page of pages) {
@@ -140,7 +148,7 @@ export function renderSite(
       businessBrief,
       theme,
       navLinks,
-      visualArchetype,
+      motionStyle: resolvedMotion,
       content: page.content,
       layout: page.layout,
     });

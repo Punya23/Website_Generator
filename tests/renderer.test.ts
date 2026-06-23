@@ -8,7 +8,7 @@ import {
   renderPage,
 } from "../src/renderer/render.js";
 
-const theme: SiteTheme = PRESETS.salon;
+const theme: SiteTheme = PRESETS.default;
 
 function pageOpts(overrides: Partial<Parameters<typeof renderPage>[0]> = {}) {
   return {
@@ -61,15 +61,16 @@ describe("Stack/Row/Grid renderer", () => {
   };
 
   it("renders all primitives without absolute positioning", () => {
-    const html = renderLayoutNode(layout, buildContentMap(variableContent));
+    const html = renderLayoutNode(layout, buildContentMap(variableContent), 3);
     expect(html).toContain('data-layout="Stack"');
     expect(html).not.toMatch(/position:\s*absolute/);
   });
 
   it("uses flow-based CSS and premium theme", () => {
     const html = renderPage(pageOpts({ content: variableContent, layout }));
-    expect(html).toContain("flex-wrap");
-    expect(html).toContain("auto-fit");
+    expect(html).toContain("data-cols");
+    expect(html).toContain("grid-template-columns");
+    expect(html).toContain("--nav-text");
     expect(html).toContain("fonts.googleapis.com");
     expect(html).toContain("reveal");
   });
@@ -80,7 +81,7 @@ describe("Stack/Row/Grid renderer", () => {
   });
 
   it("handles missing images with placeholder", () => {
-    const html = renderLayoutNode(layout, buildContentMap(variableContent));
+    const html = renderLayoutNode(layout, buildContentMap(variableContent), 3);
     expect(html).toContain("placeholder");
   });
 

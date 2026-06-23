@@ -1,19 +1,46 @@
-import type { ContentBlock, GenerationResult, PageSpec, QAResult, SitePlan, SiteTheme } from "../types.js";
-import type { ExpandedBrief } from "../types.js";
-import { generateContent } from "../agents/content-agent.js";
-import { composeLayout } from "../agents/composition-agent.js";
+import type {
+  ContentBlock,
+  GenerationResult,
+  LayoutNode,
+  PageSpec,
+  PageSection,
+  QAResult,
+  SiteContext,
+} from "../types.js";
 import { expandBrief } from "../agents/expand-brief-agent.js";
 import { planSite, getPagePlan } from "../agents/site-planner-agent.js";
-import { generateTheme } from "../agents/theme-agent.js";
-import { applyFixes, applyContentPatches } from "../agents/fix-agent.js";
-import { enrichContentWithImages, sanitizeContentBlocks } from "../media/enrich-content.js";
-import { scheduleVisionPolish } from "../agents/vision-agent.js";
+import { generateDesignSystem } from "../agents/design-director-agent.js";
+import { buildPageSections } from "../agents/section-builder-agent.js";
+import { applyFixes, applyContentPatches, applySectionScopedFixes } from "../agents/fix-agent.js";
+import { runVisionQa } from "../agents/vision-agent.js";
+import { sanitizeContentBlocks } from "../media/enrich-content.js";
+import { MediaRegistry } from "../media/media-registry.js";
+import {
+  assemblePageFromSections,
+  initSiteContext,
+  recordQaIteration,
+} from "../site-context/assemble.js";
 import { renderSite } from "../renderer/render.js";
-import { runCodeQA, screenshotPage, closeQABrowser } from "../qa/code-qa.js";
+import {
+  runCodeQA,
+  screenshotPage,
+  screenshotPageDual,
+  extractBlockManifest,
+  closeQABrowser,
+} from "../qa/code-qa.js";
+import { generateCmsCollections } from "../cms/generate.js";
+import { renderCmsPages } from "../cms/render.js";
+import { stockImageUrl } from "../media/stock-images.js";
+import fs from "fs/promises";
+import path from "path";
 import { llm } from "../llm/client.js";
 import { timedStep } from "../util/timed.js";
+import { pipelineLog } from "../util/pipeline-log.js";
+import { clearImageCache, activeImageProviders } from "../media/image-providers.js";
+import { requireLlm } from "../util/llm-required.js";
+import { persistDebugArtifacts } from "../util/debug-artifacts.js";
 
-const MAX_QA_RETRIES = 2;
+const MAX_QA_RETRIES = 3;
 
 export interface GenerateSiteOptions {
   businessName?: string;
@@ -30,83 +57,195 @@ export interface PagePipelineResult {
 }
 
 async function runPagePipeline(
-  expanded: ExpandedBrief,
-  sitePlan: SitePlan,
-  theme: SiteTheme,
+  ctx: SiteContext,
   pageSlug: string,
-  pageTitle: string
+  pageTitle: string,
+  registry: MediaRegistry,
+  enableVision: boolean
 ): Promise<PagePipelineResult> {
-  const pagePlan = getPagePlan(sitePlan, pageSlug)!;
-  const briefText = expanded.expandedBrief;
+  const pagePlan = getPagePlan(ctx.sitePlan, pageSlug)!;
+  let sections = await timedStep(pageSlug, "sections", () =>
+    buildPageSections(ctx, pagePlan, registry)
+  );
+  ctx.pages[pageSlug] = {
+    slug: pageSlug,
+    title: pageTitle,
+    navLabel: pagePlan.navLabel,
+    sections,
+  };
+  ctx.mediaRegistry = registry.toJSON();
 
-  let content = enrichContentWithImages(
-    sanitizeContentBlocks(
-      await timedStep(pageSlug, "content", () => generateContent(expanded, pagePlan))
-    ),
-    pageSlug as "home",
-    expanded.businessName,
-    briefText,
-    theme
-  );
-  let layout = await timedStep(pageSlug, "composition", () =>
-    composeLayout(content, pagePlan, expanded, sitePlan)
-  );
+  let { content, layout } = assemblePageFromSections(sections);
   let html = "";
   let qa: QAResult = { passed: false, issues: [] };
   let retries = 0;
 
-  const singlePage = [{ slug: pageSlug, title: pageTitle, content, layout }];
+  const renderPage = () => {
+    const single = [
+      {
+        slug: pageSlug,
+        title: pageTitle,
+        navLabel: pagePlan.navLabel,
+        content,
+        layout,
+        sections,
+      },
+    ];
+    return renderSite(
+      ctx.businessName,
+      ctx.expandedBrief.expandedBrief,
+      ctx.designSystem,
+      single,
+      ctx.sitePlan.motionStyle
+    )[pageSlug]!;
+  };
 
   for (let attempt = 0; attempt <= MAX_QA_RETRIES; attempt++) {
-    html = renderSite(expanded.businessName, briefText, theme, singlePage, sitePlan.visualArchetype)[pageSlug]!;
+    html = renderPage();
 
     qa = await timedStep(pageSlug, `QA${attempt > 0 ? ` retry ${attempt}` : ""}`, () =>
       runCodeQA(html, pageSlug)
     );
 
-    if (qa.passed) break;
+    let allIssues = [...qa.issues];
+
+    if (!qa.passed || (enableVision && llm.supportsVision && attempt < MAX_QA_RETRIES)) {
+      if (enableVision && llm.supportsVision) {
+        const shots = await screenshotPageDual(html);
+        const manifest = await extractBlockManifest(html);
+        const vision = await timedStep(pageSlug, "vision QA", () =>
+          runVisionQa(shots.desktop, pageSlug, manifest, ctx.designSystem, shots.mobile)
+        );
+        if (vision.issues.length > 0) {
+          allIssues = [...allIssues, ...vision.issues];
+          pipelineLog(`[pipeline] ${pageSlug}: vision found ${vision.issues.length} issue(s)`);
+        }
+      }
+    }
+
+    recordQaIteration(ctx, pageSlug, attempt, allIssues);
+
+    const hardIssues = allIssues.filter((i) => i.severity === "hard");
+    if (hardIssues.length === 0 && qa.passed) break;
 
     retries = attempt + 1;
     if (attempt >= MAX_QA_RETRIES) break;
 
-    const fix = await timedStep(pageSlug, "fix layout", () =>
-      applyFixes(layout, content, qa.issues, briefText, pageSlug)
+    const sectionFix = await applySectionScopedFixes({
+      ctx,
+      pageSlug,
+      sections,
+      issues: allIssues,
+    });
+
+    if (sectionFix) {
+      for (const patch of sectionFix.sections) {
+        const idx = sections.findIndex((s) => s.id === patch.sectionId);
+        if (idx === -1) continue;
+        sections[idx] = {
+          ...sections[idx]!,
+          layout: patch.layout,
+          blocks: applyContentPatches(sections[idx]!.blocks, patch.contentPatches),
+        };
+      }
+      ({ content, layout } = assemblePageFromSections(sections));
+      ctx.pages[pageSlug]!.sections = sections;
+      pipelineLog(
+        `[pipeline] ${pageSlug}: section-scoped fix (${sectionFix.sections.map((s) => s.sectionId).join(", ")})`
+      );
+      continue;
+    }
+
+    const fix = await timedStep(pageSlug, "fix", () =>
+      applyFixes({
+        ctx,
+        pageSlug,
+        layout,
+        content,
+        issues: allIssues,
+      })
     );
+
     layout = fix.layout;
-    content = enrichContentWithImages(
-      applyContentPatches(content, fix.contentPatches),
-      pageSlug as "home",
-      expanded.businessName,
-      briefText,
-      theme
+    content = applyContentPatches(content, fix.contentPatches);
+    sections = rebuildSectionsFromFix(sections, content, layout);
+    ctx.pages[pageSlug]!.sections = sections;
+
+    pipelineLog(
+      `[pipeline] ${pageSlug}: applied fix (${allIssues.map((i) => i.code).join(", ")})`
     );
   }
 
   return {
-    spec: { slug: pageSlug, title: pageTitle, content, layout },
+    spec: { slug: pageSlug, title: pageTitle, content, layout, sections },
     html,
     qa,
     retries,
   };
 }
 
+function rebuildSectionsFromFix(
+  sections: PageSection[],
+  content: ContentBlock[],
+  layout: LayoutNode
+): PageSection[] {
+  const contentMap = new Map(content.map((b) => [b.id, b]));
+  const sectionLayouts = extractSectionLayouts(layout);
+
+  return sections.map((s, i) => ({
+    ...s,
+    blocks: s.blocks
+      .map((b) => contentMap.get(b.id))
+      .filter((b): b is ContentBlock => Boolean(b)),
+    layout: sectionLayouts[i] ?? s.layout,
+  }));
+}
+
+function extractSectionLayouts(layout: LayoutNode): LayoutNode[] {
+  if (layout.type === "Stack") {
+    return layout.children.filter((c): c is LayoutNode => typeof c !== "string");
+  }
+  return [layout];
+}
+
 export async function generateSite(options: GenerateSiteOptions): Promise<GenerationResult> {
+  requireLlm("website generation");
   const start = Date.now();
+  clearImageCache();
+  pipelineLog(`[pipeline] Image providers: ${activeImageProviders().join(" → ")}`);
 
   const expanded = await expandBrief(options.businessBrief, options.businessName);
-  console.log("[pipeline] Expanding brief… done");
-  const [sitePlan, theme] = await Promise.all([
+  pipelineLog("[pipeline] Expanding brief… done");
+
+  const [sitePlan, designSystem] = await Promise.all([
     planSite(expanded),
-    generateTheme(expanded.businessName, expanded.expandedBrief, options.businessBrief),
+    generateDesignSystem(expanded.businessName, expanded.expandedBrief, options.businessBrief),
   ]);
-  console.log(`[pipeline] Site plan + theme ready (${sitePlan.pages.length} pages)`);
+  pipelineLog(`[pipeline] Site plan + design system ready (${sitePlan.pages.length} pages)`);
+
+  const ctx = initSiteContext(options.businessBrief, expanded, sitePlan, designSystem);
+  ctx.cmsCollections = generateCmsCollections(expanded);
+  for (const collection of ctx.cmsCollections) {
+    for (const item of collection.items) {
+      if (!item.imageQuery) continue;
+      item.imageUrl = await stockImageUrl(
+        item.imageQuery,
+        `${collection.id}-${item.id}`,
+        undefined,
+        1200,
+        800
+      );
+    }
+  }
+  const registry = new MediaRegistry();
+  const enableVision = options.enableVisionPolish !== false;
 
   const pageResults =
-    llm.provider === "groq"
-      ? await runPagesSequentially(expanded, sitePlan, theme)
+    llm.provider === "groq" || llm.provider === "mistral"
+      ? await runPagesSequentially(ctx, registry, enableVision)
       : await Promise.all(
           sitePlan.pages.map((p) =>
-            runPagePipeline(expanded, sitePlan, theme, p.slug, p.title)
+            runPagePipeline(ctx, p.slug, p.title, registry, enableVision)
           )
         );
 
@@ -114,33 +253,70 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   const htmlPages: Record<string, string> = {};
   const qaResults: Record<string, QAResult> = {};
 
-  const navPages = pages.map((p) => ({
-    slug: p.slug,
-    title: p.title,
-    content: p.content,
-    layout: p.layout,
-  }));
+  const navPages = pages.map((p) => {
+    const plan = getPagePlan(sitePlan, p.slug);
+    return {
+      slug: p.slug,
+      title: p.title,
+      navLabel: plan?.navLabel,
+      content: p.content,
+      layout: p.layout,
+    };
+  });
 
   const mergedHtml = renderSite(
     expanded.businessName,
     expanded.expandedBrief,
-    theme,
+    designSystem,
     navPages,
-    sitePlan.visualArchetype
+    sitePlan.motionStyle
   );
   for (const [slug, html] of Object.entries(mergedHtml)) {
     htmlPages[slug] = html;
   }
 
+  const cmsNav = pages.map((p) => {
+    const plan = getPagePlan(sitePlan, p.slug);
+    return { slug: p.slug, label: plan?.navLabel ?? p.title };
+  });
+  for (const collection of ctx.cmsCollections ?? []) {
+    cmsNav.push({ slug: collection.slug, label: collection.name });
+  }
+
+  const cmsHtml = renderCmsPages(
+    ctx.cmsCollections ?? [],
+    expanded.businessName,
+    expanded.expandedBrief,
+    designSystem,
+    cmsNav,
+    sitePlan.motionStyle
+  );
+  Object.assign(htmlPages, cmsHtml);
+
+  try {
+    const cmsDir = path.resolve("output", "_cms");
+    await fs.mkdir(cmsDir, { recursive: true });
+    await fs.writeFile(
+      path.join(cmsDir, `${expanded.businessName.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.json`),
+      JSON.stringify(ctx.cmsCollections, null, 2),
+      "utf8"
+    );
+  } catch {
+    // non-fatal
+  }
+
+  const site: GenerationResult["site"] = {
+    businessName: expanded.businessName,
+    businessBrief: options.businessBrief,
+    expandedBrief: expanded,
+    sitePlan,
+    theme: designSystem,
+    pages,
+  };
+
   options.onPreviewReady?.({
-    site: {
-      businessName: expanded.businessName,
-      businessBrief: options.businessBrief,
-      expandedBrief: expanded,
-      sitePlan,
-      theme,
-      pages,
-    },
+    site,
+    siteContext: ctx,
     htmlPages,
     timingMs: Date.now() - start,
   });
@@ -149,86 +325,57 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     qaResults[r.spec.slug] = r.qa;
   }
 
-  if (process.env.SKIP_MERGED_QA !== "1") {
-    for (const slug of Object.keys(htmlPages)) {
-      if (slug === "index") continue;
-      if (qaResults[slug]) continue;
-      qaResults[slug] = await runCodeQA(htmlPages[slug]!, slug);
-    }
-  }
-
   const timingMs = Date.now() - start;
+  ctx.mediaRegistry = registry.toJSON();
 
-  const result: GenerationResult = {
-    site: {
-      businessName: expanded.businessName,
-      businessBrief: options.businessBrief,
-      expandedBrief: expanded,
-      sitePlan,
-      theme,
-      pages,
-    },
+  const screenshots: Record<string, string> = {};
+  for (const slug of Object.keys(htmlPages)) {
+    if (slug === "index") continue;
+    screenshots[slug] = await screenshotPage(htmlPages[slug]!);
+  }
+  const debugDir = await persistDebugArtifacts(ctx, screenshots);
+  if (debugDir) pipelineLog(`[pipeline] Debug artifacts → ${debugDir}`);
+
+  await closeQABrowser();
+
+  return {
+    site,
+    siteContext: ctx,
     htmlPages,
     qaResults,
     timingMs,
-    visionPolish: { status: "pending", issues: [], appliedFixes: [] },
+    visionPolish: {
+      status: enableVision && llm.supportsVision ? "complete" : "skipped",
+      issues: ctx.qaHistory.flatMap((h) => h.issues),
+      appliedFixes: ctx.qaHistory.map(
+        (h) => `${h.pageSlug} iter ${h.iteration}: ${h.issues.map((i) => i.code).join(", ") || "pass"}`
+      ),
+    },
   };
-
-  if (options.enableVisionPolish !== false) {
-    scheduleVisionPolish(
-      async () => {
-        const shots: { slug: string; base64: string }[] = [];
-        for (const [slug, html] of Object.entries(htmlPages)) {
-          if (slug === "index") continue;
-          shots.push({ slug, base64: await screenshotPage(html) });
-        }
-        return shots;
-      },
-      (visionResults) => {
-        result.visionPolish = {
-          status: "complete",
-          issues: Object.values(visionResults).flatMap((v) => v.issues),
-          appliedFixes: Object.entries(visionResults).flatMap(([slug, v]) =>
-            v.appliedFixes.map((f) => `[${slug}] ${f}`)
-          ),
-        };
-      }
-    );
-  } else {
-    result.visionPolish = { status: "skipped", issues: [], appliedFixes: [] };
-  }
-
-  await closeQABrowser();
-  return result;
 }
 
 async function runPagesSequentially(
-  expanded: ExpandedBrief,
-  sitePlan: SitePlan,
-  theme: SiteTheme
+  ctx: SiteContext,
+  registry: MediaRegistry,
+  enableVision: boolean
 ): Promise<PagePipelineResult[]> {
   const results: PagePipelineResult[] = [];
-  console.log(`[pipeline] ${sitePlan.pages.length} pages planned: ${sitePlan.pages.map((p) => p.slug).join(", ")}`);
-  for (const page of sitePlan.pages) {
+  pipelineLog(
+    `[pipeline] ${ctx.sitePlan.pages.length} pages planned: ${ctx.sitePlan.pages.map((p) => p.slug).join(", ")}`
+  );
+  for (const page of ctx.sitePlan.pages) {
     results.push(
-      await runPagePipeline(expanded, sitePlan, theme, page.slug, page.title)
+      await runPagePipeline(ctx, page.slug, page.title, registry, enableVision)
     );
-    console.log(`[pipeline] ✓ ${page.slug} complete`);
+    pipelineLog(`[pipeline] ✓ ${page.slug} complete`);
   }
   return results;
 }
 
 export async function waitForVisionPolish(
   result: GenerationResult,
-  timeoutMs = 60_000
+  _timeoutMs = 60_000
 ): Promise<GenerationResult> {
-  const start = Date.now();
-  while (
-    result.visionPolish?.status === "pending" &&
-    Date.now() - start < timeoutMs
-  ) {
-    await new Promise((r) => setTimeout(r, 500));
-  }
   return result;
 }
 
@@ -237,8 +384,8 @@ export function summarizeGeneration(result: GenerationResult): string {
   const lines = [
     `Generated "${result.site.businessName}" in ${(result.timingMs / 1000).toFixed(1)}s`,
     `Strategy: ${result.site.sitePlan.compositionStrategy}`,
-    `Theme: ${result.site.theme.vertical} · ${result.site.theme.mood}`,
-    `Pages (${result.site.pages.length}): ${result.site.pages.map((p) => `${p.slug} (${p.content.length} blocks)`).join(", ")}`,
+    `Design: ${result.site.theme.vertical} · ${result.site.theme.mood}`,
+    `Pages (${result.site.pages.length}): ${result.site.pages.map((p) => `${p.slug} (${p.content.length} blocks, ${p.sections?.length ?? 0} sections)`).join(", ")}`,
     `Total content blocks: ${blockCount}`,
   ];
 

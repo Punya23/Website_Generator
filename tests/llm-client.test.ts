@@ -7,6 +7,7 @@ describe("LLM client provider resolution", () => {
     vi.resetModules();
     process.env = { ...env };
     delete process.env.GROQ_API_KEY;
+    delete process.env.MISTRAL_API_KEY;
     delete process.env.OPENAI_API_KEY;
     delete process.env.LLM_PROVIDER;
   });
@@ -35,6 +36,17 @@ describe("LLM client provider resolution", () => {
     const { resolveProvider, llm } = await import("../src/llm/client.js");
     expect(resolveProvider()).toBe("openai");
     expect(llm.provider).toBe("openai");
+  });
+
+  it("respects LLM_PROVIDER=mistral over Groq key", async () => {
+    process.env.GROQ_API_KEY = "gsk_test";
+    process.env.MISTRAL_API_KEY = "mistral_test";
+    process.env.LLM_PROVIDER = "mistral";
+    const { resolveProvider, llm } = await import("../src/llm/client.js");
+    expect(resolveProvider()).toBe("mistral");
+    expect(llm.provider).toBe("mistral");
+    expect(llm.getChatModel()).toBe("mistral-medium-latest");
+    expect(llm.supportsVision).toBe(true);
   });
 
   it("respects LLM_PROVIDER=openai over Groq key", async () => {

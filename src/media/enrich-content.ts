@@ -1,5 +1,6 @@
 import type { ContentBlock, SiteTheme } from "../types.js";
-import { heroImageUrl, stockImageUrl } from "./stock-images.js";
+import { stockImageUrl } from "./stock-images.js";
+import type { MediaRegistry } from "./media-registry.js";
 
 function str(v: unknown): string {
   return typeof v === "string" ? v : "";
@@ -16,77 +17,160 @@ function imageQueryFor(block: ContentBlock): string {
   );
 }
 
-function withSrc(block: ContentBlock, src: string): ContentBlock {
-  return { ...block, src };
+async function resolveUniqueImage(
+  query: string,
+  cacheKey: string,
+  registry: MediaRegistry,
+  blockId: string,
+  sectionId: string,
+  pageSlug: string,
+  width: number,
+  height: number
+): Promise<string> {
+  let q = query;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const src = await stockImageUrl(q, `${cacheKey}-${attempt}`, undefined, width, height);
+    if (!registry.isDuplicate(src)) {
+      registry.register({ url: src, query: q, blockId, sectionId, pageSlug });
+      return src;
+    }
+    q = registry.uniqueQuery(query, blockId, sectionId);
+  }
+  const fallback = await stockImageUrl(`${query} ${blockId}`, cacheKey, undefined, width, height);
+  registry.register({ url: fallback, query, blockId, sectionId, pageSlug });
+  return fallback;
 }
 
-/** Attach Unsplash stock photos to image/gallery blocks and hero backgrounds. */
-export function enrichContentWithImages(
+/** Attach stock photos — no synthetic banner/gallery injection. */
+export async function enrichSectionImages(
   blocks: ContentBlock[],
-  pageKind: string,
+  pageSlug: string,
   businessName: string,
   businessBrief: string,
-  theme: SiteTheme
-): ContentBlock[] {
-  const vertical = theme.vertical;
-  let enriched = blocks.map((block) => {
+  _theme: SiteTheme,
+  registry: MediaRegistry,
+  sectionId: string
+): Promise<ContentBlock[]> {
+  const enriched: ContentBlock[] = [];
+
+  for (const block of blocks) {
     if (block.type === "image" || block.type === "gallery") {
       const query = imageQueryFor(block);
-      const src = stockImageUrl(query, `${block.id}-${pageKind}`, vertical, 900, 600);
-      return withSrc(block, src);
+      const src = await resolveUniqueImage(
+        query,
+        `${block.id}-${pageSlug}`,
+        registry,
+        block.id,
+        sectionId,
+        pageSlug,
+        900,
+        600
+      );
+      enriched.push({ ...block, src });
+      continue;
     }
-    if (block.type === "headline" && pageKind === "home" && !block.heroImage) {
-      const src = heroImageUrl(businessName, businessBrief, vertical);
-      return { ...block, heroImage: src };
-    }
-    return block;
-  });
 
-  const hasVisual =
-    enriched.some((b) => b.type === "image" || b.type === "gallery") ||
-    enriched.some((b) => b.type === "headline" && b.heroImage);
-
-  if (!hasVisual) {
-    enriched = [
-      {
-        id: `${pageKind}_banner`,
-        type: "image",
-        alt: `${businessName} — ${pageKind}`,
-        imageQuery: `${businessBrief} ${pageKind}`,
-        src: stockImageUrl(`${businessBrief} ${pageKind}`, `${pageKind}-banner`, vertical, 1200, 500),
-      },
-      ...enriched,
-    ];
-  }
-
-  if (pageKind === "services" && !enriched.some((b) => b.type === "gallery")) {
-    enriched.push(
-      {
-        id: `${pageKind}_gallery_1`,
-        type: "gallery",
-        caption: "Our work",
-        imageQuery: `${businessBrief} service`,
-        src: stockImageUrl(businessBrief, `${pageKind}-g1`, vertical, 600, 600),
-      },
-      {
-        id: `${pageKind}_gallery_2`,
-        type: "gallery",
-        caption: "The experience",
-        imageQuery: `${businessBrief} interior`,
-        src: stockImageUrl(`${businessBrief} interior`, `${pageKind}-g2`, vertical, 600, 600),
+    if (block.type === "headline" && !block.heroImage) {
+      const isHeroSection = sectionId.includes("hero") || pageSlug === "home";
+      if (isHeroSection) {
+        const src = await resolveUniqueImage(
+          `${businessBrief} ${businessName} hero`,
+          `hero-${pageSlug}-${sectionId}`,
+          registry,
+          block.id,
+          sectionId,
+          pageSlug,
+          1600,
+          900
+        );
+        enriched.push({ ...block, heroImage: src });
+        continue;
       }
-    );
+    }
+
+    if (block.type === "headline" && block.splitImage === undefined) {
+      const isSplit = sectionId.includes("split") || String(block.layoutVariant) === "split";
+      if (isSplit) {
+        const src = await resolveUniqueImage(
+          imageQueryFor(block),
+          `${block.id}-split`,
+          registry,
+          block.id,
+          sectionId,
+          pageSlug,
+          1200,
+          900
+        );
+        enriched.push({ ...block, splitImage: src });
+        continue;
+      }
+    }
+
+    if (block.type === "logo") {
+      const src = await resolveUniqueImage(
+        str(block.imageQuery) || `${str(block.name)} logo`,
+        `${block.id}-logo`,
+        registry,
+        block.id,
+        sectionId,
+        pageSlug,
+        400,
+        200
+      );
+      enriched.push({ ...block, src });
+      continue;
+    }
+
+    if (block.type === "bento" || block.type === "pricing") {
+      if (block.type === "bento" && (block.imageQuery || block.title)) {
+        const src = await resolveUniqueImage(
+          imageQueryFor(block),
+          `${block.id}-bento`,
+          registry,
+          block.id,
+          sectionId,
+          pageSlug,
+          800,
+          600
+        );
+        enriched.push({ ...block, src });
+        continue;
+      }
+    }
+
+    enriched.push(block);
   }
 
   return enriched;
 }
 
-/** Legacy: strip broken LLM URLs — enrichment replaces with stock. */
+/** @deprecated use enrichSectionImages */
+export async function enrichContentWithImages(
+  blocks: ContentBlock[],
+  pageKind: string,
+  businessName: string,
+  businessBrief: string,
+  theme: SiteTheme
+): Promise<ContentBlock[]> {
+  const { MediaRegistry: Reg } = await import("./media-registry.js");
+  const registry = new Reg();
+  return enrichSectionImages(
+    blocks,
+    pageKind,
+    businessName,
+    businessBrief,
+    theme,
+    registry,
+    `${pageKind}_legacy`
+  );
+}
+
+/** Strip broken LLM URLs — enrichment replaces with resolved stock. */
 export function sanitizeContentBlocks(blocks: ContentBlock[]): ContentBlock[] {
   return blocks.map((block) => {
     if (block.type === "image" || block.type === "gallery") {
       const src = str(block.src);
-      if (src && !src.includes("images.unsplash.com")) {
+      if (src && !src.startsWith("https://")) {
         const { src: _s, ...rest } = block;
         return rest as ContentBlock;
       }

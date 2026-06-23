@@ -1,155 +1,113 @@
 import type { SiteTheme } from "../types.js";
 import { SiteThemeSchema } from "../types.js";
 import { llm } from "../llm/client.js";
-import { normalizeTheme } from "../theme/contrast.js";
+import { ensureReadableTheme } from "../theme/contrast.js";
 
-const THEME_SYSTEM = `You are a brand design director. Output a cohesive visual theme with ACCESSIBLE contrast.
+const THEME_SYSTEM = `You are the visual design director for a marketing website. Study the business and invent a cohesive visual system.
 
-Output valid JSON:
+Think through:
+- What mood and personality fit this brand?
+- What palette expresses that mood while keeping mindful contrast everywhere (navigation links must be easy to read against the nav background; body text must be comfortable on card surfaces)?
+- Where should accent color appear for emphasis — and where should it stay absent so the page breathes?
+- Should the site feel light or dark? Luxurious or energetic? Editorial or trustworthy?
+- How wide should the main content feel? How many columns suit card grids? How much vertical rhythm between sections?
+- What motion personality suits the brand (subtle, bold, calm)?
+
+Output valid JSON only:
 {
-  "vertical": "salon|finserv|restaurant|fitness|tech|healthcare|default",
+  "vertical": "short industry slug derived from the business",
   "mood": "3-word mood",
   "fontHeading": "Google Font name",
   "fontBody": "Google Font name",
+  "motionStyle": "short description of scroll/reveal personality",
+  "layout": {
+    "maxWidth": "CSS length for content width e.g. 1100px",
+    "gridColumns": 2-4,
+    "sectionGap": "CSS length between major sections",
+    "cardMinHeight": "CSS min height for uniform cards"
+  },
   "colors": {
-    "bg": "#hex page background",
-    "surface": "#hex card background — MUST contrast with bg (not same hue/intensity)",
-    "text": "#hex primary text — WCAG AA on surface (4.5:1+)",
-    "muted": "#hex secondary text — readable on surface",
-    "accent": "#hex brand accent for links/stats",
-    "accentSoft": "#hex subtle tint for hover states ONLY — not card backgrounds",
-    "gradientFrom": "#hex",
-    "gradientTo": "#hex",
-    "navBg": "rgba(...) translucent nav"
+    "bg": "page background",
+    "surface": "card/panel background",
+    "text": "primary text on surface",
+    "muted": "secondary text",
+    "accent": "brand emphasis color — use sparingly",
+    "accentSoft": "subtle accent tint",
+    "gradientFrom": "CTA gradient start",
+    "gradientTo": "CTA gradient end",
+    "navBg": "navigation bar background",
+    "navText": "navigation link text — must contrast with navBg",
+    "navMuted": "inactive nav links",
+    "navActiveBg": "active nav pill/background",
+    "navActiveText": "active nav label — must contrast with navActiveBg"
   }
 }
 
-CRITICAL CONTRAST RULES:
-- NEVER put text on accentSoft — cards use surface + text
-- Dark sites: surface slightly lighter than bg; text near white on surface
-- Light sites: surface white/off-white; text dark slate on surface
-- accentSoft is a 10-15% accent tint, NOT a second card color
-- Fitness: dark bg #0a0a0a, surface #171717, text #fafafa, electric accent
-- Salon: warm cream bg, white surface, dark brown text
-- Only output JSON`;
+You choose every value. No code. No CSS.`;
 
-const PRESETS: Record<string, SiteTheme> = {
-  salon: {
-    vertical: "salon",
-    mood: "luxe warm inviting",
-    fontHeading: "Playfair Display",
-    fontBody: "Lato",
-    colors: {
-      bg: "#faf8f5",
-      surface: "#ffffff",
-      text: "#1c1917",
-      muted: "#78716c",
-      accent: "#b45309",
-      accentSoft: "#fef3c7",
-      gradientFrom: "#92400e",
-      gradientTo: "#d97706",
-      navBg: "rgba(255,255,255,0.92)",
-    },
+export const GENERIC_THEME: SiteTheme = {
+  vertical: "business",
+  mood: "clean modern refined",
+  fontHeading: "Plus Jakarta Sans",
+  fontBody: "Inter",
+  motionStyle: "soft staggered reveals",
+  layout: {
+    maxWidth: "1200px",
+    gridColumns: 3,
+    sectionGap: "3rem",
+    cardMinHeight: "200px",
   },
-  finserv: {
-    vertical: "finserv",
-    mood: "trusted premium calm",
-    fontHeading: "DM Serif Display",
-    fontBody: "Inter",
-    colors: {
-      bg: "#f8fafc",
-      surface: "#ffffff",
-      text: "#0f172a",
-      muted: "#64748b",
-      accent: "#1e40af",
-      accentSoft: "#dbeafe",
-      gradientFrom: "#1e3a5f",
-      gradientTo: "#2563eb",
-      navBg: "rgba(255,255,255,0.94)",
-    },
-  },
-  restaurant: {
-    vertical: "restaurant",
-    mood: "warm artisan cozy",
-    fontHeading: "Fraunces",
-    fontBody: "Source Sans 3",
-    colors: {
-      bg: "#faf6f1",
-      surface: "#ffffff",
-      text: "#292524",
-      muted: "#78716c",
-      accent: "#c2410c",
-      accentSoft: "#ffedd5",
-      gradientFrom: "#9a3412",
-      gradientTo: "#ea580c",
-      navBg: "rgba(255,255,255,0.93)",
-    },
-  },
-  fitness: {
-    vertical: "fitness",
-    mood: "bold energetic modern",
-    fontHeading: "Oswald",
-    fontBody: "Nunito Sans",
-    colors: {
-      bg: "#0a0a0a",
-      surface: "#171717",
-      text: "#fafafa",
-      muted: "#a3a3a3",
-      accent: "#22d3ee",
-      accentSoft: "#164e63",
-      gradientFrom: "#0891b2",
-      gradientTo: "#06b6d4",
-      navBg: "rgba(10,10,10,0.9)",
-    },
-  },
-  default: {
-    vertical: "default",
-    mood: "clean modern professional",
-    fontHeading: "Plus Jakarta Sans",
-    fontBody: "Inter",
-    colors: {
-      bg: "#f8fafc",
-      surface: "#ffffff",
-      text: "#0f172a",
-      muted: "#64748b",
-      accent: "#6366f1",
-      accentSoft: "#eef2ff",
-      gradientFrom: "#4f46e5",
-      gradientTo: "#818cf8",
-      navBg: "rgba(255,255,255,0.92)",
-    },
+  colors: {
+    bg: "#0a0a0a",
+    surface: "#141414",
+    text: "#fafafa",
+    muted: "#a3a3a3",
+    accent: "#c9a962",
+    accentSoft: "#1f1d18",
+    gradientFrom: "#1a1a1a",
+    gradientTo: "#2d2a22",
+    navBg: "rgba(10,10,10,0.94)",
+    navText: "#fafafa",
+    navMuted: "#8a8a8a",
+    navActiveBg: "#262626",
+    navActiveText: "#c9a962",
   },
 };
 
-function detectVertical(brief: string): keyof typeof PRESETS {
-  const b = brief.toLowerCase();
-  if (/salon|hair|beauty|spa|barber|nail/.test(b)) return "salon";
-  if (/finance|wealth|invest|bank|insurance|legal|finserv|capital/.test(b)) return "finserv";
-  if (/restaurant|food|cafe|bakery|chef|dining/.test(b)) return "restaurant";
-  if (/gym|fitness|yoga|crossfit|trainer|workout/.test(b)) return "fitness";
-  if (/clinic|health|medical|dental|doctor/.test(b)) return "finserv";
-  return "default";
-}
+/** @deprecated use GENERIC_THEME — kept for tests */
+export const PRESETS = { default: GENERIC_THEME, salon: GENERIC_THEME, finserv: GENERIC_THEME, fitness: GENERIC_THEME, restaurant: GENERIC_THEME };
 
 export async function generateTheme(
   businessName: string,
   businessBrief: string,
   rawBrief?: string
 ): Promise<SiteTheme> {
-  const verticalHint = detectVertical(rawBrief ?? businessBrief);
   if (llm.isAvailable) {
     try {
       const raw = await llm.chat(
         THEME_SYSTEM,
-        `Business: ${businessName}\nBrief: ${businessBrief}`,
-        { jsonMode: true, temperature: 0.5 }
+        `Business: ${businessName}\nBrief: ${businessBrief}\nUser input: ${rawBrief ?? businessBrief}`,
+        { jsonMode: true, temperature: 0.65 }
       );
-      return normalizeTheme(SiteThemeSchema.parse(JSON.parse(raw)));
+      return ensureReadableTheme(SiteThemeSchema.parse(JSON.parse(raw)));
     } catch {
-      // fall through to preset
+      // fall through
     }
   }
-  return normalizeTheme({ ...PRESETS[verticalHint] });
+  return ensureReadableTheme({ ...GENERIC_THEME, vertical: slugifyIndustry(businessBrief) });
 }
 
-export { PRESETS, detectVertical };
+export function slugifyIndustry(brief: string): string {
+  const words = brief
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 3)
+    .slice(0, 2);
+  return words.join("-") || "business";
+}
+
+/** @deprecated industry is LLM-derived; kept for compatibility */
+export function detectVertical(brief: string): string {
+  return slugifyIndustry(brief);
+}

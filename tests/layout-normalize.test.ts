@@ -44,12 +44,11 @@ describe("layout normalizer", () => {
     expect((normalized.children[0] as { type: string }).type).toBe("Section");
   });
 
-  it("repairs missing block ids by appending to stack", () => {
+  it("throws when block ids are missing from layout", () => {
     const partial = {
       type: "Stack" as const,
       children: ["home_headline", "home_cta"],
     };
-    const repaired = repairLayoutCoverage(partial, IDS);
-    expect(collectIds(repaired).sort()).toEqual(IDS.sort());
+    expect(() => repairLayoutCoverage(partial, IDS)).toThrow(/missing block ids/i);
   });
 });

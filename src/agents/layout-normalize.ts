@@ -1,6 +1,6 @@
 import type { LayoutChild, LayoutNode } from "../types.js";
 
-const LAYOUT_TYPES = new Set<LayoutNode["type"]>(["Stack", "Row", "Grid", "Section"]);
+const LAYOUT_TYPES = new Set<LayoutNode["type"]>(["Stack", "Row", "Grid", "Section", "Bento"]);
 
 const TYPE_ALIASES: Record<string, LayoutNode["type"]> = {
   stack: "Stack",
@@ -12,6 +12,8 @@ const TYPE_ALIASES: Record<string, LayoutNode["type"]> = {
   flexcolumn: "Stack",
   column: "Stack",
   columns: "Grid",
+  bento: "Bento",
+  masonry: "Bento",
   container: "Section",
   wrapper: "Section",
   div: "Stack",
@@ -27,7 +29,9 @@ const CONTENT_BLOCK_TYPES = new Set([
   "testimonial",
   "cta",
   "contact",
-  "faq",
+  "bento",
+  "pricing",
+  "logo",
 ]);
 
 function resolveLayoutType(raw: unknown): LayoutNode["type"] | null {
@@ -111,9 +115,13 @@ function normalizeChild(raw: unknown, validIds: Set<string>): LayoutChild | Layo
   if (layoutType === "Grid" && typeof obj.minColumnWidth === "number") {
     node.minColumnWidth = obj.minColumnWidth;
   }
+  if ((layoutType === "Grid" || layoutType === "Row" || layoutType === "Bento") && typeof obj.columns === "number") {
+    node.columns = obj.columns;
+  }
   if (layoutType === "Section") {
     if (typeof obj.fullBleed === "boolean") node.fullBleed = obj.fullBleed;
     else if (typeof obj.fullbleed === "boolean") node.fullBleed = obj.fullbleed;
+    if (typeof obj.id === "string") node.id = obj.id;
   }
 
   return node;
@@ -147,6 +155,9 @@ function normalizeNode(raw: unknown, validIds: Set<string>): LayoutNode | null {
     ...(layoutType === "Grid" && typeof obj.minColumnWidth === "number"
       ? { minColumnWidth: obj.minColumnWidth }
       : {}),
+    ...((layoutType === "Grid" || layoutType === "Row" || layoutType === "Bento") && typeof obj.columns === "number"
+      ? { columns: obj.columns }
+      : {}),
     ...(layoutType === "Section"
       ? {
           fullBleed:
@@ -155,20 +166,23 @@ function normalizeNode(raw: unknown, validIds: Set<string>): LayoutNode | null {
               : typeof obj.fullbleed === "boolean"
                 ? obj.fullbleed
                 : undefined,
+          ...(typeof obj.id === "string" ? { id: obj.id } : {}),
         }
       : {}),
   };
 }
 
 export function repairLayoutCoverage(layout: LayoutNode, expectedIds: string[]): LayoutNode {
-  const used = new Set(collectIds(layout));
-  const missing = expectedIds.filter((id) => !used.has(id));
-  if (missing.length === 0) return layout;
+  const missing = findMissingBlockIds(layout, expectedIds);
+  if (missing.length > 0) {
+    throw new Error(`Layout missing block ids: ${missing.join(", ")}`);
+  }
+  return layout;
+}
 
-  return {
-    type: "Stack",
-    children: [...layout.children, ...missing],
-  };
+export function findMissingBlockIds(layout: LayoutNode, expectedIds: string[]): string[] {
+  const used = new Set(collectIds(layout));
+  return expectedIds.filter((id) => !used.has(id));
 }
 
 export function collectIds(node: LayoutNode): string[] {

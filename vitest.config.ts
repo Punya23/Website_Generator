@@ -4,5 +4,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    env: {
+      ALLOW_MOCKS: "1",
+    },
   },
 });

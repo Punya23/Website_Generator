@@ -18,7 +18,7 @@ Output valid JSON:
       "title": "page heading for the page itself",
       "navLabel": "short label for the navigation bar — clear and scannable",
       "goal": "what this page must accomplish",
-      "minBlocks": number,
+      "minBlocks": number (total content blocks target for page, usually 8-24),
       "layoutHint": "your creative direction for how this page should feel spatially",
       "contentFocus": ["topics to cover in depth"],
       "sections": [
@@ -132,6 +132,46 @@ function mockPlan(brief: ExpandedBrief): SitePlan {
   });
 }
 
+function normalizePlannerJson(raw: unknown, brief: ExpandedBrief): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const plan = raw as Record<string, unknown>;
+  if (!Array.isArray(plan.pages)) return raw;
+
+  plan.pages = plan.pages.map((pageRaw) => {
+    if (!pageRaw || typeof pageRaw !== "object") return pageRaw;
+    const page = pageRaw as Record<string, unknown>;
+    const slug = String(page.slug ?? "page");
+    const layoutHint = String(page.layoutHint ?? "Main content");
+    const blockTypes = Array.isArray(page.contentFocus)
+      ? ["text", "feature", "stat"]
+      : ["text", "feature"];
+
+    const minBlocks =
+      typeof page.minBlocks === "number" && Number.isFinite(page.minBlocks)
+        ? Math.max(1, Math.round(page.minBlocks))
+        : 12;
+
+    const sections = Array.isArray(page.sections) && page.sections.length > 0
+      ? page.sections
+      : defaultSections(slug, layoutHint, blockTypes);
+
+    return {
+      ...page,
+      minBlocks,
+      sections,
+      contentFocus: Array.isArray(page.contentFocus) ? page.contentFocus : [layoutHint],
+      layoutHint,
+      navLabel: page.navLabel ?? page.title ?? slug,
+    };
+  });
+
+  return plan;
+}
+
+function parseSitePlan(raw: unknown, brief: ExpandedBrief): SitePlan {
+  return SitePlanSchema.parse(normalizePlannerJson(raw, brief));
+}
+
 export async function planSite(brief: ExpandedBrief): Promise<SitePlan> {
   requireLlm("site planning");
 
@@ -142,7 +182,7 @@ export async function planSite(brief: ExpandedBrief): Promise<SitePlan> {
         briefToContext(brief),
         { jsonMode: true, temperature: 0.6, maxTokens: 4096, model: llm.getCompositionModel() }
       );
-      const plan = SitePlanSchema.parse(JSON.parse(raw));
+      const plan = parseSitePlan(JSON.parse(raw), brief);
       const slugs = new Set(plan.pages.map((p) => p.slug));
       for (const core of CORE_PAGE_KINDS) {
         if (!slugs.has(core)) {

@@ -2,7 +2,7 @@ import type { ContentBlock, LayoutNode, QAIssue, SiteContext } from "../types.js
 import { LayoutNodeSchema } from "../types.js";
 import { llm } from "../llm/client.js";
 import { pipelineLog } from "../util/pipeline-log.js";
-import { normalizeLayoutNode } from "./layout-normalize.js";
+import { normalizeLayoutNode, sanitizeLayoutNode } from "./layout-normalize.js";
 import { serializeContextForFix } from "../site-context/assemble.js";
 import { requireLlm } from "../util/llm-required.js";
 
@@ -70,7 +70,7 @@ BLOCK IDS: ${content.map((c) => c.id).join(", ")}`,
   }
 
   return {
-    layout: LayoutNodeSchema.parse(normalized),
+    layout: LayoutNodeSchema.parse(sanitizeLayoutNode(normalized)),
     contentPatches: parsed.contentPatches ?? [],
   };
 }

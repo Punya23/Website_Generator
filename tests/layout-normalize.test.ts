@@ -3,6 +3,7 @@ import {
   normalizeLayoutNode,
   repairLayoutCoverage,
   collectIds,
+  sanitizeLayoutNode,
 } from "../src/agents/layout-normalize.js";
 import { LayoutNodeSchema } from "../src/types.js";
 
@@ -50,5 +51,43 @@ describe("layout normalizer", () => {
       children: ["home_headline", "home_cta"],
     };
     expect(() => repairLayoutCoverage(partial, IDS)).toThrow(/missing block ids/i);
+  });
+});
+
+describe("sanitizeLayoutNode", () => {
+  it("fixes Bento with columns: 1 to valid schema", () => {
+    const layout = sanitizeLayoutNode({
+      type: "Bento",
+      columns: 1,
+      children: ["a", "b"],
+    });
+    expect(layout.type).toBe("Bento");
+    expect(layout.columns).toBeGreaterThanOrEqual(2);
+    expect(LayoutNodeSchema.parse(layout)).toBeTruthy();
+  });
+
+  it("converts single-child Grid to Stack", () => {
+    const layout = sanitizeLayoutNode({
+      type: "Grid",
+      columns: 3,
+      children: ["only"],
+    });
+    expect(layout.type).toBe("Stack");
+    expect(LayoutNodeSchema.parse(layout)).toBeTruthy();
+  });
+
+  it("sanitizes nested Section > Row with invalid columns", () => {
+    const layout = sanitizeLayoutNode({
+      type: "Section",
+      fullBleed: false,
+      children: [
+        {
+          type: "Row",
+          columns: 1,
+          children: ["home_headline", "home_feature_0"],
+        },
+      ],
+    });
+    expect(LayoutNodeSchema.parse(layout)).toBeTruthy();
   });
 });

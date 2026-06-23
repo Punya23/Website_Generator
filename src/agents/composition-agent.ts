@@ -8,6 +8,7 @@ import {
   collectIds,
   normalizeLayoutNode,
   repairLayoutCoverage,
+  sanitizeLayoutNode,
 } from "./layout-normalize.js";
 
 const COMPOSITION_SYSTEM = `You are the layout architect for one page of a marketing site. Design spatial rhythm that fits this business.
@@ -114,7 +115,7 @@ function parseAndValidateLayout(raw: string, blockIds: string[]): LayoutNode {
 
   let validated: LayoutNode;
   try {
-    validated = LayoutNodeSchema.parse(normalized);
+    validated = LayoutNodeSchema.parse(sanitizeLayoutNode(normalized));
   } catch (err) {
     if (err instanceof z.ZodError) {
       throw new Error(`Layout schema invalid after normalize: ${err.issues[0]?.message ?? "unknown"}`);

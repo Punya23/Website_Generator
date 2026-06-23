@@ -13,7 +13,7 @@ import { LayoutNodeSchema } from "../types.js";
 import { llm } from "../llm/client.js";
 import { briefToContext } from "./expand-brief-agent.js";
 import { normalizeLayoutNode } from "./layout-normalize.js";
-import { collectIds } from "./layout-normalize.js";
+import { collectIds, sanitizeLayoutNode } from "./layout-normalize.js";
 import { enrichSectionImages } from "../media/enrich-content.js";
 import { MediaRegistry } from "../media/media-registry.js";
 import { ensurePageSections } from "../site-context/assemble.js";
@@ -218,7 +218,22 @@ function parseSectionLayout(raw: string, blocks: ContentBlock[], section: Sectio
     throw new Error(`Section layout missing blocks: ${missing.join(", ")}`);
   }
 
-  return LayoutNodeSchema.parse(normalized);
+  const sanitized = sanitizeLayoutNode(normalized);
+  try {
+    return LayoutNodeSchema.parse(sanitized);
+  } catch (err) {
+    if (err instanceof z.ZodError && section.archetype && isSectionArchetype(section.archetype)) {
+      return buildArchetypeLayout(
+        section.archetype,
+        blocks,
+        section.id.includes("hero")
+      );
+    }
+    if (err instanceof z.ZodError) {
+      throw new Error(`Section layout schema invalid: ${err.issues[0]?.message ?? "unknown"}`);
+    }
+    throw err;
+  }
 }
 
 function mockSectionContent(

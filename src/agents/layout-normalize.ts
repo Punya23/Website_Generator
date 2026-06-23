@@ -193,3 +193,67 @@ export function collectIds(node: LayoutNode): string[] {
   }
   return ids;
 }
+
+function sanitizeChild(child: LayoutChild): LayoutChild {
+  if (typeof child === "string") return child;
+  return sanitizeLayoutNode(child);
+}
+
+function clampColumns(value: number | undefined, min: number, max: number, childCount: number): number | undefined {
+  if (value === undefined || !Number.isFinite(value) || value < 1) return undefined;
+  const clamped = Math.min(max, Math.max(min, Math.round(value)));
+  if (childCount > 0 && clamped > childCount) return childCount;
+  return clamped;
+}
+
+/** Fix invalid columns / single-child grids before Zod parse — Groq often returns columns: 1 on Bento. */
+export function sanitizeLayoutNode(node: LayoutNode): LayoutNode {
+  const children = node.children.map(sanitizeChild);
+  const childCount = children.length;
+
+  if ((node.type === "Row" || node.type === "Grid") && childCount === 1) {
+    const only = children[0]!;
+    return typeof only === "string"
+      ? { type: "Stack", children: [only] }
+      : only.type === "Stack"
+        ? only
+        : { type: "Stack", children: [only] };
+  }
+
+  if (node.type === "Bento" && childCount === 1) {
+    const only = children[0]!;
+    return typeof only === "string"
+      ? { type: "Stack", children: [only] }
+      : { type: "Stack", children: [only] };
+  }
+
+  if (node.type === "Row" || node.type === "Grid") {
+    const columns = clampColumns(node.columns, 1, 6, childCount);
+    return {
+      type: node.type,
+      children,
+      ...(columns !== undefined ? { columns } : {}),
+      ...(node.type === "Grid" && node.minColumnWidth !== undefined
+        ? { minColumnWidth: node.minColumnWidth }
+        : {}),
+    };
+  }
+
+  if (node.type === "Bento") {
+    const columns =
+      clampColumns(node.columns, 2, 6, childCount) ??
+      Math.min(4, Math.max(2, childCount));
+    return { type: "Bento", children, columns };
+  }
+
+  if (node.type === "Section") {
+    return {
+      type: "Section",
+      children,
+      ...(node.fullBleed !== undefined ? { fullBleed: node.fullBleed } : {}),
+      ...(node.id !== undefined ? { id: node.id } : {}),
+    };
+  }
+
+  return { type: "Stack", children };
+}

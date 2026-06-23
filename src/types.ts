@@ -85,7 +85,7 @@ export const PagePlanSchema = z.object({
   title: z.string(),
   navLabel: z.string().optional(),
   goal: z.string(),
-  minBlocks: z.number().min(12),
+  minBlocks: z.number().min(1),
   layoutHint: z.string(),
   contentFocus: z.array(z.string()),
   sections: z.array(SectionPlanSchema).min(1).optional(),

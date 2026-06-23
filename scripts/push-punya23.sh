@@ -20,7 +20,7 @@ echo "Switching GitHub CLI to Punya23…"
 gh auth switch -u Punya23
 gh auth setup-git -h github.com
 
-git remote set-url origin git@github.com:Punya23/Website_Generator.git
+git remote set-url origin https://github.com/Punya23/Website_Generator.git
 echo "Pushing master → Punya23/Website_Generator…"
 git push -u origin master
 echo "Done."

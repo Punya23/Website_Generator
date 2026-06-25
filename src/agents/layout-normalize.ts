@@ -29,9 +29,13 @@ const CONTENT_BLOCK_TYPES = new Set([
   "testimonial",
   "cta",
   "contact",
+  "faq",
   "bento",
   "pricing",
   "logo",
+  "list",
+  "form",
+  "beforeAfter",
 ]);
 
 function resolveLayoutType(raw: unknown): LayoutNode["type"] | null {
@@ -228,7 +232,10 @@ export function sanitizeLayoutNode(node: LayoutNode): LayoutNode {
   }
 
   if (node.type === "Row" || node.type === "Grid") {
-    const columns = clampColumns(node.columns, 1, 6, childCount);
+    let columns = clampColumns(node.columns, 1, 6, childCount);
+    if (node.type === "Grid" && columns === 1 && childCount > 1) {
+      columns = Math.min(childCount, 2);
+    }
     return {
       type: node.type,
       children,

@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-text: #0f172a;
+  --color-muted: #64748b;
+  --color-accent: #6366f1;
+  --color-border: rgba(15, 23, 42, 0.1);
+  --color-nav: rgba(255, 255, 255, 0.92);
+  --color-nav-text: #0f172a;
+  --color-nav-muted: #64748b;
+  --color-nav-active: #6366f1;
+  --color-nav-active-text: #ffffff;
+  --max-content: 1200px;
+  --section-gap: 5rem;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 4.5rem;
+  }
+  body {
+    @apply bg-bg text-text antialiased;
+    font-family: var(--font-body), system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display), Georgia, serif;
+  }
+  .font-mono {
+    font-family: ui-monospace, monospace;
+  }
+  .text-display {
+    font-size: clamp(2.25rem, 5vw, 3.75rem);
+  }
+  .py-section {
+    padding-block: var(--section-gap);
+  }
+  .surface-elevated {
+    @apply bg-surface shadow-lg shadow-black/5;
+  }
+  .animate-marquee {
+    animation: marquee 30s linear infinite;
+  }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
+}

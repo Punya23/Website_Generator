@@ -18,6 +18,54 @@ export const MotionPresetSchema = z.enum([
 
 export type MotionPreset = z.infer<typeof MotionPresetSchema>;
 
+export const TypographyScaleSchema = z.object({
+  display: z.string().optional(),
+  heading: z.string().optional(),
+  body: z.string().optional(),
+  label: z.string().optional(),
+  mono: z.string().optional(),
+});
+
+export const SurfaceModesSchema = z.object({
+  default: z.string().optional(),
+  elevated: z.string().optional(),
+  none: z.string().optional(),
+});
+
+export const BlueprintSectionSchema = z.object({
+  id: z.string(),
+  templateId: z.string(),
+  intent: z.string(),
+});
+
+export const PageBlueprintSchema = z.object({
+  slug: z.string(),
+  rhythm: z.string(),
+  sections: z.array(BlueprintSectionSchema).min(2).max(8),
+});
+
+export type PageBlueprint = z.infer<typeof PageBlueprintSchema>;
+
+export const SectionInstanceSchema = z.object({
+  id: z.string(),
+  templateId: z.string(),
+  intent: z.string(),
+  props: z.record(z.unknown()),
+  fullBleed: z.boolean().optional(),
+  motion: z.string().optional(),
+});
+
+export type SectionInstance = z.infer<typeof SectionInstanceSchema>;
+
+export const ReactPageSchema = z.object({
+  slug: z.string(),
+  title: z.string(),
+  navLabel: z.string().optional(),
+  sections: z.array(SectionInstanceSchema),
+});
+
+export type ReactPage = z.infer<typeof ReactPageSchema>;
+
 export const SiteThemeSchema = z.object({
   vertical: z.string(),
   mood: z.string(),
@@ -26,6 +74,9 @@ export const SiteThemeSchema = z.object({
   motionStyle: z.string().optional(),
   motionPreset: MotionPresetSchema.optional(),
   layout: ThemeLayoutSchema.optional(),
+  typography: TypographyScaleSchema.optional(),
+  surfaces: SurfaceModesSchema.optional(),
+  sectionGapMode: z.enum(["tight", "normal", "airy"]).optional(),
   colors: z.object({
     bg: z.string(),
     surface: z.string(),
@@ -224,6 +275,7 @@ export const SiteContextSchema = z.object({
       })
     )
     .default([]),
+  reactPages: z.record(z.string(), ReactPageSchema).optional(),
 });
 
 export type SiteContext = z.infer<typeof SiteContextSchema>;
@@ -259,6 +311,9 @@ export interface GenerationResult {
   qaResults: Record<string, QAResult>;
   timingMs: number;
   visionPolish?: VisionPolishResult;
+  reactProjectPath?: string;
+  reactStaticOutPath?: string;
+  outputMode?: "react" | "html";
 }
 
 export interface VisionPolishResult {

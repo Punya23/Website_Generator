@@ -1,5 +1,6 @@
 import { chromium, type Browser } from "playwright";
 import type { QAIssue, QAResult } from "../types.js";
+import { SUPPORTED_BLOCK_TYPES } from "../agents/content-normalize.js";
 import { withTimeout } from "../util/timed.js";
 
 let sharedBrowser: Browser | null = null;
@@ -50,6 +51,27 @@ export async function runCodeQA(html: string, pageSlug: string): Promise<QAResul
 
 async function runCodeQAInner(html: string, pageSlug: string): Promise<QAResult> {
   const issues: QAIssue[] = [];
+
+  if (/\{"id":\s*"[^"]+",\s*"type":/.test(html)) {
+    issues.push({
+      severity: "hard",
+      code: "RAW_JSON_LEAK",
+      message: "Page HTML contains raw JSON block data",
+      suggestion: "Normalize block types before render or add missing renderer cases",
+    });
+  }
+
+  for (const match of html.matchAll(/data-block-type="([^"]+)"/g)) {
+    const blockType = match[1];
+    if (blockType && !SUPPORTED_BLOCK_TYPES.has(blockType)) {
+      issues.push({
+        severity: "hard",
+        code: "UNKNOWN_BLOCK_TYPE",
+        message: `Unknown block type rendered: ${blockType}`,
+        suggestion: "Coerce to a supported block type in content-normalize",
+      });
+    }
+  }
 
   try {
     const browser = await getBrowser();

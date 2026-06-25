@@ -6,26 +6,31 @@ export function exportProjectJson(ctx: SiteContext): string {
 }
 
 export function exportWebflowJson(ctx: SiteContext): string {
-  const pages = Object.values(ctx.pages).map((page) => {
-    const { content, layout } = assemblePageFromSections(page.sections);
-    return {
-      slug: page.slug,
-      title: page.title,
-      sections: page.sections.map((s) => ({
-        id: s.id,
-        intent: s.intent,
-        archetype: s.archetype,
-        blocks: s.blocks,
-        layout: s.layout,
-      })),
-      content,
-      layout,
-    };
-  });
+  const pages = ctx.reactPages
+    ? Object.values(ctx.reactPages).map((page) => ({
+        slug: page.slug,
+        title: page.title,
+        sections: page.sections.map((s) => ({
+          id: s.id,
+          templateId: s.templateId,
+          intent: s.intent,
+          props: s.props,
+        })),
+      }))
+    : Object.values(ctx.pages).map((page) => {
+        const { content, layout } = assemblePageFromSections(page.sections);
+        return {
+          slug: page.slug,
+          title: page.title,
+          sections: page.sections,
+          content,
+          layout,
+        };
+      });
 
   return JSON.stringify(
     {
-      version: "1.0",
+      version: "2.0",
       platform: "website-generator",
       businessName: ctx.businessName,
       designSystem: ctx.designSystem,
@@ -38,48 +43,33 @@ export function exportWebflowJson(ctx: SiteContext): string {
   );
 }
 
+/** Returns a summary of the React project (full project is written by codegen to disk). */
 export function exportReactProject(ctx: SiteContext): string {
+  if (ctx.reactPages) {
+    return JSON.stringify(
+      {
+        mode: "react",
+        businessName: ctx.businessName,
+        pages: Object.values(ctx.reactPages).map((p) => ({
+          slug: p.slug,
+          title: p.title,
+          sectionCount: p.sections.length,
+          templates: p.sections.map((s) => s.templateId),
+        })),
+      },
+      null,
+      2
+    );
+  }
+
   const pages = Object.values(ctx.pages);
-  const componentNames = pages.map((p) => p.slug.replace(/[^a-z0-9]/gi, "_"));
-
-  const imports = `import type { SiteTheme } from "./types";\n\nexport const theme: SiteTheme = ${JSON.stringify(ctx.designSystem, null, 2)};\n`;
-
-  const pageComponents = pages
-    .map((page, i) => {
-      const name = componentNames[i]!;
-      const sections = page.sections
-        .map(
-          (s) => `    <section key="${s.id}" data-section="${s.id}"${s.archetype ? ` data-archetype="${s.archetype}"` : ""}>
-      {/* ${s.intent} — ${s.blocks.length} blocks */}
-    </section>`
-        )
-        .join("\n");
-      return `export function ${capitalize(name)}Page() {
-  return (
-    <main className="page-${page.slug}">
-${sections}
-    </main>
+  return JSON.stringify(
+    {
+      mode: "html-legacy",
+      message: "Regenerate with OUTPUT_MODE=react for full Next.js project",
+      pages: pages.map((p) => p.slug),
+    },
+    null,
+    2
   );
-}`;
-    })
-    .join("\n\n");
-
-  const routes = pages
-    .map((p, i) => `  { path: "/${p.slug}", element: <${capitalize(componentNames[i]!)}Page /> },`)
-    .join("\n");
-
-  return `${imports}
-${pageComponents}
-
-export const routes = [
-${routes}
-];
-`;
-}
-
-function capitalize(slug: string): string {
-  return slug
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join("");
 }

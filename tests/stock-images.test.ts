@@ -22,13 +22,16 @@ describe("Stock images", () => {
     expect(blocks[0]?.src).toMatch(/^https:\/\//);
   });
 
-  it("adds hero image to home headline", async () => {
-    const blocks = await enrichContentWithImages(
+  it("adds hero image to hero section headline", async () => {
+    const registry = new MediaRegistry();
+    const blocks = await enrichSectionImages(
       [{ id: "h", type: "headline", text: "Welcome", subtext: "We deliver" }],
       "home",
       "Acme Co",
       "Business services",
-      GENERIC_THEME
+      GENERIC_THEME,
+      registry,
+      "home_hero"
     );
     const headline = blocks.find((b) => b.type === "headline");
     expect(headline?.heroImage).toMatch(/^https:\/\//);

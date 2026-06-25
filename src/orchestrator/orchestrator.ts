@@ -13,8 +13,8 @@ import { generateDesignSystem } from "../agents/design-director-agent.js";
 import { buildPageSections } from "../agents/section-builder-agent.js";
 import { applyFixes, applyContentPatches, applySectionScopedFixes } from "../agents/fix-agent.js";
 import { runVisionQa } from "../agents/vision-agent.js";
-import { sanitizeContentBlocks } from "../media/enrich-content.js";
 import { MediaRegistry } from "../media/media-registry.js";
+import { clearImageCache, activeImageProviders } from "../media/image-providers.js";
 import {
   assemblePageFromSections,
   initSiteContext,
@@ -36,9 +36,10 @@ import path from "path";
 import { llm } from "../llm/client.js";
 import { timedStep } from "../util/timed.js";
 import { pipelineLog } from "../util/pipeline-log.js";
-import { clearImageCache, activeImageProviders } from "../media/image-providers.js";
 import { requireLlm } from "../util/llm-required.js";
 import { persistDebugArtifacts } from "../util/debug-artifacts.js";
+import { getOutputMode, runReactPipeline } from "./react-pipeline.js";
+import { renderReactPreviewFallback } from "../react-codegen/preview-fallback.js";
 
 const MAX_QA_RETRIES = 3;
 
@@ -225,6 +226,7 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
 
   const ctx = initSiteContext(options.businessBrief, expanded, sitePlan, designSystem);
   ctx.cmsCollections = generateCmsCollections(expanded);
+  ctx.reactPages = {};
   for (const collection of ctx.cmsCollections) {
     for (const item of collection.items) {
       if (!item.imageQuery) continue;
@@ -239,41 +241,103 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   }
   const registry = new MediaRegistry();
   const enableVision = options.enableVisionPolish !== false;
+  const outputMode = getOutputMode();
 
-  const pageResults =
-    llm.provider === "groq" || llm.provider === "mistral"
-      ? await runPagesSequentially(ctx, registry, enableVision)
-      : await Promise.all(
-          sitePlan.pages.map((p) =>
-            runPagePipeline(ctx, p.slug, p.title, registry, enableVision)
-          )
-        );
+  let pageResults: PagePipelineResult[] = [];
+  let reactProjectPath: string | undefined;
+  let reactStaticOutPath: string | undefined;
+  let htmlPages: Record<string, string> = {};
+  let qaResults: Record<string, QAResult> = {};
+
+  if (outputMode === "react") {
+    pipelineLog("[pipeline] Output mode: React (Framer-parity)");
+    const reactOut = path.resolve("output", "_playground-react");
+    const reactResult = await runReactPipeline(ctx, registry, reactOut);
+    reactProjectPath = reactResult.projectPath;
+    if (reactResult.buildSucceeded) {
+      reactStaticOutPath = reactResult.previewPath;
+    }
+    ctx.reactPages = reactResult.reactPages;
+    qaResults = reactResult.qaResults;
+
+    for (const [slug, page] of Object.entries(reactResult.reactPages)) {
+      ctx.pages[slug] = {
+        slug,
+        title: page.title,
+        navLabel: page.navLabel,
+        sections: [],
+      };
+    }
+
+    try {
+      const fs = await import("fs/promises");
+      if (reactResult.buildSucceeded) {
+        const outDir = reactResult.previewPath;
+        for (const slug of Object.keys(reactResult.reactPages)) {
+          const file =
+            slug === "home"
+              ? path.join(outDir, "index.html")
+              : path.join(outDir, slug, "index.html");
+          htmlPages[slug] = await fs.readFile(file, "utf8");
+        }
+      } else {
+        throw new Error("build failed");
+      }
+    } catch {
+      pipelineLog("[pipeline] React static export unavailable — using styled HTML preview fallback");
+      htmlPages = renderReactPreviewFallback(ctx, reactResult.reactPages);
+    }
+
+    pageResults = sitePlan.pages.map((p) => ({
+      spec: {
+        slug: p.slug,
+        title: p.title,
+        content: [],
+        layout: { type: "Stack", children: [] },
+        sections: [],
+      },
+      html: htmlPages[p.slug] ?? "",
+      qa: qaResults[p.slug] ?? { passed: true, issues: [] },
+      retries: 0,
+    }));
+  } else {
+    pageResults =
+      llm.provider === "groq" || llm.provider === "mistral"
+        ? await runPagesSequentially(ctx, registry, enableVision)
+        : await Promise.all(
+            sitePlan.pages.map((p) =>
+              runPagePipeline(ctx, p.slug, p.title, registry, enableVision)
+            )
+          );
+
+    const pages: PageSpec[] = pageResults.map((r) => r.spec);
+
+    const navPages = pages.map((p) => {
+      const plan = getPagePlan(sitePlan, p.slug);
+      return {
+        slug: p.slug,
+        title: p.title,
+        navLabel: plan?.navLabel,
+        content: p.content,
+        layout: p.layout,
+      };
+    });
+
+    const mergedHtml = renderSite(
+      expanded.businessName,
+      expanded.expandedBrief,
+      designSystem,
+      navPages,
+      sitePlan.motionStyle
+    );
+    htmlPages = { ...mergedHtml };
+
+    for (const r of pageResults) {
+      qaResults[r.spec.slug] = r.qa;
+    }
+  }
 
   const pages: PageSpec[] = pageResults.map((r) => r.spec);
-  const htmlPages: Record<string, string> = {};
-  const qaResults: Record<string, QAResult> = {};
-
-  const navPages = pages.map((p) => {
-    const plan = getPagePlan(sitePlan, p.slug);
-    return {
-      slug: p.slug,
-      title: p.title,
-      navLabel: plan?.navLabel,
-      content: p.content,
-      layout: p.layout,
-    };
-  });
-
-  const mergedHtml = renderSite(
-    expanded.businessName,
-    expanded.expandedBrief,
-    designSystem,
-    navPages,
-    sitePlan.motionStyle
-  );
-  for (const [slug, html] of Object.entries(mergedHtml)) {
-    htmlPages[slug] = html;
-  }
 
   const cmsNav = pages.map((p) => {
     const plan = getPagePlan(sitePlan, p.slug);
@@ -291,7 +355,9 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     cmsNav,
     sitePlan.motionStyle
   );
-  Object.assign(htmlPages, cmsHtml);
+  if (outputMode !== "react") {
+    Object.assign(htmlPages, cmsHtml);
+  }
 
   try {
     const cmsDir = path.resolve("output", "_cms");
@@ -319,10 +385,15 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     siteContext: ctx,
     htmlPages,
     timingMs: Date.now() - start,
+    reactProjectPath,
+    reactStaticOutPath,
+    outputMode,
   });
 
-  for (const r of pageResults) {
-    qaResults[r.spec.slug] = r.qa;
+  if (outputMode === "html") {
+    for (const r of pageResults) {
+      qaResults[r.spec.slug] = r.qa;
+    }
   }
 
   const timingMs = Date.now() - start;
@@ -344,6 +415,9 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     htmlPages,
     qaResults,
     timingMs,
+    reactProjectPath,
+    reactStaticOutPath,
+    outputMode,
     visionPolish: {
       status: enableVision && llm.supportsVision ? "complete" : "skipped",
       issues: ctx.qaHistory.flatMap((h) => h.issues),
@@ -380,14 +454,28 @@ export async function waitForVisionPolish(
 }
 
 export function summarizeGeneration(result: GenerationResult): string {
+  const reactSectionCount = result.siteContext.reactPages
+    ? Object.values(result.siteContext.reactPages).reduce((n, p) => n + p.sections.length, 0)
+    : 0;
   const blockCount = result.site.pages.reduce((n, p) => n + p.content.length, 0);
   const lines = [
     `Generated "${result.site.businessName}" in ${(result.timingMs / 1000).toFixed(1)}s`,
+    `Output: ${result.outputMode ?? "html"}`,
     `Strategy: ${result.site.sitePlan.compositionStrategy}`,
     `Design: ${result.site.theme.vertical} · ${result.site.theme.mood}`,
-    `Pages (${result.site.pages.length}): ${result.site.pages.map((p) => `${p.slug} (${p.content.length} blocks, ${p.sections?.length ?? 0} sections)`).join(", ")}`,
-    `Total content blocks: ${blockCount}`,
   ];
+
+  if (result.outputMode === "react") {
+    lines.push(
+      `React sections: ${reactSectionCount}`,
+      `Pages: ${result.site.pages.map((p) => p.slug).join(", ")}`
+    );
+  } else {
+    lines.push(
+      `Pages (${result.site.pages.length}): ${result.site.pages.map((p) => `${p.slug} (${p.content.length} blocks, ${p.sections?.length ?? 0} sections)`).join(", ")}`,
+      `Total content blocks: ${blockCount}`
+    );
+  }
 
   for (const [slug, qa] of Object.entries(result.qaResults)) {
     const status = qa.passed ? "PASS" : "FAIL";

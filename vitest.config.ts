@@ -6,6 +6,7 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     env: {
       ALLOW_MOCKS: "1",
+      OUTPUT_MODE: "html",
     },
   },
 });

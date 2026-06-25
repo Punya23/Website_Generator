@@ -23,6 +23,55 @@ function featureList(items: unknown): string {
     .join("")}</ul>`;
 }
 
+function isHeroHeadline(block: ContentBlock): boolean {
+  return block.variant === "hero" || block.heroVariant === "hero";
+}
+
+function renderFormField(field: Record<string, unknown>, index: number): string {
+  const label = escapeHtml(str(field.label, `Field ${index + 1}`));
+  const name = escapeHtml(str(field.name, `field_${index}`).replace(/\s+/g, "_").toLowerCase());
+  const required = Boolean(field.required);
+  const fieldType = str(field.type, "text");
+
+  if (fieldType === "select" && Array.isArray(field.options)) {
+    const options = (field.options as unknown[])
+      .map((opt) => `<option value="${escapeHtml(String(opt))}">${escapeHtml(String(opt))}</option>`)
+      .join("");
+    return `<label class="form-field">
+  <span class="form-label">${label}${required ? " *" : ""}</span>
+  <select name="${name}"${required ? " required" : ""}>${options}</select>
+</label>`;
+  }
+
+  if (fieldType === "textarea") {
+    return `<label class="form-field">
+  <span class="form-label">${label}${required ? " *" : ""}</span>
+  <textarea name="${name}" rows="4"${required ? " required" : ""}></textarea>
+</label>`;
+  }
+
+  const inputType = ["text", "email", "tel", "datetime-local", "date", "number"].includes(fieldType)
+    ? fieldType
+    : "text";
+
+  return `<label class="form-field">
+  <span class="form-label">${label}${required ? " *" : ""}</span>
+  <input type="${escapeHtml(inputType)}" name="${name}"${required ? " required" : ""} />
+</label>`;
+}
+
+function renderFallbackBlock(block: ContentBlock, id: string, type: string): string {
+  const title = str(block.title) || str(block.headline);
+  const text = str(block.text) || str(block.content) || str(block.description);
+  if (!title && !text) {
+    return `<!-- omitted unknown block ${id} type=${type} -->`;
+  }
+  return revealWrap(`<section class="block block-text" data-block-id="${id}" data-block-type="text">
+  ${title ? `<h2>${escapeHtml(title)}</h2>` : ""}
+  ${text ? `<div class="prose">${escapeHtml(text)}</div>` : ""}
+</section>`);
+}
+
 export function renderContentBlock(block: ContentBlock): string {
   const id = escapeHtml(block.id);
   const type = block.type;
@@ -31,10 +80,12 @@ export function renderContentBlock(block: ContentBlock): string {
     case "headline": {
       const heroImage = str(block.heroImage);
       const splitImage = str(block.splitImage);
-      if (splitImage) {
+      const headingTag = typeof block.level === "number" && block.level >= 2 ? "h2" : "h1";
+
+      if (splitImage && isHeroHeadline(block)) {
         return revealWrap(`<section class="block-split-hero" data-block-id="${id}" data-block-type="${type}">
   <div class="split-hero-text">
-    <h1>${escapeHtml(str(block.text))}</h1>
+    <${headingTag}>${escapeHtml(str(block.text))}</${headingTag}>
     ${block.subtext ? `<p>${escapeHtml(str(block.subtext))}</p>` : ""}
     ${block.buttonText ? `<a class="btn" href="${escapeHtml(str(block.buttonUrl, "#"))}">${escapeHtml(str(block.buttonText))}</a>` : ""}
   </div>
@@ -43,17 +94,17 @@ export function renderContentBlock(block: ContentBlock): string {
   </div>
 </section>`);
       }
-      if (heroImage) {
+      if (heroImage && isHeroHeadline(block)) {
         const bg = escapeHtml(heroImage);
         return revealWrap(`<section class="block-hero" data-block-id="${id}" data-block-type="${type}" style="background-image: linear-gradient(to top, color-mix(in srgb, var(--gradient-from) 88%, black), transparent 70%), url('${bg}')">
   <div class="hero-content">
-    <h1>${escapeHtml(str(block.text))}</h1>
+    <${headingTag}>${escapeHtml(str(block.text))}</${headingTag}>
     ${block.subtext ? `<p>${escapeHtml(str(block.subtext))}</p>` : ""}
   </div>
 </section>`);
       }
       return revealWrap(`<header class="section-headline" data-block-id="${id}" data-block-type="${type}">
-  <h1>${escapeHtml(str(block.text))}</h1>
+  <${headingTag}>${escapeHtml(str(block.text))}</${headingTag}>
   ${block.subtext ? `<p class="section-subtitle">${escapeHtml(str(block.subtext))}</p>` : ""}
 </header>`);
     }
@@ -159,9 +210,51 @@ export function renderContentBlock(block: ContentBlock): string {
       );
     }
 
-    default:
-      return revealWrap(`<section class="block" data-block-id="${id}" data-block-type="${escapeHtml(type)}">
-  <p>${escapeHtml(str(block.text, JSON.stringify(block)))}</p>
+    case "list":
+      return revealWrap(`<section class="block block-list" data-block-id="${id}" data-block-type="${type}">
+  ${block.title ? `<h3>${escapeHtml(str(block.title))}</h3>` : ""}
+  ${featureList(block.items)}
 </section>`);
+
+    case "form": {
+      const fields = Array.isArray(block.fields) ? block.fields : [];
+      const fieldsHtml = fields
+        .map((field, i) =>
+          field && typeof field === "object"
+            ? renderFormField(field as Record<string, unknown>, i)
+            : ""
+        )
+        .join("\n  ");
+      const submitLabel = escapeHtml(str(block.submitLabel, "Submit"));
+      return revealWrap(`<section class="block block-form" data-block-id="${id}" data-block-type="${type}">
+  ${block.title ? `<h2>${escapeHtml(str(block.title))}</h2>` : ""}
+  <form class="site-form" action="#" method="post" onsubmit="event.preventDefault()">
+  ${fieldsHtml}
+  <button type="submit" class="btn btn-form">${submitLabel}</button>
+  </form>
+</section>`);
+    }
+
+    case "beforeAfter": {
+      const beforeSrc = str(block.beforeSrc) || str(block.beforeImage);
+      const afterSrc = str(block.afterSrc) || str(block.afterImage);
+      const caption = str(block.caption);
+      return revealWrap(`<section class="block block-before-after" data-block-id="${id}" data-block-type="${type}">
+  <div class="before-after-pair">
+    <figure class="before-after-item">
+      ${beforeSrc ? `<img src="${escapeHtml(beforeSrc)}" alt="Before" loading="lazy" />` : `<div class="placeholder">Before</div>`}
+      <figcaption>Before</figcaption>
+    </figure>
+    <figure class="before-after-item">
+      ${afterSrc ? `<img src="${escapeHtml(afterSrc)}" alt="After" loading="lazy" />` : `<div class="placeholder">After</div>`}
+      <figcaption>After</figcaption>
+    </figure>
+  </div>
+  ${caption ? `<p class="caption">${escapeHtml(caption)}</p>` : ""}
+</section>`);
+    }
+
+    default:
+      return renderFallbackBlock(block, id, type);
   }
 }

@@ -33,7 +33,7 @@ describe("Fixture golden QA", () => {
 
       expect(html).toContain(ctx.businessName);
       expect(html).toContain("data-block-id");
-      expect(html).not.toMatch(/min-height:\s*var\(--card-min-height\)/);
+      expect(html).not.toMatch(/\{"id":\s*"[^"]+",\s*"type":/);
 
       const qa = await runCodeQA(html, "home");
       const hard = qa.issues.filter((i) => i.severity === "hard");

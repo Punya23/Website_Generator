@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs/promises";
 import { fileURLToPath } from "url";
 import { generateSite } from "../orchestrator/orchestrator.js";
 import { writeSiteOutput } from "../server/preview-server.js";
@@ -17,10 +18,46 @@ import {
   exportReactProject,
   exportWebflowJson,
 } from "../export/formats.js";
+import {
+  startReactPreviewServer,
+  stopReactPreviewServer,
+} from "../react-codegen/react-preview-server.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, "public");
 const PLAYGROUND_OUTPUT = path.resolve("output", "_playground");
+
+async function persistReactPreview(reactOutPath: string): Promise<void> {
+  await fs.rm(PLAYGROUND_OUTPUT, { recursive: true, force: true });
+  await fs.cp(reactOutPath, PLAYGROUND_OUTPUT, { recursive: true });
+}
+
+async function persistHtmlPreview(htmlPages: Record<string, string>): Promise<void> {
+  await writeSiteOutput(PLAYGROUND_OUTPUT, htmlPages);
+}
+
+function mountPreviewRoutes(app: express.Express): void {
+  // Next static export: /preview/about → about/index.html
+  app.get("/preview/:slug", async (req, res, next) => {
+    const slug = req.params.slug ?? "";
+    if (!slug || slug.includes(".") || slug === "_next") return next();
+    const file = path.join(PLAYGROUND_OUTPUT, slug, "index.html");
+    try {
+      await fs.access(file);
+      res.sendFile(file);
+    } catch {
+      next();
+    }
+  });
+
+  app.use(
+    "/preview",
+    express.static(PLAYGROUND_OUTPUT, {
+      index: "index.html",
+      extensions: ["html"],
+    })
+  );
+}
 
 export interface PlaygroundServerOptions {
   port?: number;
@@ -31,7 +68,7 @@ async function persistPreview(): Promise<void> {
   if (!session?.siteContext) return;
   const htmlPages = rerenderFromContext(session.siteContext);
   session.htmlPages = htmlPages;
-  await writeSiteOutput(PLAYGROUND_OUTPUT, htmlPages);
+  await persistHtmlPreview(htmlPages);
 }
 
 export function startPlaygroundServer(options: PlaygroundServerOptions = {}): Promise<{
@@ -44,7 +81,7 @@ export function startPlaygroundServer(options: PlaygroundServerOptions = {}): Pr
     const app = express();
     app.use(express.json({ limit: "256kb" }));
     app.use(express.static(PUBLIC_DIR));
-    app.use("/preview", express.static(PLAYGROUND_OUTPUT));
+    mountPreviewRoutes(app);
 
     app.get("/api/session", (_req, res) => {
       const session = getEditorSession();
@@ -55,6 +92,7 @@ export function startPlaygroundServer(options: PlaygroundServerOptions = {}): Pr
       res.json({
         businessName: session.site.businessName,
         designSystem: session.siteContext.designSystem,
+        outputMode: session.outputMode ?? "html",
         pages: Object.entries(session.siteContext.pages).map(([slug, page]) => ({
           slug,
           title: page.title,
@@ -65,6 +103,13 @@ export function startPlaygroundServer(options: PlaygroundServerOptions = {}): Pr
             blockCount: s.blocks.length,
           })),
         })),
+        reactPages: session.siteContext.reactPages
+          ? Object.entries(session.siteContext.reactPages).map(([slug, page]) => ({
+              slug,
+              title: page.title,
+              sectionCount: page.sections.length,
+            }))
+          : [],
         cmsCollections: session.siteContext.cmsCollections ?? [],
       });
     });
@@ -201,15 +246,41 @@ export function startPlaygroundServer(options: PlaygroundServerOptions = {}): Pr
         });
 
         setEditorSession(result);
-        await writeSiteOutput(PLAYGROUND_OUTPUT, result.htmlPages);
+
+        let previewUrl = "/preview/";
+        let previewSource: "live-server" | "next-static" | "html-fallback" = "html-fallback";
+
+        if (result.reactProjectPath && result.reactStaticOutPath) {
+          try {
+            previewUrl = await startReactPreviewServer(result.reactProjectPath);
+            previewSource = "live-server";
+            send({ type: "log", line: `[preview] Live server → ${previewUrl}` });
+          } catch (err) {
+            send({
+              type: "log",
+              line: `[preview] Live server failed (${err instanceof Error ? err.message : String(err)}) — static fallback`,
+            });
+            await persistReactPreview(result.reactStaticOutPath);
+            previewUrl = "/preview/";
+            previewSource = "next-static";
+          }
+        } else if (result.reactStaticOutPath) {
+          await persistReactPreview(result.reactStaticOutPath);
+          previewSource = "next-static";
+        } else {
+          await persistHtmlPreview(result.htmlPages);
+        }
 
         send({
           type: "done",
           businessName: result.site.businessName,
-          previewUrl: "/preview/index.html",
+          previewUrl,
           timingMs: result.timingMs,
           pages: result.site.pages.map((p) => p.slug),
           editorReady: true,
+          outputMode: result.outputMode ?? "html",
+          reactProjectPath: result.reactProjectPath,
+          previewSource,
         });
       } catch (err) {
         send({
@@ -230,7 +301,10 @@ export function startPlaygroundServer(options: PlaygroundServerOptions = {}): Pr
         }
         resolve({
           url,
-          close: () => server.close(),
+          close: () => {
+            stopReactPreviewServer();
+            server.close();
+          },
         });
       });
 

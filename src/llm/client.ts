@@ -1,7 +1,12 @@
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { llmQueue, sleep } from "./request-queue.js";
-import { isRateLimitError, parseRetryAfterMs } from "./rate-limit.js";
+import {
+  groqFallbackModel,
+  isOverCapacityError,
+  isTransientLLMError,
+  parseRetryAfterMs,
+} from "./rate-limit.js";
 
 export type LLMProvider = "groq" | "openai" | "mistral";
 
@@ -194,7 +199,8 @@ export class LLMClient {
     system: string,
     user: string,
     options: LLMOptions,
-    attempt = 0
+    attempt = 0,
+    modelOverride?: string
   ): Promise<string> {
     const MAX_RETRIES = 8;
 
@@ -203,7 +209,10 @@ export class LLMClient {
       { role: "user", content: user },
     ];
 
-    const model = resolveModel(this.provider, options.model ?? this.getChatModel());
+    const model = resolveModel(
+      this.provider,
+      modelOverride ?? options.model ?? this.getChatModel()
+    );
 
     try {
       const response = await this.client!.chat.completions.create({
@@ -216,13 +225,28 @@ export class LLMClient {
 
       return response.choices[0]?.message?.content ?? "";
     } catch (err: unknown) {
-      if (isRateLimitError(err) && attempt < MAX_RETRIES) {
+      if (isTransientLLMError(err) && attempt < MAX_RETRIES) {
+        if (
+          this.provider === "groq" &&
+          isOverCapacityError(err) &&
+          !modelOverride
+        ) {
+          const fallback = groqFallbackModel(model);
+          if (fallback) {
+            console.warn(
+              `[llm] Groq model "${model}" over capacity — trying fallback "${fallback}"`
+            );
+            return this.chatWithRetry(system, user, options, attempt, fallback);
+          }
+        }
+
         const waitMs = parseRetryAfterMs(err, attempt);
+        const reason = isOverCapacityError(err) ? "Over capacity" : "Rate limit";
         console.warn(
-          `[llm] Rate limit (${this.provider}) — waiting ${(waitMs / 1000).toFixed(1)}s (retry ${attempt + 1}/${MAX_RETRIES})`
+          `[llm] ${reason} (${this.provider}, ${model}) — waiting ${(waitMs / 1000).toFixed(1)}s (retry ${attempt + 1}/${MAX_RETRIES})`
         );
         await sleep(waitMs);
-        return this.chatWithRetry(system, user, options, attempt + 1);
+        return this.chatWithRetry(system, user, options, attempt + 1, modelOverride);
       }
       throw enhanceGroqModelError(err, model);
     }
@@ -335,5 +359,21 @@ function enhanceGroqModelError(err: unknown, model: string): Error {
       { cause: err }
     );
   }
+  if (isOverCapacityError(err)) {
+    const fallback = groqFallbackModel(model);
+    const hint = fallback
+      ? ` Groq is overloaded — retries were exhausted. Set GROQ_MODEL=${fallback} or wait and try again. Status: https://groqstatus.com`
+      : " Groq is overloaded — wait and try again. Status: https://groqstatus.com";
+    const message = extractErrorMessage(err);
+    return new Error(`${message}.${hint}`, { cause: err });
+  }
   return err instanceof Error ? err : new Error(String(err));
+}
+
+function extractErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object" && "message" in err) {
+    return String(err.message);
+  }
+  return String(err);
 }

@@ -17,6 +17,9 @@ Output valid JSON only — you choose every value:
   "fontBody": "Google Font",
   "motionStyle": "scroll personality",
   "motionPreset": "fade-up|stagger|scale-in|slide-left|parallax-hero|none",
+  "sectionGapMode": "tight|normal|airy",
+  "typography": { "display": "font name", "heading": "font name", "body": "font name", "label": "font name", "mono": "font name" },
+  "surfaces": { "default": "subtle border", "elevated": "shadow panels for pricing only", "none": "typography sections without card chrome" },
   "layout": {
     "maxWidth": "CSS length",
     "gridColumns": 2-4,

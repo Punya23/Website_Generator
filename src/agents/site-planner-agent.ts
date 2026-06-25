@@ -5,6 +5,12 @@ import { llm } from "../llm/client.js";
 import { briefToContext } from "./expand-brief-agent.js";
 import { allowMocks, requireLlm } from "../util/llm-required.js";
 import type { SectionArchetype } from "../components/archetypes.js";
+import {
+  normalizePlannerBlockTypes,
+  PLANNER_BLOCK_TYPES,
+} from "./content-normalize.js";
+
+const ALLOWED_BLOCK_TYPES = PLANNER_BLOCK_TYPES.join(", ");
 
 const PLANNER_SYSTEM = `You are a website information architect. Design a unique site structure for this business.
 
@@ -22,9 +28,12 @@ Output valid JSON:
       "layoutHint": "your creative direction for how this page should feel spatially",
       "contentFocus": ["topics to cover in depth"],
       "sections": [
-        { "id": "home_hero", "intent": "...", "blockTypes": ["headline"] },
-        { "id": "home_proof", "intent": "...", "blockTypes": ["stat"] }
+        { "id": "home_hero", "intent": "...", "blockTypes": ["headline", "text"] },
+        { "id": "home_proof", "intent": "...", "blockTypes": ["stat", "feature"] }
       ]
+
+Allowed blockTypes values ONLY: ${ALLOWED_BLOCK_TYPES}
+Never use invented types like card, button, accordion, profileCard, backgroundImage.
     }
   ],
   "compositionStrategy": "how layout rhythm should differ from a generic template",
@@ -151,9 +160,18 @@ function normalizePlannerJson(raw: unknown, brief: ExpandedBrief): unknown {
         ? Math.max(1, Math.round(page.minBlocks))
         : 12;
 
-    const sections = Array.isArray(page.sections) && page.sections.length > 0
+    const sections = (Array.isArray(page.sections) && page.sections.length > 0
       ? page.sections
-      : defaultSections(slug, layoutHint, blockTypes);
+      : defaultSections(slug, layoutHint, blockTypes)
+    ).map((sectionRaw) => {
+      if (!sectionRaw || typeof sectionRaw !== "object") return sectionRaw;
+      const section = sectionRaw as Record<string, unknown>;
+      const blockTypesRaw = Array.isArray(section.blockTypes) ? section.blockTypes : [];
+      return {
+        ...section,
+        blockTypes: normalizePlannerBlockTypes(blockTypesRaw.map(String)),
+      };
+    });
 
     return {
       ...page,

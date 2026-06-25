@@ -90,4 +90,15 @@ describe("sanitizeLayoutNode", () => {
     });
     expect(LayoutNodeSchema.parse(layout)).toBeTruthy();
   });
+
+  it("bumps Grid columns 1 to 2 when multiple children", () => {
+    const layout = sanitizeLayoutNode({
+      type: "Grid",
+      columns: 1,
+      children: ["a", "b", "c"],
+    });
+    expect(layout.type).toBe("Grid");
+    expect(layout.columns).toBe(2);
+    expect(LayoutNodeSchema.parse(layout)).toBeTruthy();
+  });
 });

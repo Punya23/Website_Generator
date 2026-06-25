@@ -79,7 +79,8 @@ function renderExamples() {
 }
 
 function refreshPreview(url) {
-  previewFrame.src = url + "?t=" + Date.now();
+  const sep = url.includes("?") ? "&" : "?";
+  previewFrame.src = url + sep + "t=" + Date.now();
   openTab.href = url;
 }
 
@@ -271,8 +272,13 @@ async function generate() {
         if (json.type === "error") appendLog(json.message, true);
         if (json.type === "done") {
           appendLog(`Done in ${(json.timingMs / 1000).toFixed(1)}s — ${json.pages?.length ?? 0} pages`);
+          if (json.previewSource === "live-server") {
+            appendLog(`Preview: ${json.previewUrl} (built Next.js app)`);
+          } else if (json.previewSource === "html-fallback") {
+            appendLog("Preview: HTML fallback (Next build unavailable)");
+          }
           previewTitle.textContent = json.businessName ?? "Preview";
-          const url = json.previewUrl + "?t=" + Date.now();
+          const url = (json.previewUrl ?? "/preview/index.html") + "?t=" + Date.now();
           refreshPreview(url);
           previewPanel.hidden = false;
           previewPanel.scrollIntoView({ behavior: "smooth", block: "start" });

@@ -1,4 +1,5 @@
 import type { ContentBlock, LayoutNode, PageSection, SectionPlan, SiteContext } from "../types.js";
+import { normalizeContentBlocks } from "../agents/content-normalize.js";
 
 export function ensurePageSections(
   pageSlug: string,
@@ -20,7 +21,7 @@ export function assemblePageFromSections(sections: PageSection[]): {
 } {
   const content: ContentBlock[] = [];
   for (const section of sections) {
-    content.push(...section.blocks);
+    content.push(...normalizeContentBlocks(section.blocks, section.id));
   }
 
   const layout: LayoutNode = {

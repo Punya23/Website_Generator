@@ -98,6 +98,7 @@ describe("Stack/Row/Grid renderer", () => {
           makeBlock("h", "headline", {
             text: "Welcome",
             subtext: "Luxury salon",
+            variant: "hero",
             heroImage: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1200",
           }),
         ],

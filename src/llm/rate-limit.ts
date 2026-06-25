@@ -1,5 +1,13 @@
 const RATE_LIMIT_RE = /rate limit|429|tokens per minute|tpm/i;
+const OVER_CAPACITY_RE = /over capacity|temporarily unavailable|service unavailable/i;
 const RETRY_AFTER_RE = /try again in ([\d.]+)s/i;
+
+export const DEFAULT_GROQ_FALLBACK_MODEL = "llama-3.1-8b-instant";
+
+export function groqFallbackModel(current: string): string | null {
+  const fallback = process.env.GROQ_FALLBACK_MODEL ?? DEFAULT_GROQ_FALLBACK_MODEL;
+  return fallback === current ? null : fallback;
+}
 
 export function isRateLimitError(err: unknown): boolean {
   if (!err || typeof err !== "object") return false;
@@ -7,6 +15,22 @@ export function isRateLimitError(err: unknown): boolean {
   if (status === 429) return true;
   const message = extractErrorMessage(err);
   return RATE_LIMIT_RE.test(message);
+}
+
+export function isOverCapacityError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const status = "status" in err ? err.status : undefined;
+  if (status === 503) return true;
+  return OVER_CAPACITY_RE.test(extractErrorMessage(err));
+}
+
+/** Transient Groq/OpenAI-style errors worth retrying (429, 502, 503, 504). */
+export function isTransientLLMError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const status = "status" in err ? err.status : undefined;
+  if (status === 429 || status === 502 || status === 503 || status === 504) return true;
+  const message = extractErrorMessage(err);
+  return RATE_LIMIT_RE.test(message) || OVER_CAPACITY_RE.test(message);
 }
 
 export function parseRetryAfterMs(err: unknown, attempt: number): number {

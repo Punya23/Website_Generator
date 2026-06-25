@@ -17,7 +17,7 @@ function imageQueryFor(block: ContentBlock): string {
   );
 }
 
-async function resolveUniqueImage(
+export async function resolveUniqueImage(
   query: string,
   cacheKey: string,
   registry: MediaRegistry,
@@ -70,8 +70,35 @@ export async function enrichSectionImages(
       continue;
     }
 
+    if (block.type === "beforeAfter") {
+      const beforeQuery = str(block.beforeImageQuery) || str(block.beforeImage) || "before";
+      const afterQuery = str(block.afterImageQuery) || str(block.afterImage) || "after";
+      const beforeSrc = await resolveUniqueImage(
+        `${businessBrief} ${beforeQuery}`,
+        `${block.id}-before`,
+        registry,
+        block.id,
+        sectionId,
+        pageSlug,
+        800,
+        600
+      );
+      const afterSrc = await resolveUniqueImage(
+        `${businessBrief} ${afterQuery}`,
+        `${block.id}-after`,
+        registry,
+        block.id,
+        sectionId,
+        pageSlug,
+        800,
+        600
+      );
+      enriched.push({ ...block, beforeSrc, afterSrc });
+      continue;
+    }
+
     if (block.type === "headline" && !block.heroImage) {
-      const isHeroSection = sectionId.includes("hero") || pageSlug === "home";
+      const isHeroSection = sectionId.includes("hero");
       if (isHeroSection) {
         const src = await resolveUniqueImage(
           `${businessBrief} ${businessName} hero`,

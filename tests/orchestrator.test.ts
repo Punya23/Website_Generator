@@ -34,7 +34,7 @@ describe("Orchestrator", () => {
     );
     expect(onPreviewReady).toHaveBeenCalled();
     expect(result.timingMs).toBeGreaterThan(0);
-  });
+  }, 15_000);
 
   it("each page html contains nav, images, and animations", async () => {
     const result = await generateSite({

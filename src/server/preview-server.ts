@@ -12,10 +12,16 @@ export async function writeSiteOutput(
   }
   await writeFile(
     path.join(outputDir, "index.html"),
-    htmlPages.home ?? htmlPages[Object.keys(htmlPages)[0]!] ?? "<html><body>No pages</body></html>",
+    pickIndexHtml(htmlPages),
     "utf-8"
   );
   return outputDir;
+}
+
+function pickIndexHtml(htmlPages: Record<string, string>): string {
+  if (htmlPages.home?.trim()) return htmlPages.home;
+  const first = Object.entries(htmlPages).find(([, html]) => html?.trim());
+  return first?.[1] ?? "<html><body>No pages</body></html>";
 }
 
 export function startPreviewServer(

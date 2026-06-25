@@ -24,16 +24,26 @@ import {
   isSectionArchetype,
 } from "../components/archetypes.js";
 import { pipelineLog } from "../util/pipeline-log.js";
+import { normalizeContentBlocks } from "./content-normalize.js";
 
 const SECTION_CONTENT_PROMPT = `You are an expert copywriter. Generate content blocks for ONE section of a page.
 No layout fields. No src URLs. imageQuery required on image/gallery blocks.
 
 Output JSON: { "blocks": [ { "id", "type", ...fields } ] }
 
-Block types: headline, stat, testimonial, cta, text, feature, gallery, image, contact, faq, pricing, logo, bento.
-pricing: { title, price, period?, description?, features[], buttonText?, highlighted? }
-logo: { name, imageQuery? }
-bento: { title, description?, imageQuery?, span: "normal"|"wide"|"tall"|"large" }
+Use ONLY these block types — never invent new type names:
+headline, stat, testimonial, cta, text, feature, gallery, image, contact, faq, pricing, logo, bento, list, form.
+
+Field names (use exactly):
+- cta: { headline, subtext?, buttonText, buttonUrl? }
+- testimonial: { quote, author, role? }
+- text: { title?, text }
+- list: { title?, items: string[] }
+- form: { title?, fields: [{ label, type: "text"|"email"|"tel"|"select"|"textarea"|"datetime-local", required?, options? }], submitLabel? }
+- pricing: { title, price, period?, description?, features[], buttonText?, highlighted? }
+- logo: { name, imageQuery? }
+- bento: { title, description?, imageQuery?, span: "normal"|"wide"|"tall"|"large" }
+
 IDs must be unique and prefixed with the section id.`;
 
 const SECTION_LAYOUT_PROMPT = `You are a layout architect for ONE page section.
@@ -115,7 +125,7 @@ Generate 2-8 blocks for this section only. IDs must start with "${section.id}_".
       }
     );
     const parsed = JSON.parse(raw) as { blocks: ContentBlock[] };
-    return parsed.blocks;
+    return normalizeContentBlocks(parsed.blocks, section.id);
   }
 
   if (!allowMocks()) throw new Error("Section content requires LLM");

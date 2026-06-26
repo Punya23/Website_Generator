@@ -3,21 +3,23 @@ import { resolveImageUrl, resolveImageUrlSync } from "./image-providers.js";
 export async function stockImageUrl(
   query: string,
   seed: string,
-  _vertical?: string,
+  vertical?: string,
   width = 1200,
   height = 800
 ): Promise<string> {
-  return resolveImageUrl({ query, seed, width, height });
+  const enriched = vertical ? `${query} ${vertical}`.trim() : query;
+  return resolveImageUrl({ query: enriched, seed, width, height });
 }
 
 export function stockImageUrlSync(
   query: string,
   seed: string,
-  _vertical?: string,
+  vertical?: string,
   width = 1200,
   height = 800
 ): string {
-  return resolveImageUrlSync({ query, seed, width, height });
+  const enriched = vertical ? `${query} ${vertical}`.trim() : query;
+  return resolveImageUrlSync({ query: enriched, seed, width, height });
 }
 
 export async function heroImageUrl(

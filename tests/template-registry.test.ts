@@ -7,11 +7,33 @@ import {
 } from "../src/section-templates/registry.js";
 
 describe("section template registry", () => {
-  it("has 15 premium templates", () => {
-    expect(SECTION_TEMPLATES.length).toBeGreaterThanOrEqual(12);
-    expect(TEMPLATE_IDS).toContain("hero_editorial");
-    expect(TEMPLATE_IDS).toContain("services_showcase");
-    expect(TEMPLATE_IDS).toContain("cta_band");
+  it("has immersive marketing templates including carousels and video hero", () => {
+    expect(SECTION_TEMPLATES.length).toBeGreaterThanOrEqual(24);
+    expect(TEMPLATE_IDS).toContain("hero_video");
+    expect(TEMPLATE_IDS).toContain("testimonial_carousel");
+    expect(TEMPLATE_IDS).toContain("portfolio_carousel");
+    expect(TEMPLATE_IDS).toContain("before_after");
+    expect(TEMPLATE_IDS).toContain("pricing_toggle");
+    expect(TEMPLATE_IDS).toContain("stats_animated");
+    expect(TEMPLATE_IDS).toContain("newsletter_band");
+    expect(TEMPLATE_IDS).toContain("text_marquee");
+    expect(TEMPLATE_IDS).toContain("footer_cta");
+  });
+
+  it("validates text_marquee props", () => {
+    const props = validateTemplateProps("text_marquee", {
+      phrases: ["Craft", "Quality", "Style"],
+      speed: "normal",
+    });
+    expect(props.phrases).toHaveLength(3);
+  });
+
+  it("validates footer_cta props", () => {
+    const props = validateTemplateProps("footer_cta", {
+      headline: "Ready to start?",
+      cta: { label: "Contact", href: "/contact" },
+    });
+    expect(props.headline).toBe("Ready to start?");
   });
 
   it("validates hero_editorial props", () => {

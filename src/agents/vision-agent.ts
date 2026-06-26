@@ -4,6 +4,14 @@ import { llm } from "../llm/client.js";
 
 const VISION_SYSTEM = `Visual QA reviewer. You receive desktop (1280px) and mobile (390px) screenshots plus a block manifest (id, type, bounds, sectionId).
 Flag only real layout problems: misaligned columns, stretched empty cards, cramped gaps, unreadable nav, repeated hero imagery, headline beside full image in same row, mobile overflow.
+
+Use these structured codes when applicable:
+- VISUAL_NAV_CONTRAST — unreadable nav links, white-on-white glass, poor nav contrast
+- VISUAL_MOTION_MONOTONY — identical static sections, no scroll rhythm, lifeless page
+- VISUAL_COPY_WEAK — weak headlines, placeholder copy, illegible text in sections
+- VISUAL_SPACING — cramped gaps, overflow, misalignment (set sectionId when known)
+- VISUAL_CHROME — footer/nav chrome issues, missing CTA, broken link grouping
+
 Output JSON: { "issues": [{ "severity": "hard"|"soft", "code": "VISUAL_*", "message": "...", "targetId": "...", "sectionId": "...", "suggestion": "..." }], "summary": "one line" }
 Empty issues if page looks good. Always set sectionId when you can identify the section.`;
 
@@ -54,10 +62,17 @@ Manifest: ${JSON.stringify(manifest.slice(0, 50))}`;
       appliedFixes: parsed.summary ? [parsed.summary] : [],
     };
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     return {
       status: "complete",
-      issues: [],
-      appliedFixes: [`Vision error: ${err instanceof Error ? err.message : String(err)}`],
+      issues: [
+        {
+          severity: "hard",
+          code: "VISION_QA_ERROR",
+          message: `Vision QA failed: ${message}`,
+        },
+      ],
+      appliedFixes: [],
     };
   }
 }

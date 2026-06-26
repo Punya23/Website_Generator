@@ -4,21 +4,33 @@ import { llmQueue, sleep } from "./request-queue.js";
 import {
   groqFallbackModel,
   isOverCapacityError,
+  isConnectionError,
+  isNonRetryableLLMError,
   isTransientLLMError,
   parseRetryAfterMs,
+  DEFAULT_GROQ_FALLBACK_MODEL,
 } from "./rate-limit.js";
+import { llmMaxRetries, maxTokensFor, type TokenRole } from "./token-budget.js";
+import { normalizeLlmJsonContent } from "./parse-json.js";
+import { openRouterDefaults } from "./openrouter-models.js";
 
-export type LLMProvider = "groq" | "openai" | "mistral";
+export type LLMProvider = "groq" | "openai" | "mistral" | "openrouter" | "ollama";
 
 export interface LLMOptions {
   model?: string;
   temperature?: number;
   jsonMode?: boolean;
   maxTokens?: number;
+  /** Token budget role when maxTokens omitted */
+  tokenRole?: TokenRole;
 }
 
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 const MISTRAL_BASE_URL = "https://api.mistral.ai/v1";
+const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434/v1";
+
+const OR_DEFAULTS = openRouterDefaults();
 
 /** Groq-decommissioned IDs → current replacements (see console.groq.com/docs/deprecations) */
 export const GROQ_MODEL_MIGRATIONS: Record<string, string> = {
@@ -32,7 +44,7 @@ const DEFAULT_MODELS: Record<LLMProvider, { chat: string; composition: string; v
   groq: {
     chat: "llama-3.3-70b-versatile",
     composition: "llama-3.3-70b-versatile",
-    vision: null,
+    vision: "meta-llama/llama-4-scout-17b-16e-instruct",
   },
   openai: {
     chat: "gpt-4o-mini",
@@ -43,6 +55,16 @@ const DEFAULT_MODELS: Record<LLMProvider, { chat: string; composition: string; v
     chat: "mistral-medium-latest",
     composition: "mistral-medium-latest",
     vision: "mistral-medium-latest",
+  },
+  openrouter: {
+    chat: OR_DEFAULTS.chat,
+    composition: OR_DEFAULTS.composition,
+    vision: OR_DEFAULTS.vision,
+  },
+  ollama: {
+    chat: "llama3.1:8b",
+    composition: "llama3.1:8b",
+    vision: null,
   },
 };
 
@@ -58,9 +80,16 @@ function resolveProvider(): LLMProvider | null {
   if (explicit === "mistral") {
     return process.env.MISTRAL_API_KEY ? "mistral" : null;
   }
+  if (explicit === "openrouter") {
+    return process.env.OPENROUTER_API_KEY ? "openrouter" : null;
+  }
+  if (explicit === "ollama") {
+    return "ollama";
+  }
 
   if (process.env.GROQ_API_KEY) return "groq";
   if (process.env.MISTRAL_API_KEY) return "mistral";
+  if (process.env.OPENROUTER_API_KEY) return "openrouter";
   if (process.env.OPENAI_API_KEY) return "openai";
   return null;
 }
@@ -80,6 +109,26 @@ function createClient(provider: LLMProvider): OpenAI {
       apiKey: process.env.MISTRAL_API_KEY,
       baseURL: MISTRAL_BASE_URL,
       timeout: timeoutMs,
+      maxRetries: 0,
+    });
+  }
+  if (provider === "openrouter") {
+    return new OpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseURL: OPENROUTER_BASE_URL,
+      timeout: timeoutMs,
+      maxRetries: 0,
+      defaultHeaders: {
+        "HTTP-Referer": process.env.OPENROUTER_HTTP_REFERER ?? "http://localhost:3847",
+        "X-Title": process.env.OPENROUTER_APP_NAME ?? "website-generator",
+      },
+    });
+  }
+  if (provider === "ollama") {
+    return new OpenAI({
+      apiKey: process.env.OLLAMA_API_KEY ?? "ollama",
+      baseURL: OLLAMA_BASE_URL,
+      timeout: Number.parseInt(process.env.OLLAMA_TIMEOUT_MS ?? "300000", 10),
       maxRetries: 0,
     });
   }
@@ -103,6 +152,7 @@ export class LLMClient {
   readonly provider: LLMProvider | null;
   private client: OpenAI | null;
   private models: (typeof DEFAULT_MODELS)[LLMProvider];
+  private tokenUsage = { prompt: 0, completion: 0, total: 0 };
 
   constructor() {
     this.provider = resolveProvider();
@@ -127,33 +177,50 @@ export class LLMClient {
 
   getChatModel(): string {
     const raw =
-      this.provider === "mistral"
-        ? (process.env.LLM_MODEL ?? process.env.MISTRAL_MODEL ?? this.models.chat)
-        : this.provider === "groq"
-          ? (process.env.LLM_MODEL ?? process.env.GROQ_MODEL ?? this.models.chat)
-          : (process.env.LLM_MODEL ?? process.env.OPENAI_MODEL ?? this.models.chat);
+      this.provider === "ollama"
+        ? (process.env.LLM_MODEL ?? process.env.OLLAMA_MODEL ?? this.models.chat)
+        : this.provider === "openrouter"
+          ? (process.env.LLM_MODEL ?? process.env.OPENROUTER_MODEL ?? this.models.chat)
+          : this.provider === "mistral"
+            ? (process.env.LLM_MODEL ?? process.env.MISTRAL_MODEL ?? this.models.chat)
+            : this.provider === "groq"
+              ? (process.env.LLM_MODEL ?? process.env.GROQ_MODEL ?? this.models.chat)
+              : (process.env.LLM_MODEL ?? process.env.OPENAI_MODEL ?? this.models.chat);
     return resolveModel(this.provider, raw);
   }
 
   getCompositionModel(): string {
     const raw =
-      this.provider === "mistral"
+      this.provider === "ollama"
         ? (process.env.LLM_COMPOSITION_MODEL ??
-          process.env.MISTRAL_COMPOSITION_MODEL ??
+          process.env.OLLAMA_COMPOSITION_MODEL ??
+          process.env.OLLAMA_MODEL ??
           this.models.composition)
-        : this.provider === "groq"
+        : this.provider === "openrouter"
+        ? (process.env.LLM_COMPOSITION_MODEL ??
+          process.env.OPENROUTER_COMPOSITION_MODEL ??
+          this.models.composition)
+        : this.provider === "mistral"
           ? (process.env.LLM_COMPOSITION_MODEL ??
-            process.env.GROQ_COMPOSITION_MODEL ??
+            process.env.MISTRAL_COMPOSITION_MODEL ??
             this.models.composition)
-          : (process.env.LLM_COMPOSITION_MODEL ??
-            process.env.OPENAI_COMPOSITION_MODEL ??
-            this.models.composition);
+          : this.provider === "groq"
+            ? (process.env.LLM_COMPOSITION_MODEL ??
+              process.env.GROQ_COMPOSITION_MODEL ??
+              this.models.composition)
+            : (process.env.LLM_COMPOSITION_MODEL ??
+              process.env.OPENAI_COMPOSITION_MODEL ??
+              this.models.composition);
     return resolveModel(this.provider, raw);
   }
 
   getVisionModel(): string | null {
+    if (this.provider === "ollama") {
+      return process.env.OLLAMA_VISION_MODEL ?? process.env.LLM_VISION_MODEL ?? null;
+    }
     return (
       process.env.LLM_VISION_MODEL ??
+      (this.provider === "openrouter" ? process.env.OPENROUTER_VISION_MODEL : undefined) ??
       (this.provider === "mistral" ? process.env.MISTRAL_VISION_MODEL : undefined) ??
       process.env.GROQ_VISION_MODEL ??
       process.env.OPENAI_VISION_MODEL ??
@@ -162,12 +229,31 @@ export class LLMClient {
   }
 
   getSectionModel(): string {
-    const openai =
+    const explicit =
       process.env.LLM_SECTION_MODEL ??
+      (this.provider === "ollama"
+        ? process.env.OLLAMA_SECTION_MODEL
+        : this.provider === "openrouter"
+          ? process.env.OPENROUTER_SECTION_MODEL
+          : this.provider === "groq"
+            ? process.env.GROQ_SECTION_MODEL
+            : this.provider === "mistral"
+              ? process.env.MISTRAL_SECTION_MODEL
+              : process.env.OPENAI_SECTION_MODEL);
+    if (explicit) {
+      return resolveModel(this.provider, explicit);
+    }
+    if (this.provider === "openrouter") {
+      return openRouterDefaults().section;
+    }
+    const openai =
       process.env.OPENAI_SECTION_MODEL ??
       (process.env.OPENAI_API_KEY ? process.env.OPENAI_MODEL ?? "gpt-4o-mini" : undefined);
     if (openai && (process.env.LLM_PROVIDER === "openai" || process.env.OPENAI_API_KEY)) {
       return openai;
+    }
+    if (this.provider === "groq") {
+      return resolveModel(this.provider, DEFAULT_GROQ_FALLBACK_MODEL);
     }
     return resolveModel(this.provider, this.getCompositionModel());
   }
@@ -181,6 +267,21 @@ export class LLMClient {
     return resolveModel(this.provider, this.getCompositionModel());
   }
 
+  getTokenUsage(): { prompt: number; completion: number; total: number } {
+    return { ...this.tokenUsage };
+  }
+
+  resetTokenUsage(): void {
+    this.tokenUsage = { prompt: 0, completion: 0, total: 0 };
+  }
+
+  private recordUsage(usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number }): void {
+    if (!usage) return;
+    this.tokenUsage.prompt += usage.prompt_tokens ?? 0;
+    this.tokenUsage.completion += usage.completion_tokens ?? 0;
+    this.tokenUsage.total += usage.total_tokens ?? 0;
+  }
+
   async chat(
     system: string,
     user: string,
@@ -188,7 +289,7 @@ export class LLMClient {
   ): Promise<string> {
     if (!this.client) {
       throw new Error(
-        "No LLM configured — set GROQ_API_KEY, MISTRAL_API_KEY, or OPENAI_API_KEY"
+        "No LLM configured — set LLM_PROVIDER=ollama, OPENROUTER_API_KEY, GROQ_API_KEY, MISTRAL_API_KEY, or OPENAI_API_KEY"
       );
     }
 
@@ -202,7 +303,7 @@ export class LLMClient {
     attempt = 0,
     modelOverride?: string
   ): Promise<string> {
-    const MAX_RETRIES = 8;
+    const MAX_RETRIES = llmMaxRetries();
 
     const messages: ChatCompletionMessageParam[] = [
       { role: "system", content: system },
@@ -218,13 +319,20 @@ export class LLMClient {
       const response = await this.client!.chat.completions.create({
         model,
         temperature: options.temperature ?? 0.7,
-        max_tokens: options.maxTokens ?? defaultMaxTokens(this.provider),
+        max_tokens:
+          options.maxTokens ??
+          (options.tokenRole ? maxTokensFor(options.tokenRole) : defaultMaxTokens(this.provider)),
         messages,
         response_format: options.jsonMode ? { type: "json_object" } : undefined,
       });
 
-      return response.choices[0]?.message?.content ?? "";
+      this.recordUsage(response.usage);
+      const content = response.choices[0]?.message?.content ?? "";
+      return options.jsonMode ? normalizeLlmJsonContent(content) : content;
     } catch (err: unknown) {
+      if (isNonRetryableLLMError(err)) {
+        throw enhanceGroqModelError(err, model);
+      }
       if (isTransientLLMError(err) && attempt < MAX_RETRIES) {
         if (
           this.provider === "groq" &&
@@ -241,7 +349,11 @@ export class LLMClient {
         }
 
         const waitMs = parseRetryAfterMs(err, attempt);
-        const reason = isOverCapacityError(err) ? "Over capacity" : "Rate limit";
+        const reason = isOverCapacityError(err)
+          ? "Over capacity"
+          : isConnectionError(err)
+            ? "Connection error"
+            : "Rate limit";
         console.warn(
           `[llm] ${reason} (${this.provider}, ${model}) — waiting ${(waitMs / 1000).toFixed(1)}s (retry ${attempt + 1}/${MAX_RETRIES})`
         );
@@ -262,6 +374,19 @@ export class LLMClient {
       throw new Error("No LLM configured — vision QA requires an API key");
     }
 
+    return llmQueue.run(() =>
+      this.chatWithVisionRetry(system, userText, imageBase64, options)
+    );
+  }
+
+  private async chatWithVisionRetry(
+    system: string,
+    userText: string,
+    imageBase64: string,
+    options: LLMOptions = {},
+    attempt = 0
+  ): Promise<string> {
+    const MAX_RETRIES = llmMaxRetries();
     const visionModel = options.model ?? this.getVisionModel();
     if (!visionModel) {
       throw new Error(
@@ -269,26 +394,39 @@ export class LLMClient {
       );
     }
 
-    const response = await this.client.chat.completions.create({
-      model: visionModel,
-      temperature: options.temperature ?? 0.3,
-      messages: [
-        { role: "system", content: system },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: userText },
-            {
-              type: "image_url",
-              image_url: { url: `data:image/png;base64,${imageBase64}` },
-            },
-          ],
-        },
-      ],
-      response_format: { type: "json_object" },
-    });
+    try {
+      const response = await this.client!.chat.completions.create({
+        model: visionModel,
+        temperature: options.temperature ?? 0.3,
+        messages: [
+          { role: "system", content: system },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: userText },
+              {
+                type: "image_url",
+                image_url: { url: `data:image/png;base64,${imageBase64}` },
+              },
+            ],
+          },
+        ],
+        response_format: { type: "json_object" },
+      });
 
-    return response.choices[0]?.message?.content ?? "";
+      this.recordUsage(response.usage);
+      return normalizeLlmJsonContent(response.choices[0]?.message?.content ?? "");
+    } catch (err: unknown) {
+      if (isNonRetryableLLMError(err)) {
+        throw enhanceGroqModelError(err, visionModel);
+      }
+      if (isTransientLLMError(err) && attempt < MAX_RETRIES) {
+        const waitMs = parseRetryAfterMs(err, attempt);
+        await sleep(waitMs);
+        return this.chatWithVisionRetry(system, userText, imageBase64, options, attempt + 1);
+      }
+      throw err instanceof Error ? err : new Error(String(err));
+    }
   }
 
   async chatWithVisionDual(
@@ -302,36 +440,70 @@ export class LLMClient {
       throw new Error("No LLM configured — vision QA requires an API key");
     }
 
+    return llmQueue.run(() =>
+      this.chatWithVisionDualRetry(system, userText, desktopBase64, mobileBase64, options)
+    );
+  }
+
+  private async chatWithVisionDualRetry(
+    system: string,
+    userText: string,
+    desktopBase64: string,
+    mobileBase64: string,
+    options: LLMOptions = {},
+    attempt = 0
+  ): Promise<string> {
+    const MAX_RETRIES = llmMaxRetries();
     const visionModel = options.model ?? this.getVisionModel();
     if (!visionModel) {
       throw new Error(`Vision QA is not supported on provider "${this.provider}"`);
     }
 
-    const response = await this.client.chat.completions.create({
-      model: visionModel,
-      temperature: options.temperature ?? 0.3,
-      messages: [
-        { role: "system", content: system },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: `${userText}\n\n[Desktop 1280px]` },
-            {
-              type: "image_url",
-              image_url: { url: `data:image/png;base64,${desktopBase64}` },
-            },
-            { type: "text", text: "[Mobile 390px]" },
-            {
-              type: "image_url",
-              image_url: { url: `data:image/png;base64,${mobileBase64}` },
-            },
-          ],
-        },
-      ],
-      response_format: { type: "json_object" },
-    });
+    try {
+      const response = await this.client!.chat.completions.create({
+        model: visionModel,
+        temperature: options.temperature ?? 0.3,
+        messages: [
+          { role: "system", content: system },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: `${userText}\n\n[Desktop 1280px]` },
+              {
+                type: "image_url",
+                image_url: { url: `data:image/png;base64,${desktopBase64}` },
+              },
+              { type: "text", text: "[Mobile 390px]" },
+              {
+                type: "image_url",
+                image_url: { url: `data:image/png;base64,${mobileBase64}` },
+              },
+            ],
+          },
+        ],
+        response_format: { type: "json_object" },
+      });
 
-    return response.choices[0]?.message?.content ?? "";
+      this.recordUsage(response.usage);
+      return normalizeLlmJsonContent(response.choices[0]?.message?.content ?? "");
+    } catch (err: unknown) {
+      if (isNonRetryableLLMError(err)) {
+        throw enhanceGroqModelError(err, visionModel);
+      }
+      if (isTransientLLMError(err) && attempt < MAX_RETRIES) {
+        const waitMs = parseRetryAfterMs(err, attempt);
+        await sleep(waitMs);
+        return this.chatWithVisionDualRetry(
+          system,
+          userText,
+          desktopBase64,
+          mobileBase64,
+          options,
+          attempt + 1
+        );
+      }
+      throw err instanceof Error ? err : new Error(String(err));
+    }
   }
 }
 
@@ -340,7 +512,9 @@ export const llm = new LLMClient();
 export { resolveProvider, DEFAULT_MODELS, resolveGroqModel };
 
 function defaultMaxTokens(provider: LLMProvider | null): number {
-  return provider === "groq" ? 6144 : 8192;
+  if (provider === "ollama") return maxTokensFor("composition");
+  if (provider === "openrouter") return maxTokensFor("composition");
+  return provider === "groq" ? 3072 : 8192;
 }
 
 function enhanceGroqModelError(err: unknown, model: string): Error {

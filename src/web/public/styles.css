@@ -189,6 +189,32 @@ textarea:focus { outline: none; }
   max-width: var(--max);
 }
 
+.hero-seed {
+  margin-top: 1rem;
+  max-width: var(--max);
+  text-align: center;
+}
+
+.hero-seed label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+.hero-seed input {
+  width: 10rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  text-align: center;
+}
+
+.seed-hint {
+  opacity: 0.75;
+}
+
 .example-chip {
   background: transparent;
   border: none;

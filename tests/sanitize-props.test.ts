@@ -22,6 +22,19 @@ describe("sanitize props for codegen", () => {
     });
     expect(props.images).toEqual([{ src: "https://a.jpg" }]);
   });
+
+  it("strips imageQuery from testimonial avatar fields", () => {
+    const props = sanitizePropsForCodegen({
+      items: [
+        {
+          quote: "Great",
+          author: "Alex",
+          avatar: { src: "https://a.jpg", imageQuery: "portrait", alt: "Alex" },
+        },
+      ],
+    });
+    expect(props.items).toEqual([{ quote: "Great", author: "Alex", avatar: { src: "https://a.jpg", alt: "Alex" } }]);
+  });
 });
 
 describe("polish section props", () => {

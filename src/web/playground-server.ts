@@ -7,6 +7,14 @@ import { writeSiteOutput } from "../server/preview-server.js";
 import { subscribePipelineLogs } from "../util/pipeline-log.js";
 import { extractBusinessName } from "../util/extract-name.js";
 import { llm } from "../llm/client.js";
+import {
+  createJobId,
+  registerJob,
+  runExclusive,
+  completeJob,
+  failJob,
+} from "../web/generation-jobs.js";
+import { closeQABrowser } from "../qa/code-qa.js";
 import { getEditorSession, setEditorSession, updateEditorSession } from "../editor/session.js";
 import { applyThemePatch, reorderSections, rerenderFromContext } from "../editor/rerender.js";
 import { regenerateSection } from "../agents/section-builder-agent.js";
@@ -22,6 +30,11 @@ import {
   startReactPreviewServer,
   stopReactPreviewServer,
 } from "../react-codegen/react-preview-server.js";
+import { ensurePlaywrightBrowsers } from "../util/ensure-playwright.js";
+import { getSiteBySlug } from "../hosting/site-repository.js";
+import { isSupabaseConfigured } from "../hosting/supabase-client.js";
+import { publishSite } from "../hosting/publish-site.js";
+import { siteSlugFromName } from "../hosting/slug.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, "public");
@@ -71,10 +84,14 @@ async function persistPreview(): Promise<void> {
   await persistHtmlPreview(htmlPages);
 }
 
-export function startPlaygroundServer(options: PlaygroundServerOptions = {}): Promise<{
+export async function startPlaygroundServer(options: PlaygroundServerOptions = {}): Promise<{
   url: string;
   close: () => void;
 }> {
+  if (process.env.SKIP_VISION !== "1") {
+    await ensurePlaywrightBrowsers();
+  }
+
   const basePort = options.port ?? Number(process.env.PLAYGROUND_PORT ?? 3847);
 
   return new Promise((resolve, reject) => {
@@ -198,6 +215,56 @@ export function startPlaygroundServer(options: PlaygroundServerOptions = {}): Pr
       }
     });
 
+    app.get("/api/sites/:slug", async (req, res) => {
+      try {
+        if (!isSupabaseConfigured()) {
+          res.status(503).json({ error: "Supabase is not configured" });
+          return;
+        }
+        const site = await getSiteBySlug(req.params.slug!);
+        if (!site) {
+          res.status(404).json({ error: "Site not found" });
+          return;
+        }
+        res.json({
+          slug: site.slug,
+          businessName: site.business_name,
+          status: site.status,
+          publishedUrl: site.published_url,
+          outBytes: site.out_bytes,
+          variationSeed: site.variation_seed,
+          publishedAt: site.published_at,
+          storagePrefix: site.storage_prefix,
+        });
+      } catch (err) {
+        res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+      }
+    });
+
+    app.post("/api/sites/:slug/publish", async (req, res) => {
+      try {
+        if (!isSupabaseConfigured()) {
+          res.status(503).json({ error: "Supabase is not configured" });
+          return;
+        }
+        const session = getEditorSession();
+        if (!session?.reactStaticOutPath || !session.reactProjectPath) {
+          res.status(400).json({ error: "No built React site in session — generate first" });
+          return;
+        }
+        const slug = req.params.slug!;
+        const result = await publishSite({
+          ctx: session.siteContext,
+          outPath: session.reactStaticOutPath,
+          projectPath: session.reactProjectPath,
+          slug,
+        });
+        res.json(result);
+      } catch (err) {
+        res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+      }
+    });
+
     app.get("/api/export", (req, res) => {
       const session = getEditorSession();
       if (!session) {
@@ -230,27 +297,53 @@ export function startPlaygroundServer(options: PlaygroundServerOptions = {}): Pr
       res.flushHeaders?.();
 
       const send = (payload: Record<string, unknown>) => {
-        res.write(`data: ${JSON.stringify(payload)}\n\n`);
+        if (res.writableEnded) return;
+        try {
+          res.write(`data: ${JSON.stringify(payload)}\n\n`);
+        } catch {
+          // Client disconnected — pipeline keeps running; errors surface via catch below.
+        }
       };
+
+      const heartbeat = setInterval(() => {
+        send({ type: "ping", ts: Date.now() });
+      }, 15_000);
 
       const unsub = subscribePipelineLogs((line) => send({ type: "log", line }));
 
+      const jobId = createJobId();
+      registerJob(jobId);
+      let generationResult: Awaited<ReturnType<typeof generateSite>> | undefined;
+
       try {
-        send({ type: "status", message: "starting" });
+        send({ type: "status", message: "starting", jobId });
+
         const businessName = extractBusinessName(brief);
 
-        const result = await generateSite({
-          businessBrief: brief,
-          businessName,
-          enableVisionPolish: llm.supportsVision && process.env.SKIP_VISION !== "1",
-        });
+        const variationSeed =
+          typeof req.body?.variationSeed === "number"
+            ? req.body.variationSeed
+            : req.body?.regenerate
+              ? Date.now()
+              : undefined;
+
+        const result = await runExclusive(jobId, () =>
+          generateSite({
+            businessBrief: brief,
+            businessName,
+            enableVisionPolish: llm.supportsVision && process.env.SKIP_VISION !== "1",
+            variationSeed,
+            jobId,
+          })
+        );
+        generationResult = result;
 
         setEditorSession(result);
 
         let previewUrl = "/preview/";
-        let previewSource: "live-server" | "next-static" | "html-fallback" = "html-fallback";
+        let previewSource = result.previewSource ?? "html-fallback";
 
-        if (result.reactProjectPath && result.reactStaticOutPath) {
+        if (result.reactProjectPath && result.reactStaticOutPath && result.buildSucceeded) {
           try {
             previewUrl = await startReactPreviewServer(result.reactProjectPath);
             previewSource = "live-server";
@@ -260,35 +353,61 @@ export function startPlaygroundServer(options: PlaygroundServerOptions = {}): Pr
               type: "log",
               line: `[preview] Live server failed (${err instanceof Error ? err.message : String(err)}) — static fallback`,
             });
-            await persistReactPreview(result.reactStaticOutPath);
             previewUrl = "/preview/";
             previewSource = "next-static";
           }
-        } else if (result.reactStaticOutPath) {
+          await persistReactPreview(result.reactStaticOutPath);
+        } else if (result.reactStaticOutPath && result.buildSucceeded) {
           await persistReactPreview(result.reactStaticOutPath);
           previewSource = "next-static";
         } else {
           await persistHtmlPreview(result.htmlPages);
+          previewSource = "html-fallback";
+          if (result.outputMode === "react" && result.buildSucceeded === false && result.reactProjectPath) {
+            send({
+              type: "log",
+              line: `[pipeline] Failed React project kept at ${result.reactProjectPath} (run npm run build inside to debug)`,
+            });
+          }
         }
 
+        completeJob(jobId, result);
+
+        const success = !result.degraded;
+
         send({
-          type: "done",
+          type: success ? "done" : "degraded",
           businessName: result.site.businessName,
           previewUrl,
           timingMs: result.timingMs,
           pages: result.site.pages.map((p) => p.slug),
-          editorReady: true,
+          editorReady: success,
           outputMode: result.outputMode ?? "html",
           reactProjectPath: result.reactProjectPath,
           previewSource,
+          buildSucceeded: result.buildSucceeded,
+          degraded: result.degraded,
+          qaSummary: result.qaSummary,
+          variationSeed: result.variationSeed,
+          verticalProfileId: result.verticalProfileId,
+          siteSlug: result.siteSlug ?? siteSlugFromName(result.site.businessName),
+          publishedUrl: result.publishedUrl,
+          outBytes: result.outBytes,
+          jobId,
         });
       } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        failJob(jobId, message);
         send({
           type: "error",
-          message: err instanceof Error ? err.message : String(err),
+          message,
         });
       } finally {
+        clearInterval(heartbeat);
         unsub();
+        // Keep output/_playground-react for debugging (orchestrator already strips node_modules/.next).
+        // Static export is copied to output/_playground for /preview/ in the playground UI.
+        await closeQABrowser();
         res.end();
       }
     });

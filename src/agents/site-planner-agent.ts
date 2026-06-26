@@ -9,6 +9,9 @@ import {
   normalizePlannerBlockTypes,
   PLANNER_BLOCK_TYPES,
 } from "./content-normalize.js";
+import { extractBriefIntentFromText } from "../design/brief-intent.js";
+import { isOptionalPageRelevant } from "../design/template-relevance.js";
+import { recordFallback } from "../util/fallback-tracker.js";
 
 const ALLOWED_BLOCK_TYPES = PLANNER_BLOCK_TYPES.join(", ");
 
@@ -38,7 +41,8 @@ Never use invented types like card, button, accordion, profileCard, backgroundIm
   ],
   "compositionStrategy": "how layout rhythm should differ from a generic template",
   "avoidPatterns": ["what to avoid for this specific business"],
-  "visualArchetype": "free-form name for the visual personality you envision",
+  "visualArchetype": "free-form name e.g. salon-luxury-dark, dental-clinical-light, finance-corporate-light",
+  "industryFamily": "short slug for vertical (salon, dental, finance, etc.)",
   "motionStyle": "how motion should feel on scroll"
 }
 
@@ -146,7 +150,23 @@ function normalizePlannerJson(raw: unknown, brief: ExpandedBrief): unknown {
   const plan = raw as Record<string, unknown>;
   if (!Array.isArray(plan.pages)) return raw;
 
-  plan.pages = plan.pages.map((pageRaw) => {
+  const briefText = [
+    brief.businessName,
+    brief.expandedBrief,
+    brief.tagline,
+    ...brief.services,
+  ].join(" ");
+  const intent = extractBriefIntentFromText(briefText);
+  const coreSlugs = new Set<string>(CORE_PAGE_KINDS);
+
+  plan.pages = (plan.pages as unknown[])
+    .filter((pageRaw) => {
+      if (!pageRaw || typeof pageRaw !== "object") return false;
+      const slug = String((pageRaw as Record<string, unknown>).slug ?? "page");
+      if (coreSlugs.has(slug)) return true;
+      return isOptionalPageRelevant(slug, intent, briefText);
+    })
+    .map((pageRaw) => {
     if (!pageRaw || typeof pageRaw !== "object") return pageRaw;
     const page = pageRaw as Record<string, unknown>;
     const slug = String(page.slug ?? "page");
@@ -198,7 +218,7 @@ export async function planSite(brief: ExpandedBrief): Promise<SitePlan> {
       const raw = await llm.chat(
         PLANNER_SYSTEM,
         briefToContext(brief),
-        { jsonMode: true, temperature: 0.6, maxTokens: 4096, model: llm.getCompositionModel() }
+        { jsonMode: true, temperature: 0.6, tokenRole: "plan", model: llm.getCompositionModel() }
       );
       const plan = parseSitePlan(JSON.parse(raw), brief);
       const slugs = new Set(plan.pages.map((p) => p.slug));
@@ -210,6 +230,7 @@ export async function planSite(brief: ExpandedBrief): Promise<SitePlan> {
       }
       return plan;
     } catch (err) {
+      recordFallback("site_planner");
       if (!allowMocks()) throw err instanceof Error ? err : new Error(String(err));
     }
   }

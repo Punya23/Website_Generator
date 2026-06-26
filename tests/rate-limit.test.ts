@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   groqFallbackModel,
+  isInsufficientCreditsError,
+  isNonRetryableLLMError,
   isOverCapacityError,
   isRateLimitError,
   isTransientLLMError,
@@ -36,8 +38,20 @@ describe("rate limit helpers", () => {
     expect(parseRetryAfterMs(err, 2)).toBe(8000);
   });
 
+  it("detects connection errors for retry", () => {
+    const err = Object.assign(new Error("Connection error."), { name: "APIConnectionError" });
+    expect(isTransientLLMError(err)).toBe(true);
+  });
+
   it("returns a different Groq fallback model", () => {
     expect(groqFallbackModel("llama-3.3-70b-versatile")).toBe("llama-3.1-8b-instant");
     expect(groqFallbackModel("llama-3.1-8b-instant")).toBeNull();
+  });
+
+  it("does not retry billing or auth errors", () => {
+    const err402 = Object.assign(new Error("requires more credits"), { status: 402 });
+    expect(isInsufficientCreditsError(err402)).toBe(true);
+    expect(isNonRetryableLLMError(err402)).toBe(true);
+    expect(isTransientLLMError(err402)).toBe(false);
   });
 });

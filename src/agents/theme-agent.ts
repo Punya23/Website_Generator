@@ -51,6 +51,11 @@ export const GENERIC_THEME: SiteTheme = {
   fontHeading: "Plus Jakarta Sans",
   fontBody: "Inter",
   motionStyle: "soft staggered reveals",
+  motionPreset: "stagger",
+  pageTone: "dark",
+  navTreatment: "glass-dark",
+  gradientMood: "subtle",
+  accentRole: "sparing",
   layout: {
     maxWidth: "1200px",
     gridColumns: 3,

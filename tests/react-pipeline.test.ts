@@ -43,7 +43,32 @@ describe("react pipeline (mock)", () => {
       },
     });
 
-    const blueprints = await directPageBlueprints(ctx, sitePlan.pages);
+    ctx.verticalProfile = {
+      profileId: "editorial-light",
+      pageTone: "warm",
+      heroBias: "hero_spotlight",
+      blueprintFamily: "editorial-light",
+      grainOverlay: true,
+      industryFamily: "fashion",
+      copyHints: "Editorial fashion voice",
+      imageHints: "Fashion editorial photography",
+      ctaPatterns: ["Book consultation", "View collections"],
+      proofPatterns: ["portfolio", "testimonials"],
+    };
+    ctx.variationSeed = 1001;
+
+    const blueprintsA = await directPageBlueprints(ctx, sitePlan.pages);
+    ctx.variationSeed = 2002;
+    const blueprintsB = await directPageBlueprints(ctx, sitePlan.pages);
+
+    const homeA = blueprintsA.find((b) => b.slug === "home")!;
+    const homeB = blueprintsB.find((b) => b.slug === "home")!;
+    const seqA = homeA.sections.map((s) => s.templateId).join(",");
+    const seqB = homeB.sections.map((s) => s.templateId).join(",");
+    expect(seqA).not.toBe(seqB);
+
+    ctx.variationSeed = 1001;
+    const blueprints = blueprintsA;
     expect(blueprints.length).toBe(4);
     expect(blueprints[0]?.sections[0]?.templateId).toMatch(/hero_/);
 
@@ -57,6 +82,7 @@ describe("react pipeline (mock)", () => {
     const composed = composePageSections(home, instances);
     expect(composed.length).toBeGreaterThanOrEqual(home.sections.length);
     expect(composed.every((s) => s.props && typeof s.props === "object")).toBe(true);
-    expect(composed.some((s) => s.templateId === "hero_editorial" || s.templateId === "hero_split_cinematic")).toBe(true);
+    expect(composed.some((s) => ["hero_editorial", "hero_split_cinematic", "hero_video", "hero_spotlight"].includes(s.templateId))).toBe(true);
+    expect(composed.some((s) => s.templateId === "testimonial_carousel" || s.templateId === "stats_animated" || s.templateId === "testimonial_featured")).toBe(true);
   });
 });

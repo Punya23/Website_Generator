@@ -11,7 +11,7 @@ describe("react QA", () => {
         id: "home_hero",
         templateId: "hero_editorial",
         intent: "Hero",
-        props: { headline: "Welcome", image: { src: "https://example.com/a.jpg" } },
+        props: { headline: "Welcome", image: { src: "https://example.com/a.jpg", alt: "Welcome hero" } },
       },
       {
         id: "home_intro",

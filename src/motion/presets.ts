@@ -9,6 +9,24 @@ export const MOTION_PRESETS = [
 
 export type MotionPreset = (typeof MOTION_PRESETS)[number];
 
+const SECTION_ENTRANCES = ["reveal", "stagger", "scale-in", "slide-left", "none"] as const;
+type SectionEntrance = (typeof SECTION_ENTRANCES)[number];
+
+/** Map LLM entrance values (often confuses preset names with entrances). */
+export function coerceSectionEntrance(value: string | undefined): SectionEntrance {
+  if (value && (SECTION_ENTRANCES as readonly string[]).includes(value)) {
+    return value as SectionEntrance;
+  }
+  if (value === "fade-up" || value === "parallax-hero" || value === "fade" || value === "slide-up") {
+    return "reveal";
+  }
+  return "reveal";
+}
+
+function coerceEntrance(value: string | undefined): SectionEntrance {
+  return coerceSectionEntrance(value);
+}
+
 export function resolveMotionPreset(
   preset?: string | null,
   motionStyle?: string | null
@@ -23,6 +41,43 @@ export function resolveMotionPreset(
   if (style.includes("stagger") || style.includes("cascade")) return "stagger";
   if (style.includes("minimal") || style.includes("none") || style.includes("subtle")) return "fade-up";
   return "stagger";
+}
+
+/** Coerce LLM motion plan values before embedding in generated Next.js layout. */
+export function normalizeMotionPlan<T extends {
+  globalPreset: string;
+  reducedMotion: string;
+  navScrollEnhance: boolean;
+  sections: Record<string, { entrance: string; staggerDelay?: number; parallax?: boolean; marquee?: boolean; presetOverride?: string }>;
+  chrome: {
+    footer: { entrance: string; staggerDelay?: number };
+    nav: { compactOnScroll: boolean; shadowOnScroll?: boolean };
+  };
+}>(plan: T): T {
+  return {
+    ...plan,
+    globalPreset: resolveMotionPreset(plan.globalPreset) as T["globalPreset"],
+    reducedMotion: (plan.reducedMotion === "minimal" ? "minimal" : "respect") as T["reducedMotion"],
+    sections: Object.fromEntries(
+      Object.entries(plan.sections).map(([id, cfg]) => [
+        id,
+        {
+          ...cfg,
+          entrance: coerceEntrance(cfg.entrance),
+          presetOverride: cfg.presetOverride
+            ? (resolveMotionPreset(cfg.presetOverride) as typeof cfg.presetOverride)
+            : undefined,
+        },
+      ])
+    ) as T["sections"],
+    chrome: {
+      ...plan.chrome,
+      footer: {
+        ...plan.chrome.footer,
+        entrance: coerceEntrance(plan.chrome.footer.entrance),
+      },
+    },
+  };
 }
 
 export function motionPresetCss(preset: MotionPreset): string {

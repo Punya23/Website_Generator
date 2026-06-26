@@ -10,6 +10,9 @@ import type {
 import { expandBrief } from "../agents/expand-brief-agent.js";
 import { planSite, getPagePlan } from "../agents/site-planner-agent.js";
 import { generateDesignSystem } from "../agents/design-director-agent.js";
+import { refineDesignSystem } from "../agents/design-refine-agent.js";
+import { skipSecondDesignRefine } from "../llm/pipeline-speed.js";
+import { runDesignQA } from "../qa/react-qa.js";
 import { buildPageSections } from "../agents/section-builder-agent.js";
 import { applyFixes, applyContentPatches, applySectionScopedFixes } from "../agents/fix-agent.js";
 import { runVisionQa } from "../agents/vision-agent.js";
@@ -35,11 +38,22 @@ import fs from "fs/promises";
 import path from "path";
 import { llm } from "../llm/client.js";
 import { timedStep } from "../util/timed.js";
-import { pipelineLog } from "../util/pipeline-log.js";
+import { pipelineLog, pipelineStructured, setPipelineContext, clearPipelineContext } from "../util/pipeline-log.js";
+import { resetFallbackTracker, getFallbackSummary, totalFallbacks } from "../util/fallback-tracker.js";
+import { summarizeQaResults, hasHardQaFailures } from "../qa/qa-summary.js";
 import { requireLlm } from "../util/llm-required.js";
 import { persistDebugArtifacts } from "../util/debug-artifacts.js";
 import { getOutputMode, runReactPipeline } from "./react-pipeline.js";
+import { applyHtmlVisionRetry } from "./html-vision-retry.js";
 import { renderReactPreviewFallback } from "../react-codegen/preview-fallback.js";
+import { inferVerticalProfile } from "../design/vertical-profiles.js";
+import {
+  autoPublishEnabled,
+  publishSite,
+  saveSiteAfterGeneration,
+} from "../hosting/publish-site.js";
+import { cleanupAfterPublish } from "../hosting/cleanup-artifacts.js";
+import { siteSlugFromName } from "../hosting/slug.js";
 
 const MAX_QA_RETRIES = 3;
 
@@ -48,6 +62,8 @@ export interface GenerateSiteOptions {
   businessBrief: string;
   onPreviewReady?: (result: Partial<GenerationResult>) => void;
   enableVisionPolish?: boolean;
+  variationSeed?: number;
+  jobId?: string;
 }
 
 export interface PagePipelineResult {
@@ -80,6 +96,7 @@ async function runPagePipeline(
   let html = "";
   let qa: QAResult = { passed: false, issues: [] };
   let retries = 0;
+  let htmlVisionRetried = false;
 
   const renderPage = () => {
     const single = [
@@ -109,6 +126,7 @@ async function runPagePipeline(
     );
 
     let allIssues = [...qa.issues];
+    let visionHard: QAResult["issues"] = [];
 
     if (!qa.passed || (enableVision && llm.supportsVision && attempt < MAX_QA_RETRIES)) {
       if (enableVision && llm.supportsVision) {
@@ -119,6 +137,7 @@ async function runPagePipeline(
         );
         if (vision.issues.length > 0) {
           allIssues = [...allIssues, ...vision.issues];
+          visionHard = vision.issues.filter((i) => i.severity === "hard");
           pipelineLog(`[pipeline] ${pageSlug}: vision found ${vision.issues.length} issue(s)`);
         }
       }
@@ -131,6 +150,14 @@ async function runPagePipeline(
 
     retries = attempt + 1;
     if (attempt >= MAX_QA_RETRIES) break;
+
+    if (!htmlVisionRetried && enableVision && visionHard.length > 0) {
+      const applied = await applyHtmlVisionRetry(ctx, visionHard, pageSlug);
+      if (applied) {
+        htmlVisionRetried = true;
+        continue;
+      }
+    }
 
     const sectionFix = await applySectionScopedFixes({
       ctx,
@@ -212,19 +239,103 @@ function extractSectionLayouts(layout: LayoutNode): LayoutNode[] {
 export async function generateSite(options: GenerateSiteOptions): Promise<GenerationResult> {
   requireLlm("website generation");
   const start = Date.now();
+  llm.resetTokenUsage();
+  resetFallbackTracker();
+  setPipelineContext({
+    jobId: options.jobId,
+    seed: options.variationSeed,
+  });
   clearImageCache();
   pipelineLog(`[pipeline] Image providers: ${activeImageProviders().join(" → ")}`);
+
+  let buildSucceeded: boolean | undefined;
+  let reactProjectPath: string | undefined;
+  let reactStaticOutPath: string | undefined;
+  let siteSlug: string | undefined;
+  let publishedUrl: string | undefined;
+  let outBytes: number | undefined;
+  let htmlPages: Record<string, string> = {};
+  let qaResults: Record<string, QAResult> = {};
+  let outputMode: "react" | "html" = getOutputMode();
+  let pageResults: PagePipelineResult[] = [];
+
+  try {
 
   const expanded = await expandBrief(options.businessBrief, options.businessName);
   pipelineLog("[pipeline] Expanding brief… done");
 
-  const [sitePlan, designSystem] = await Promise.all([
-    planSite(expanded),
-    generateDesignSystem(expanded.businessName, expanded.expandedBrief, options.businessBrief),
-  ]);
+  const variationSeed = options.variationSeed ?? Date.now();
+  pipelineLog("[pipeline] Planning site structure…");
+  const sitePlan = await planSite(expanded);
+  pipelineLog(`[pipeline] Site plan ready (${sitePlan.pages.length} pages)`);
+  const verticalProfile = inferVerticalProfile(expanded, sitePlan);
+
+  pipelineLog("[pipeline] Generating design system…");
+  let designSystem = await generateDesignSystem(
+    expanded.businessName,
+    expanded.expandedBrief,
+    options.businessBrief,
+    expanded,
+    { sitePlan, verticalProfile, variationSeed }
+  );
+  const profileCoherence = {
+    profileId: verticalProfile.profileId,
+    pageTone: verticalProfile.pageTone,
+    navTreatment: verticalProfile.navTreatment,
+    motionPreset: verticalProfile.motionPreset,
+  };
+  designSystem = await refineDesignSystem(
+    expanded.businessName,
+    expanded.expandedBrief,
+    designSystem,
+    profileCoherence
+  );
+  let designQa = runDesignQA(designSystem);
+  if (!designQa.passed && !skipSecondDesignRefine()) {
+    pipelineLog(
+      `[pipeline] Design token QA failed (${designQa.issues.map((i) => i.message).join("; ")}); refining once more…`
+    );
+    designSystem = await refineDesignSystem(
+      expanded.businessName,
+      expanded.expandedBrief,
+      designSystem,
+      profileCoherence
+    );
+    designQa = runDesignQA(designSystem);
+    if (!designQa.passed) {
+      pipelineLog(
+        `[pipeline] Design token QA still failing: ${designQa.issues.map((i) => i.message).join("; ")}`
+      );
+    }
+  } else if (!designQa.passed && skipSecondDesignRefine()) {
+    pipelineLog(
+      `[pipeline] Design token QA issues (fast mode, skipping second refine): ${designQa.issues.map((i) => i.message).join("; ")}`
+    );
+  }
   pipelineLog(`[pipeline] Site plan + design system ready (${sitePlan.pages.length} pages)`);
 
   const ctx = initSiteContext(options.businessBrief, expanded, sitePlan, designSystem);
+  ctx.verticalProfile = {
+    profileId: verticalProfile.profileId,
+    pageTone: verticalProfile.pageTone,
+    heroBias: verticalProfile.heroBias,
+    blueprintFamily: verticalProfile.blueprintFamily,
+    grainOverlay: verticalProfile.grainOverlay,
+    industryFamily: verticalProfile.industryFamily,
+    copyHints: verticalProfile.copyHints,
+    imageHints: verticalProfile.imageHints,
+    ctaPatterns: verticalProfile.ctaPatterns,
+    proofPatterns: verticalProfile.proofPatterns,
+  };
+  ctx.variationSeed = variationSeed;
+  setPipelineContext({
+    jobId: options.jobId,
+    profileId: verticalProfile.profileId,
+    seed: variationSeed,
+  });
+  pipelineLog(
+    `[pipeline] Vertical profile: ${verticalProfile.profileId} (${verticalProfile.pageTone}) — seed ${variationSeed}`
+  );
   ctx.cmsCollections = generateCmsCollections(expanded);
   ctx.reactPages = {};
   for (const collection of ctx.cmsCollections) {
@@ -241,21 +352,21 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   }
   const registry = new MediaRegistry();
   const enableVision = options.enableVisionPolish !== false;
-  const outputMode = getOutputMode();
-
-  let pageResults: PagePipelineResult[] = [];
-  let reactProjectPath: string | undefined;
-  let reactStaticOutPath: string | undefined;
-  let htmlPages: Record<string, string> = {};
-  let qaResults: Record<string, QAResult> = {};
 
   if (outputMode === "react") {
     pipelineLog("[pipeline] Output mode: React (Framer-parity)");
     const reactOut = path.resolve("output", "_playground-react");
-    const reactResult = await runReactPipeline(ctx, registry, reactOut);
+    const reactResult = await runReactPipeline(ctx, registry, reactOut, {
+      previewBasePath: "/preview",
+    });
     reactProjectPath = reactResult.projectPath;
+    buildSucceeded = reactResult.buildSucceeded;
     if (reactResult.buildSucceeded) {
       reactStaticOutPath = reactResult.previewPath;
+      if (reactProjectPath && reactStaticOutPath) {
+        const stats = await cleanupAfterPublish(reactProjectPath, reactStaticOutPath);
+        outBytes = stats.bytes;
+      }
     }
     ctx.reactPages = reactResult.reactPages;
     qaResults = reactResult.qaResults;
@@ -270,7 +381,6 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     }
 
     try {
-      const fs = await import("fs/promises");
       if (reactResult.buildSucceeded) {
         const outDir = reactResult.previewPath;
         for (const slug of Object.keys(reactResult.reactPages)) {
@@ -297,12 +407,21 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
         sections: [],
       },
       html: htmlPages[p.slug] ?? "",
-      qa: qaResults[p.slug] ?? { passed: true, issues: [] },
+      qa: qaResults[p.slug] ?? {
+        passed: false,
+        issues: [
+          {
+            severity: "hard",
+            code: "MISSING_PAGE_QA",
+            message: `No QA result for page ${p.slug}`,
+          },
+        ],
+      },
       retries: 0,
     }));
   } else {
     pageResults =
-      llm.provider === "groq" || llm.provider === "mistral"
+      llm.provider === "groq" || llm.provider === "mistral" || llm.provider === "openrouter"
         ? await runPagesSequentially(ctx, registry, enableVision)
         : await Promise.all(
             sitePlan.pages.map((p) =>
@@ -407,7 +526,73 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   const debugDir = await persistDebugArtifacts(ctx, screenshots);
   if (debugDir) pipelineLog(`[pipeline] Debug artifacts → ${debugDir}`);
 
-  await closeQABrowser();
+  const qaSummary = summarizeQaResults(qaResults);
+  const hardPipelineQa = hasHardQaFailures(qaResults);
+  const fallbackSummary = getFallbackSummary();
+  const degraded =
+    (outputMode === "react" && buildSucceeded === false) ||
+    hardPipelineQa ||
+    !qaSummary.passed ||
+    totalFallbacks() > 8;
+
+  const previewSource: GenerationResult["previewSource"] =
+    outputMode === "react"
+      ? buildSucceeded
+        ? reactProjectPath
+          ? "live-server"
+          : "next-static"
+        : "html-fallback"
+      : "html-fallback";
+
+  pipelineStructured({
+    step: "complete",
+    durationMs: timingMs,
+    message: degraded ? "generation degraded" : "generation succeeded",
+    tokens: llm.getTokenUsage(),
+    fallbacks: Object.keys(fallbackSummary).length > 0 ? fallbackSummary : undefined,
+  });
+
+  if (Object.keys(fallbackSummary).length > 0) {
+    pipelineLog(
+      `[pipeline] Agent fallbacks: ${Object.entries(fallbackSummary)
+        .map(([k, v]) => `${k}=${v}`)
+        .join(", ")}`
+    );
+  }
+
+  siteSlug = siteSlugFromName(expanded.businessName);
+  try {
+    const saved = await saveSiteAfterGeneration(ctx, siteSlug);
+    if (saved) siteSlug = saved;
+  } catch (err) {
+    pipelineLog(
+      `[hosting] Site context save skipped: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
+
+  if (
+    autoPublishEnabled() &&
+    outputMode === "react" &&
+    buildSucceeded &&
+    reactStaticOutPath &&
+    reactProjectPath
+  ) {
+    try {
+      const published = await publishSite({
+        ctx,
+        outPath: reactStaticOutPath,
+        projectPath: reactProjectPath,
+        slug: siteSlug,
+      });
+      publishedUrl = published.publishedUrl;
+      outBytes = published.outBytes;
+      siteSlug = published.slug;
+    } catch (err) {
+      pipelineLog(
+        `[hosting] Auto-publish failed: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+  }
 
   return {
     site,
@@ -418,6 +603,16 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     reactProjectPath,
     reactStaticOutPath,
     outputMode,
+    buildSucceeded,
+    degraded,
+    previewSource,
+    qaSummary,
+    jobId: options.jobId,
+    variationSeed: ctx.variationSeed,
+    verticalProfileId: ctx.verticalProfile?.profileId,
+    siteSlug,
+    publishedUrl,
+    outBytes,
     visionPolish: {
       status: enableVision && llm.supportsVision ? "complete" : "skipped",
       issues: ctx.qaHistory.flatMap((h) => h.issues),
@@ -426,6 +621,10 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
       ),
     },
   };
+  } finally {
+    await closeQABrowser();
+    clearPipelineContext();
+  }
 }
 
 async function runPagesSequentially(

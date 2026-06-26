@@ -26,6 +26,7 @@ const EXAMPLES = [
 ];
 
 const briefEl = document.getElementById("brief");
+const seedEl = document.getElementById("variation-seed");
 const terminalEl = document.getElementById("terminal");
 const generateBtn = document.getElementById("generate");
 const spinnerEl = document.querySelector(".btn-spinner");
@@ -47,6 +48,7 @@ const applyThemeBtn = document.getElementById("apply-theme");
 let abortController = null;
 let editorState = null;
 let activePageSlug = "home";
+let lastVariationSeed = null;
 
 function appendLog(line, isError = false) {
   const idle = terminalEl.querySelector(".terminal-idle");
@@ -242,10 +244,22 @@ async function generate() {
   appendLog(`Starting generation…`);
 
   try {
+    const seedRaw = seedEl?.value?.trim();
+    const body = { brief };
+    if (seedRaw) {
+      const parsed = Number(seedRaw);
+      if (!Number.isFinite(parsed)) {
+        appendLog("Variation seed must be a number.", true);
+        setLoading(false);
+        return;
+      }
+      body.variationSeed = parsed;
+    }
+
     const res = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ brief }),
+      body: JSON.stringify(body),
       signal: abortController.signal,
     });
 
@@ -270,12 +284,41 @@ async function generate() {
         const json = JSON.parse(line.slice(5).trim());
         if (json.type === "log") appendLog(json.line);
         if (json.type === "error") appendLog(json.message, true);
-        if (json.type === "done") {
-          appendLog(`Done in ${(json.timingMs / 1000).toFixed(1)}s — ${json.pages?.length ?? 0} pages`);
+        if (json.type === "done" || json.type === "degraded") {
+          const degraded = json.type === "degraded" || json.degraded;
+          if (json.variationSeed != null) {
+            lastVariationSeed = json.variationSeed;
+            if (seedEl && !seedEl.value) seedEl.placeholder = String(json.variationSeed);
+          }
+          appendLog(
+            `${degraded ? "Degraded" : "Done"} in ${(json.timingMs / 1000).toFixed(1)}s — ${json.pages?.length ?? 0} pages`,
+            degraded
+          );
+          if (json.verticalProfileId || json.variationSeed != null) {
+            appendLog(
+              `Profile: ${json.verticalProfileId ?? "—"} · seed: ${json.variationSeed ?? "—"}`
+            );
+          }
+          if (json.siteSlug) {
+            appendLog(`Site slug: ${json.siteSlug}`);
+          }
+          if (json.outBytes != null) {
+            const kb = (json.outBytes / 1024).toFixed(1);
+            appendLog(`Static export: ${kb} KB`);
+          }
+          if (json.publishedUrl) {
+            appendLog(`Published: ${json.publishedUrl}`);
+          }
           if (json.previewSource === "live-server") {
             appendLog(`Preview: ${json.previewUrl} (built Next.js app)`);
           } else if (json.previewSource === "html-fallback") {
             appendLog("Preview: HTML fallback (Next build unavailable)");
+            if (json.outputMode === "react" && json.buildSucceeded === false) {
+              appendLog(
+                "Debug: output/_playground-react — run npm run build there to inspect errors",
+                true
+              );
+            }
           }
           previewTitle.textContent = json.businessName ?? "Preview";
           const url = (json.previewUrl ?? "/preview/index.html") + "?t=" + Date.now();
@@ -288,7 +331,15 @@ async function generate() {
     }
   } catch (err) {
     if (err.name !== "AbortError") {
-      appendLog(err.message ?? String(err), true);
+      const msg = err.message ?? String(err);
+      if (/network|failed to fetch/i.test(msg)) {
+        appendLog(
+          "Lost connection to the playground server. Keep `npm run playground` running in your terminal and try again.",
+          true
+        );
+      } else {
+        appendLog(msg, true);
+      }
     }
   } finally {
     setLoading(false);

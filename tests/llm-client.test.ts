@@ -10,6 +10,7 @@ describe("LLM client provider resolution", () => {
     delete process.env.MISTRAL_API_KEY;
     delete process.env.OPENAI_API_KEY;
     delete process.env.LLM_PROVIDER;
+    delete process.env.OPENROUTER_API_KEY;
   });
 
   afterEach(() => {
@@ -58,10 +59,18 @@ describe("LLM client provider resolution", () => {
     expect(llm.provider).toBe("openai");
   });
 
-  it("Groq does not support vision by default", async () => {
+  it("Groq supports vision with default scout model", async () => {
     process.env.GROQ_API_KEY = "gsk_test";
     const { llm } = await import("../src/llm/client.js");
-    expect(llm.supportsVision).toBe(false);
+    expect(llm.supportsVision).toBe(true);
+    expect(llm.getVisionModel()).toBe("meta-llama/llama-4-scout-17b-16e-instruct");
+  });
+
+  it("Groq section model defaults to 8b-instant", async () => {
+    process.env.GROQ_API_KEY = "gsk_test";
+    const { llm } = await import("../src/llm/client.js");
+    expect(llm.getSectionModel()).toBe("llama-3.1-8b-instant");
+    expect(llm.getCompositionModel()).toBe("llama-3.3-70b-versatile");
   });
 
   it("allows custom Groq model via env", async () => {
@@ -69,5 +78,26 @@ describe("LLM client provider resolution", () => {
     process.env.GROQ_MODEL = "llama-3.1-8b-instant";
     const { llm } = await import("../src/llm/client.js");
     expect(llm.getChatModel()).toBe("llama-3.1-8b-instant");
+  });
+
+  it("uses OpenRouter when LLM_PROVIDER=openrouter", async () => {
+    process.env.OPENROUTER_API_KEY = "sk-or-test";
+    process.env.LLM_PROVIDER = "openrouter";
+    const { resolveProvider, llm } = await import("../src/llm/client.js");
+    expect(resolveProvider()).toBe("openrouter");
+    expect(llm.provider).toBe("openrouter");
+    expect(llm.getCompositionModel()).toBe("google/gemini-2.5-flash");
+    expect(llm.getSectionModel()).toBe("google/gemini-2.5-flash-lite");
+    expect(llm.supportsVision).toBe(true);
+    expect(llm.getVisionModel()).toBe("google/gemini-2.5-flash");
+  });
+
+  it("OpenRouter respects LLM_PROVIDER over Groq key", async () => {
+    process.env.GROQ_API_KEY = "gsk_test";
+    process.env.OPENROUTER_API_KEY = "sk-or-test";
+    process.env.LLM_PROVIDER = "openrouter";
+    const { resolveProvider, llm } = await import("../src/llm/client.js");
+    expect(resolveProvider()).toBe("openrouter");
+    expect(llm.provider).toBe("openrouter");
   });
 });

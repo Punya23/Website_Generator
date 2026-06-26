@@ -1,14 +1,23 @@
-import { pipelineLog } from "./pipeline-log.js";
+import { pipelineLog, pipelineStructured } from "./pipeline-log.js";
 
 export async function timedStep<T>(scope: string, label: string, fn: () => Promise<T>): Promise<T> {
   const start = Date.now();
   pipelineLog(`[pipeline] ${scope}: ${label}…`);
   try {
     const result = await fn();
-    pipelineLog(`[pipeline] ${scope}: ${label} done (${formatSeconds(Date.now() - start)})`);
+    const durationMs = Date.now() - start;
+    pipelineLog(`[pipeline] ${scope}: ${label} done (${formatSeconds(durationMs)})`);
+    pipelineStructured({ scope, step: label, durationMs });
     return result;
   } catch (err) {
-    pipelineLog(`[pipeline] ${scope}: ${label} failed (${formatSeconds(Date.now() - start)})`);
+    const durationMs = Date.now() - start;
+    pipelineLog(`[pipeline] ${scope}: ${label} failed (${formatSeconds(durationMs)})`);
+    pipelineStructured({
+      scope,
+      step: label,
+      durationMs,
+      error: err instanceof Error ? err.message : String(err),
+    });
     throw err;
   }
 }

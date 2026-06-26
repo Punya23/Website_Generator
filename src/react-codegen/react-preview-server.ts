@@ -3,6 +3,7 @@ import http from "http";
 import path from "path";
 import fs from "fs/promises";
 import { createRequire } from "module";
+import { prepareStaticServeRoot } from "./static-serve.js";
 
 const require = createRequire(import.meta.url);
 
@@ -56,8 +57,9 @@ export async function startReactPreviewServer(projectPath: string): Promise<stri
 
   const port = getReactPreviewPort();
   const bin = serveBin();
+  const { serveDir, urlPath } = await prepareStaticServeRoot(projectPath, outDir);
 
-  previewProc = spawn(process.execPath, [bin, outDir, "-l", String(port), "--no-clipboard"], {
+  previewProc = spawn(process.execPath, [bin, serveDir, "-l", String(port), "--no-clipboard"], {
     stdio: "pipe",
     env: { ...process.env, NODE_NO_WARNINGS: "1" },
   });
@@ -66,7 +68,7 @@ export async function startReactPreviewServer(projectPath: string): Promise<stri
     previewProc = null;
   });
 
-  const url = `http://localhost:${port}`;
+  const url = `http://localhost:${port}${urlPath}`;
   await waitForHttp(url);
   return url;
 }

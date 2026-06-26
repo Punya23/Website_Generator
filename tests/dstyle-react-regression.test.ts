@@ -59,6 +59,20 @@ describe("Dstyle fashion react regression", () => {
       },
     });
 
+    ctx.verticalProfile = {
+      profileId: "editorial-light",
+      pageTone: "warm",
+      heroBias: "hero_spotlight",
+      blueprintFamily: "editorial-light",
+      grainOverlay: true,
+      industryFamily: "fashion",
+      copyHints: "Editorial fashion voice",
+      imageHints: "Fashion editorial photography",
+      ctaPatterns: ["Book consultation", "View collections"],
+      proofPatterns: ["portfolio", "testimonials"],
+    };
+    ctx.variationSeed = 42;
+
     const registry = new MediaRegistry();
     const blueprints = await directPageBlueprints(ctx, sitePlan.pages);
 
@@ -79,5 +93,9 @@ describe("Dstyle fashion react regression", () => {
       const cardHeavy = qa.issues.filter((i) => i.code === "CARD_HEAVY_PAGE");
       expect(cardHeavy.length, cardHeavy.map((i) => i.message).join("; ")).toBeLessThanOrEqual(1);
     }
+
+    const home = blueprints.find((b) => b.slug === "home");
+    expect(home?.sections.some((s) => s.templateId.startsWith("hero_"))).toBe(true);
+    expect(home?.sections.some((s) => s.templateId === "cta_band")).toBe(true);
   });
 });

@@ -1,42 +1,68 @@
 import { z } from "zod";
+import { LayoutVariantSchema } from "../types.js";
+import {
+  coerceToString,
+  coerceToStringArray,
+  normalizeCopyProps,
+} from "../llm/normalize-llm-output.js";
+
+const layoutFields = {
+  layoutVariant: LayoutVariantSchema.optional(),
+  density: z.enum(["airy", "normal", "compact"]).optional(),
+  mediaPosition: z.enum(["background", "left", "right"]).optional(),
+};
+
+/** LLMs sometimes return imageQuery as an array of keywords — coerce to one search string. */
+export function coerceImageQuery(val: unknown): string | undefined {
+  return coerceToString(val);
+}
+
+const zStr = z.preprocess((v) => coerceToString(v) ?? "", z.string());
+const zStrOpt = z.preprocess(coerceToString, z.string().optional());
+const zStrArr = z.preprocess(
+  (v) => coerceToStringArray(v) ?? [],
+  z.array(z.string())
+);
 
 const imageField = z.object({
   src: z.string().optional(),
-  imageQuery: z.string().optional(),
+  imageQuery: z.preprocess(coerceImageQuery, z.string().optional()),
   alt: z.string().optional(),
 });
 
 const ctaField = z.object({
-  label: z.string(),
+  label: zStr,
   href: z.string().optional(),
 });
 
 const statItem = z.object({
-  value: z.string(),
-  label: z.string(),
+  value: zStr,
+  label: zStr,
 });
 
 export const HeroEditorialPropsSchema = z.object({
-  label: z.string().optional(),
-  headline: z.string(),
-  subcopy: z.string().optional(),
+  label: zStrOpt,
+  headline: zStr,
+  subcopy: zStrOpt,
   image: imageField,
   cta: ctaField.optional(),
+  ...layoutFields,
 });
 
 export const HeroSplitCinematicPropsSchema = z.object({
-  label: z.string().optional(),
-  headline: z.string(),
-  subcopy: z.string().optional(),
-  body: z.string().optional(),
+  label: zStrOpt,
+  headline: zStr,
+  subcopy: zStrOpt,
+  body: zStrOpt,
   image: imageField,
   cta: ctaField.optional(),
+  ...layoutFields,
 });
 
 export const IntroStatementPropsSchema = z.object({
-  label: z.string().optional(),
-  headline: z.string(),
-  body: z.string(),
+  label: zStrOpt,
+  headline: zStr,
+  body: zStr,
 });
 
 export const StatsMarqueePropsSchema = z.object({
@@ -120,6 +146,21 @@ export const CtaBandPropsSchema = z.object({
   headline: z.string(),
   subcopy: z.string().optional(),
   cta: ctaField,
+  ...layoutFields,
+});
+
+export const TextMarqueePropsSchema = z.object({
+  label: z.string().optional(),
+  phrases: z.array(z.string()).min(2).max(8),
+  speed: z.enum(["slow", "normal", "fast"]).optional(),
+});
+
+export const FooterCtaPropsSchema = z.object({
+  headline: z.string(),
+  subcopy: z.string().optional(),
+  cta: ctaField,
+  secondaryCta: ctaField.optional(),
+  ...layoutFields,
 });
 
 export const ContactSplitPropsSchema = z.object({
@@ -170,6 +211,135 @@ export const GalleryMasonryPropsSchema = z.object({
   images: z.array(imageField.extend({ caption: z.string().optional() })).min(3).max(12),
 });
 
+export const HeroVideoPropsSchema = z.object({
+  label: z.string().optional(),
+  headline: z.string(),
+  subcopy: z.string().optional(),
+  video: z
+    .object({
+      src: z.string().optional(),
+      poster: imageField.optional(),
+    })
+    .optional(),
+  cta: ctaField.optional(),
+  ...layoutFields,
+});
+
+export const TestimonialCarouselPropsSchema = z.object({
+  label: z.string().optional(),
+  headline: z.string().optional(),
+  items: z
+    .array(
+      z.object({
+        quote: z.string(),
+        author: z.string(),
+        role: z.string().optional(),
+        avatar: imageField.optional(),
+      })
+    )
+    .min(2)
+    .max(8),
+});
+
+export const PortfolioCarouselPropsSchema = z.object({
+  label: z.string().optional(),
+  headline: z.string().optional(),
+  slides: z
+    .array(
+      z.object({
+        title: z.string(),
+        category: z.string().optional(),
+        image: imageField.optional(),
+      })
+    )
+    .min(3)
+    .max(10),
+});
+
+export const BeforeAfterPropsSchema = z.object({
+  label: z.string().optional(),
+  headline: z.string().optional(),
+  before: imageField,
+  after: imageField,
+  caption: z.string().optional(),
+});
+
+export const PricingTogglePropsSchema = z.object({
+  label: z.string().optional(),
+  headline: z.string().optional(),
+  monthlyLabel: z.string().optional(),
+  yearlyLabel: z.string().optional(),
+  tiers: z
+    .array(
+      z.object({
+        name: z.string(),
+        monthlyPrice: z.string(),
+        yearlyPrice: z.string(),
+        description: z.string().optional(),
+        features: z.array(z.string()).optional(),
+        highlighted: z.boolean().optional(),
+        cta: ctaField.optional(),
+      })
+    )
+    .min(1)
+    .max(4),
+});
+
+export const StatsAnimatedPropsSchema = z.object({
+  label: z.string().optional(),
+  headline: z.string().optional(),
+  stats: z.array(statItem).min(2).max(6),
+});
+
+export const NewsletterBandPropsSchema = z.object({
+  headline: z.string(),
+  subcopy: z.string().optional(),
+  placeholder: z.string().optional(),
+  buttonLabel: z.string().optional(),
+});
+
+export const HeroSpotlightPropsSchema = z.object({
+  label: z.string().optional(),
+  headline: z.string(),
+  subcopy: z.string().optional(),
+  image: imageField,
+  cta: ctaField.optional(),
+  ...layoutFields,
+});
+
+export const ScrollShowcasePropsSchema = z.object({
+  label: zStrOpt,
+  headline: zStr,
+  body: zStrOpt,
+  steps: z
+    .array(
+      z.object({
+        title: z.string(),
+        description: z.string(),
+      })
+    )
+    .min(2)
+    .max(5)
+    .optional(),
+  image: imageField.optional(),
+  cta: ctaField.optional(),
+});
+
+export const HorizontalGalleryPropsSchema = z.object({
+  label: z.string().optional(),
+  headline: z.string().optional(),
+  items: z
+    .array(
+      z.object({
+        title: z.string(),
+        subtitle: z.string().optional(),
+        image: imageField.optional(),
+      })
+    )
+    .min(3)
+    .max(10),
+});
+
 export const TEMPLATE_PROP_SCHEMAS = {
   hero_editorial: HeroEditorialPropsSchema,
   hero_split_cinematic: HeroSplitCinematicPropsSchema,
@@ -182,10 +352,163 @@ export const TEMPLATE_PROP_SCHEMAS = {
   pricing_tiers: PricingTiersPropsSchema,
   faq_accordion: FaqAccordionPropsSchema,
   cta_band: CtaBandPropsSchema,
+  text_marquee: TextMarqueePropsSchema,
+  footer_cta: FooterCtaPropsSchema,
   contact_split: ContactSplitPropsSchema,
   logo_marquee: LogoMarqueePropsSchema,
   team_grid: TeamGridPropsSchema,
   gallery_masonry: GalleryMasonryPropsSchema,
+  hero_video: HeroVideoPropsSchema,
+  testimonial_carousel: TestimonialCarouselPropsSchema,
+  portfolio_carousel: PortfolioCarouselPropsSchema,
+  before_after: BeforeAfterPropsSchema,
+  pricing_toggle: PricingTogglePropsSchema,
+  stats_animated: StatsAnimatedPropsSchema,
+  newsletter_band: NewsletterBandPropsSchema,
+  hero_spotlight: HeroSpotlightPropsSchema,
+  scroll_showcase: ScrollShowcasePropsSchema,
+  horizontal_gallery: HorizontalGalleryPropsSchema,
 } as const;
+
+/** Copy-only props — no required image/media fields (media curator fills those). */
+export const COPY_PROP_SCHEMAS = {
+  hero_editorial: HeroEditorialPropsSchema.omit({ image: true }),
+  hero_split_cinematic: HeroSplitCinematicPropsSchema.omit({ image: true }),
+  intro_statement: IntroStatementPropsSchema,
+  stats_marquee: StatsMarqueePropsSchema,
+  services_showcase: ServicesShowcasePropsSchema.omit({ image: true }),
+  feature_bento: z.object({
+    label: z.string().optional(),
+    headline: z.string().optional(),
+    items: z
+      .array(
+        z.object({
+          title: z.string(),
+          description: z.string(),
+          span: z.enum(["normal", "wide", "tall", "large"]).optional(),
+        })
+      )
+      .min(2)
+      .max(6),
+  }),
+  portfolio_strip: z.object({
+    label: z.string().optional(),
+    headline: z.string().optional(),
+    projects: z
+      .array(
+        z.object({
+          title: z.string(),
+          category: z.string().optional(),
+          year: z.string().optional(),
+        })
+      )
+      .min(2)
+      .max(8),
+  }),
+  testimonial_featured: TestimonialFeaturedPropsSchema,
+  pricing_tiers: PricingTiersPropsSchema,
+  faq_accordion: FaqAccordionPropsSchema,
+  cta_band: CtaBandPropsSchema,
+  text_marquee: TextMarqueePropsSchema,
+  footer_cta: FooterCtaPropsSchema,
+  contact_split: ContactSplitPropsSchema,
+  logo_marquee: LogoMarqueePropsSchema,
+  team_grid: z.object({
+    label: z.string().optional(),
+    headline: z.string().optional(),
+    members: z
+      .array(
+        z.object({
+          name: z.string(),
+          role: z.string(),
+          bio: z.string().optional(),
+        })
+      )
+      .min(2)
+      .max(8),
+  }),
+  gallery_masonry: z.object({
+    label: z.string().optional(),
+    headline: z.string().optional(),
+  }),
+  hero_video: HeroVideoPropsSchema.omit({ video: true }).extend({
+    video: z.object({ poster: imageField.optional() }).optional(),
+  }),
+  testimonial_carousel: z.object({
+    label: z.string().optional(),
+    headline: z.string().optional(),
+    items: z
+      .array(
+        z.object({
+          quote: z.string(),
+          author: z.string(),
+          role: z.string().optional(),
+        })
+      )
+      .min(2)
+      .max(8),
+  }),
+  portfolio_carousel: z.object({
+    label: z.string().optional(),
+    headline: z.string().optional(),
+    slides: z
+      .array(
+        z.object({
+          title: z.string(),
+          category: z.string().optional(),
+        })
+      )
+      .min(3)
+      .max(10),
+  }),
+  before_after: z.object({
+    label: z.string().optional(),
+    headline: z.string().optional(),
+    caption: z.string().optional(),
+  }),
+  pricing_toggle: PricingTogglePropsSchema,
+  stats_animated: StatsAnimatedPropsSchema,
+  newsletter_band: NewsletterBandPropsSchema,
+  hero_spotlight: HeroSpotlightPropsSchema.omit({ image: true }),
+  scroll_showcase: z.object({
+    label: z.string().optional(),
+    headline: z.string(),
+    body: z.string().optional(),
+    steps: z
+      .array(
+        z.object({
+          title: z.string(),
+          description: z.string(),
+        })
+      )
+      .min(2)
+      .max(5)
+      .optional(),
+    cta: ctaField.optional(),
+  }),
+  horizontal_gallery: z.object({
+    label: z.string().optional(),
+    headline: z.string().optional(),
+    items: z
+      .array(
+        z.object({
+          title: z.string(),
+          subtitle: z.string().optional(),
+        })
+      )
+      .min(3)
+      .max(10),
+  }),
+} as const satisfies Record<keyof typeof TEMPLATE_PROP_SCHEMAS, z.ZodTypeAny>;
+
+export function validateCopyProps(templateId: string, props: unknown): Record<string, unknown> {
+  const schema = COPY_PROP_SCHEMAS[templateId as TemplateId];
+  if (!schema) throw new Error(`Unknown template: ${templateId}`);
+  const normalized = normalizeCopyProps(
+    templateId,
+    (props ?? {}) as Record<string, unknown>
+  );
+  return schema.parse(normalized) as Record<string, unknown>;
+}
 
 export type TemplateId = keyof typeof TEMPLATE_PROP_SCHEMAS;

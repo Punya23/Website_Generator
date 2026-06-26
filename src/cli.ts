@@ -4,6 +4,7 @@ import { generateSite, summarizeGeneration, waitForVisionPolish } from "./orches
 import { writeSiteOutput, startPreviewServer } from "./server/preview-server.js";
 import { startPlaygroundServer } from "./web/playground-server.js";
 import { extractBusinessName } from "./util/extract-name.js";
+import { ensurePlaywrightBrowsers } from "./util/ensure-playwright.js";
 import path from "path";
 
 async function main() {
@@ -11,6 +12,9 @@ async function main() {
   const cmd = command ?? "generate";
 
   if (cmd === "playground" || cmd === "ui") {
+    if (process.env.SKIP_VISION !== "1") {
+      await ensurePlaywrightBrowsers();
+    }
     const { url, close } = await startPlaygroundServer();
     console.log(`Playground UI → ${url}`);
     console.log("Pipeline logs stream in the browser terminal panel.");
@@ -23,6 +27,9 @@ async function main() {
   }
 
   if (cmd === "generate" || cmd === "dev") {
+    if (process.env.SKIP_VISION !== "1") {
+      await ensurePlaywrightBrowsers();
+    }
     const brief = args.join(" ").trim() || process.env.BUSINESS_BRIEF?.trim() || "";
     if (!brief) {
       console.error("Usage: npm run dev -- \"Your business in 1-2 lines\"");
@@ -39,8 +46,17 @@ async function main() {
     const { llm } = await import("./llm/client.js");
     if (llm.isAvailable) {
       console.log(`LLM: ${llm.provider} (${llm.getChatModel()})`);
+      if (process.env.SKIP_VISION !== "1") {
+        console.log(
+          llm.supportsVision
+            ? `Vision: enabled (${llm.getVisionModel()})`
+            : "Vision: disabled — set GROQ_VISION_MODEL, MISTRAL_API_KEY, or OPENAI_API_KEY"
+        );
+      } else {
+        console.log("Vision: skipped (SKIP_VISION=1)");
+      }
     } else {
-      console.log("LLM: mock mode (set GROQ_API_KEY, MISTRAL_API_KEY, or OPENAI_API_KEY)");
+      console.log("LLM: mock mode (set OPENROUTER_API_KEY, GROQ_API_KEY, MISTRAL_API_KEY, or OPENAI_API_KEY)");
     }
     console.log(`Media: ${activeImageProviders().join(" → ")}`);
     console.log();
@@ -105,11 +121,14 @@ async function main() {
   npm run generate -- "Brief here"
 
 Environment (set in .env — see .env.example):
-  GROQ_API_KEY / MISTRAL_API_KEY / OPENAI_API_KEY   Live LLM (mock works offline)
+  OPENROUTER_API_KEY / GROQ_API_KEY / MISTRAL_API_KEY / OPENAI_API_KEY   Live LLM (mock works offline)
   LLM_PROVIDER=mistral|groq|openai                  Force a provider when multiple keys set
   PEXELS_API_KEY / PIXABAY_API_KEY  Optional extra image sources
   BUSINESS_NAME                   Optional override
-  SKIP_VISION=1                   Skip vision polish (Gemini Flash later)
+  CUSTOM_HERO_CODEGEN=1        Force bespoke home hero TSX
+  SKIP_VISION=1                Skip vision QA + retry
+  SKIP_PLAYWRIGHT_SETUP=1      Skip auto Chromium install on startup
+  GROQ_VISION_MODEL=...        Vision model (default: llama-4-scout on Groq)
 `);
 }
 

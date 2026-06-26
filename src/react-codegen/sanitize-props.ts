@@ -1,4 +1,6 @@
 /** Strip internal fields (imageQuery) before writing props into generated TSX. */
+const NESTED_IMAGE_KEYS = ["image", "avatar", "before", "after", "poster"] as const;
+
 export function sanitizeImageField(value: unknown): Record<string, unknown> | undefined {
   if (!value || typeof value !== "object") return undefined;
   const img = value as Record<string, unknown>;
@@ -6,6 +8,19 @@ export function sanitizeImageField(value: unknown): Record<string, unknown> | un
   if (typeof img.src === "string" && img.src) out.src = img.src;
   if (typeof img.alt === "string" && img.alt) out.alt = img.alt;
   return Object.keys(out).length ? out : undefined;
+}
+
+function sanitizeNestedImages(row: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...row };
+  for (const key of NESTED_IMAGE_KEYS) {
+    if (key in out) {
+      const img = sanitizeImageField(out[key]);
+      if (img) out[key] = img;
+      else delete out[key];
+    }
+  }
+  delete out.imageQuery;
+  return out;
 }
 
 export function sanitizePropsForCodegen(props: Record<string, unknown>): Record<string, unknown> {
@@ -18,17 +33,21 @@ export function sanitizePropsForCodegen(props: Record<string, unknown>): Record<
       continue;
     }
 
+    if (key === "video" && value && typeof value === "object" && !Array.isArray(value)) {
+      const video = { ...(value as Record<string, unknown>) };
+      if ("poster" in video) {
+        const poster = sanitizeImageField(video.poster);
+        if (poster) video.poster = poster;
+        else delete video.poster;
+      }
+      out.video = video;
+      continue;
+    }
+
     if (Array.isArray(value)) {
       out[key] = value.map((item) => {
         if (!item || typeof item !== "object") return item;
-        const row = { ...(item as Record<string, unknown>) };
-        if ("image" in row) {
-          const img = sanitizeImageField(row.image);
-          if (img) row.image = img;
-          else delete row.image;
-        }
-        if ("imageQuery" in row) delete row.imageQuery;
-        return row;
+        return sanitizeNestedImages(item as Record<string, unknown>);
       });
       continue;
     }

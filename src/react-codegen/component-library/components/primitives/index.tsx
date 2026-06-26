@@ -2,29 +2,34 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0 },
-};
+import { useMotionPreset, useRevealVariants, useStaggerDelay, useSectionMotion } from "../MotionProvider";
+import { useCurrentSectionId } from "../SectionContext";
 
 export function Reveal({
   children,
   className = "",
   delay = 0,
+  sectionId: sectionIdProp,
 }: {
   children: ReactNode;
   className?: string;
   delay?: number;
+  sectionId?: string;
 }) {
   const reduce = useReducedMotion();
+  const sectionId = sectionIdProp ?? useCurrentSectionId();
+  const variants = useRevealVariants(sectionId);
+  const sectionMotion = useSectionMotion(sectionId);
+  if (sectionMotion?.entrance === "none") {
+    return <div className={className}>{children}</div>;
+  }
   return (
     <motion.div
       className={className}
       initial={reduce ? false : "hidden"}
       whileInView="visible"
       viewport={{ once: true, margin: "-80px" }}
-      variants={fadeUp}
+      variants={variants}
       transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1], delay }}
     >
       {children}
@@ -35,11 +40,19 @@ export function Reveal({
 export function Stagger({
   children,
   className = "",
+  sectionId: sectionIdProp,
 }: {
   children: ReactNode;
   className?: string;
+  sectionId?: string;
 }) {
   const reduce = useReducedMotion();
+  const sectionId = sectionIdProp ?? useCurrentSectionId();
+  const stagger = useStaggerDelay(sectionId);
+  const sectionMotion = useSectionMotion(sectionId);
+  if (sectionMotion?.entrance === "none") {
+    return <div className={className}>{children}</div>;
+  }
   return (
     <motion.div
       className={className}
@@ -48,7 +61,7 @@ export function Stagger({
       viewport={{ once: true, margin: "-60px" }}
       variants={{
         hidden: {},
-        visible: { transition: { staggerChildren: 0.08 } },
+        visible: { transition: { staggerChildren: stagger } },
       }}
     >
       {children}
@@ -56,12 +69,22 @@ export function Stagger({
   );
 }
 
-export function StaggerItem({ children, className = "" }: { children: ReactNode; className?: string }) {
+export function StaggerItem({
+  children,
+  className = "",
+  sectionId: sectionIdProp,
+}: {
+  children: ReactNode;
+  className?: string;
+  sectionId?: string;
+}) {
   const reduce = useReducedMotion();
+  const sectionId = sectionIdProp ?? useCurrentSectionId();
+  const variants = useRevealVariants(sectionId);
   return (
     <motion.div
       className={className}
-      variants={reduce ? undefined : fadeUp}
+      variants={reduce ? undefined : variants}
       transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
     >
       {children}
@@ -95,7 +118,7 @@ export function DisplayHeading({ children, as: Tag = "h2", className = "" }: { c
 
 export function PrimaryButton({ href, children }: { href?: string; children: ReactNode }) {
   const cls =
-    "inline-flex items-center justify-center rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90";
+    "magnetic-btn inline-flex items-center justify-center rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90";
   if (href) {
     return (
       <a href={href} className={cls}>
@@ -109,3 +132,86 @@ export function PrimaryButton({ href, children }: { href?: string; children: Rea
     </button>
   );
 }
+
+export function MagneticButton({
+  href,
+  children,
+  className = "",
+}: {
+  href?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  const cls = `magnetic-btn inline-flex items-center justify-center rounded-full transition ${className}`;
+  if (href) {
+    return (
+      <motion.a
+        href={href}
+        className={cls}
+        whileHover={{ scale: 1.04 }}
+        whileTap={{ scale: 0.98 }}
+        transition={{ type: "spring", stiffness: 400, damping: 20 }}
+      >
+        {children}
+      </motion.a>
+    );
+  }
+  return (
+    <motion.button
+      type="button"
+      className={cls}
+      whileHover={{ scale: 1.04 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      {children}
+    </motion.button>
+  );
+}
+
+export function SplitRevealHeading({
+  text,
+  as: Tag = "h1",
+  className = "",
+}: {
+  text: string;
+  as?: "h1" | "h2" | "h3";
+  className?: string;
+}) {
+  const lines = text.split(/\n|(?<=\.)\s+/).filter(Boolean);
+  const reduce = useReducedMotion();
+  if (reduce || lines.length <= 1) {
+    return <DisplayHeading as={Tag} className={className}>{text}</DisplayHeading>;
+  }
+  return (
+    <Tag className={`font-display text-display leading-[1.05] tracking-tight text-text ${className}`}>
+      {lines.map((line, i) => (
+        <motion.span
+          key={i}
+          className="block overflow-hidden"
+          initial={{ opacity: 0, y: "100%" }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {line}
+        </motion.span>
+      ))}
+    </Tag>
+  );
+}
+
+export function SectionDivider({ variant = "angle" }: { variant?: "angle" | "fade" }) {
+  if (variant === "fade") {
+    return <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent" aria-hidden />;
+  }
+  return <div className="section-divider-angle h-16 w-full bg-surface mesh-gradient" aria-hidden />;
+}
+
+export {
+  CursorSpotlight,
+  GlassPanel,
+  HorizontalScrollTrack,
+  NoiseGradientBg,
+  ScrollPinSection,
+  TextScrub,
+} from "./premium";

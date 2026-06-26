@@ -9,6 +9,32 @@ export { SECTION_TEMPLATES, TEMPLATE_IDS, validateTemplateProps } from "./sectio
 export { runReactQA } from "./qa/react-qa.js";
 export { buildPageSections, regenerateSection } from "./agents/section-builder-agent.js";
 export { generateDesignSystem } from "./agents/design-director-agent.js";
+export { publishSite, saveSiteAfterGeneration, autoPublishEnabled } from "./hosting/publish-site.js";
+export { siteSlugFromName } from "./hosting/slug.js";
+export { refineDesignSystem } from "./agents/design-refine-agent.js";
+export { directMotionPlan } from "./agents/motion-director-agent.js";
+export { directChromeSpec } from "./agents/chrome-director-agent.js";
+export { writeSectionCopy } from "./agents/copywriter-agent.js";
+export { curateSectionMedia } from "./agents/media-curator-agent.js";
+export { mergeSectionProps } from "./agents/merge-props.js";
+export { mergeDesignSystem } from "./agents/merge-design.js";
+export { generatePalette } from "./agents/palette-agent.js";
+export { generateTypography } from "./agents/typography-agent.js";
+export { generateNavSurface } from "./agents/nav-surface-agent.js";
+export { runDesignQA } from "./qa/react-qa.js";
+export { runMotionQA } from "./qa/motion-qa.js";
+export { runChromeQA } from "./qa/chrome-qa.js";
+export { runLayoutQA } from "./qa/layout-qa.js";
+export { routeVisionIssues, visionFixPlanHasWork } from "./qa/vision-router.js";
+export { applyHtmlVisionRetry } from "./orchestrator/html-vision-retry.js";
+export {
+  generateCustomHeroSection,
+  shouldCodegenCustomHero,
+  validateCustomHeroSource,
+} from "./agents/section-codegen-agent.js";
+export { directLayoutPlan } from "./agents/layout-director-agent.js";
+export { applyLayoutFixes, layoutSpecToProps } from "./agents/layout-fix-agent.js";
+export { runDesignTokenQA, effectiveNavBg, resolveEffectiveColor } from "./theme/contrast.js";
 export { buildArchetypeLayout, SECTION_ARCHETYPES } from "./components/archetypes.js";
 export { resolveMotionPreset, MOTION_PRESETS } from "./motion/presets.js";
 export { generateCmsCollections } from "./cms/generate.js";

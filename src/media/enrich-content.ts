@@ -25,18 +25,19 @@ export async function resolveUniqueImage(
   sectionId: string,
   pageSlug: string,
   width: number,
-  height: number
+  height: number,
+  vertical?: string
 ): Promise<string> {
   let q = query;
   for (let attempt = 0; attempt < 4; attempt++) {
-    const src = await stockImageUrl(q, `${cacheKey}-${attempt}`, undefined, width, height);
+    const src = await stockImageUrl(q, `${cacheKey}-${attempt}`, vertical, width, height);
     if (!registry.isDuplicate(src)) {
       registry.register({ url: src, query: q, blockId, sectionId, pageSlug });
       return src;
     }
     q = registry.uniqueQuery(query, blockId, sectionId);
   }
-  const fallback = await stockImageUrl(`${query} ${blockId}`, cacheKey, undefined, width, height);
+  const fallback = await stockImageUrl(`${query} ${blockId}`, cacheKey, vertical, width, height);
   registry.register({ url: fallback, query, blockId, sectionId, pageSlug });
   return fallback;
 }

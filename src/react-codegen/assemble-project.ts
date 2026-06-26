@@ -1,9 +1,12 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import type { ReactPage, SiteContext, SiteTheme } from "../types.js";
+import type { ReactPage, SiteContext, SiteTheme, ChromeSpec, SiteMotionPlan } from "../types.js";
 import { getTemplate } from "../section-templates/registry.js";
 import { sanitizePropsForCodegen } from "./sanitize-props.js";
+import { normalizeMotionPlan, resolveMotionPreset } from "../motion/presets.js";
+import type { MotionPreset } from "../types.js";
+import { generateFontLayout } from "./font-codegen.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const COMPONENT_LIBRARY = path.join(__dirname, "component-library");
@@ -22,23 +25,44 @@ function pageComponentName(slug: string): string {
 }
 
 function writePageTsx(page: ReactPage): string {
-  const imports = new Set<string>();
+  const stdImports = new Set<string>();
+  const customImportLines: string[] = [];
+
   for (const section of page.sections) {
-    const t = getTemplate(section.templateId);
-    if (t) imports.add(t.componentName);
+    if (section.customCodegen) {
+      const mod = section.customCodegen.fileName.replace(/\.tsx$/, "");
+      customImportLines.push(
+        `import ${section.customCodegen.componentName} from "@/components/custom/${mod}";`
+      );
+    } else {
+      const t = getTemplate(section.templateId);
+      if (t) stdImports.add(t.componentName);
+    }
   }
 
-  const importLine = `import { ${[...imports].join(", ")} } from "@/components/sections";`;
+  const importLines = [
+    stdImports.size > 0
+      ? `import { ${[...stdImports].join(", ")} } from "@/components/sections";`
+      : "",
+    ...customImportLines,
+  ].filter(Boolean);
+
   const sectionsJsx = page.sections
     .map((s) => {
-      const t = getTemplate(s.templateId);
-      const name = t?.componentName ?? "IntroStatement";
+      const name =
+        s.customCodegen?.componentName ??
+        getTemplate(s.templateId)?.componentName ??
+        "IntroStatement";
       const props = sanitizePropsForCodegen(s.props);
+      if (s.customCodegen) {
+        const merged = { ...props, id: s.id };
+        return `      <${name} {...${JSON.stringify(merged)}} />`;
+      }
       return `      <${name} id="${s.id}" {...${JSON.stringify(props)}} />`;
     })
     .join("\n");
 
-  return `${importLine}
+  return `${importLines.join("\n")}
 
 export default function ${pageComponentName(page.slug)}() {
   return (
@@ -54,6 +78,8 @@ function themeCssVars(theme: SiteTheme): string {
   const c = theme.colors;
   const gap =
     theme.sectionGapMode === "tight" ? "3.5rem" : theme.sectionGapMode === "airy" ? "7rem" : "5rem";
+  const navBlur =
+    theme.navTreatment === "glass-dark" || theme.navTreatment === "glass-light" ? "14px" : "0px";
   return `:root {
   --color-bg: ${c.bg};
   --color-surface: ${c.surface};
@@ -66,10 +92,14 @@ function themeCssVars(theme: SiteTheme): string {
   --color-nav-muted: ${c.navMuted ?? c.muted};
   --color-nav-active: ${c.navActiveBg ?? c.accent};
   --color-nav-active-text: ${c.navActiveText ?? "#fff"};
+  --color-gradient-from: ${c.gradientFrom};
+  --color-gradient-to: ${c.gradientTo};
+  --nav-blur: ${navBlur};
   --max-content: ${theme.layout?.maxWidth ?? "1200px"};
   --section-gap: ${gap};
   --font-display: '${theme.fontHeading}', Georgia, serif;
   --font-body: '${theme.fontBody}', system-ui, sans-serif;
+${generateFontLayout(theme).typeScaleCss.split("\n").map((l) => l).join("\n")}
 }`;
 }
 
@@ -112,12 +142,46 @@ function layoutTsx(ctx: SiteContext, pages: ReactPage[]): string {
     slug: p.slug,
     label: p.navLabel ?? p.title,
   }));
-  const fonts = encodeURIComponent(ctx.designSystem.fontHeading).replace(/%20/g, "+");
-  const fontsBody = encodeURIComponent(ctx.designSystem.fontBody).replace(/%20/g, "+");
+  const fonts = generateFontLayout(ctx.designSystem);
+  const chrome = ctx.chromeSpec ?? defaultChromeSpec(ctx, links);
+  const motionPlanRaw = ctx.motionPlan;
+  const motionPreset: MotionPreset = resolveMotionPreset(
+    motionPlanRaw?.globalPreset ?? ctx.designSystem.motionPreset
+  );
+  const immersive = chrome.immersive ?? { smoothScroll: true, grainOverlay: true };
+  const announcement = chrome.announcement;
+  const stickyCta = chrome.stickyMobileCta ?? {
+    label: chrome.footer.ctaLabel,
+    href: chrome.footer.ctaHref,
+  };
+  const newsletter = chrome.newsletter;
+
+  const linkGroups = (chrome.footer.linkGroups ?? []).map((g) => ({
+    label: g.label,
+    slugs: g.slugs.map((slug) => {
+      const page = pages.find((p) => p.slug === slug);
+      return { slug, label: page?.navLabel ?? page?.title ?? slug };
+    }),
+  }));
+
+  const motionPlanJson = motionPlanRaw
+    ? JSON.stringify(normalizeMotionPlan(motionPlanRaw as SiteMotionPlan)).replace(/</g, "\\u003c")
+    : "null";
+
+  const smoothScroll = immersive.smoothScroll !== false;
+  const grainOverlay = immersive.grainOverlay !== false;
 
   return `import type { Metadata } from "next";
 import "./globals.css";
 import { SiteNav } from "@/components/SiteNav";
+import { SiteFooter } from "@/components/SiteFooter";
+import { MotionProvider } from "@/components/MotionProvider";
+${fonts.imports}
+${smoothScroll ? 'import { SmoothScroll } from "@/components/SmoothScroll";' : ""}
+${announcement ? 'import { AnnouncementBar } from "@/components/AnnouncementBar";' : ""}
+import { StickyMobileCta } from "@/components/StickyMobileCta";
+
+${fonts.fontVars}
 
 export const metadata: Metadata = {
   title: "${ctx.businessName.replace(/"/g, '\\"')}",
@@ -125,27 +189,81 @@ export const metadata: Metadata = {
 };
 
 const navLinks = ${JSON.stringify(links, null, 2)};
+const footerLinkGroups = ${JSON.stringify(linkGroups, null, 2)};
+const motionPlan = ${motionPlanJson === "null" ? "null" : motionPlanJson};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const site = (
+    <MotionProvider preset="${motionPreset}" plan={motionPlan}>
+      ${announcement ? `<AnnouncementBar message="${announcement.message.replace(/"/g, '\\"')}"${announcement.href ? ` href="${announcement.href.replace(/"/g, '\\"')}"` : ""} />` : ""}
+      <SiteNav businessName="${ctx.businessName.replace(/"/g, '\\"')}" links={navLinks} />
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[200] focus:rounded focus:bg-accent focus:px-4 focus:py-2 focus:text-white">
+        Skip to content
+      </a>
+      <main id="main-content">{children}</main>
+      <SiteFooter
+        businessName="${ctx.businessName.replace(/"/g, '\\"')}"
+        mood="${ctx.designSystem.mood.replace(/"/g, '\\"')}"
+        tagline="${(chrome.footer.tagline ?? ctx.expandedBrief.tagline).replace(/"/g, '\\"')}"
+        ctaLabel="${chrome.footer.ctaLabel.replace(/"/g, '\\"')}"
+        ctaHref="${chrome.footer.ctaHref.replace(/"/g, '\\"')}"
+        links={navLinks}
+        layout="${chrome.footer.layout}"
+        linkGroups={footerLinkGroups}
+        showMood={${chrome.footer.showMood}}
+        ${newsletter ? `newsletter={${JSON.stringify(newsletter)}}` : ""}
+      />
+      <StickyMobileCta label="${stickyCta.label.replace(/"/g, '\\"')}" href="${stickyCta.href.replace(/"/g, '\\"')}" />
+    </MotionProvider>
+  );
+
   return (
     <html lang="en">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=${fonts}:wght@500;600;700;800&family=${fontsBody}:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="font-body">
-        <SiteNav businessName="${ctx.businessName.replace(/"/g, '\\"')}" links={navLinks} />
-        <main>{children}</main>
-        <footer className="border-t border-border py-10 text-center text-sm text-muted">
-          © {new Date().getFullYear()} ${ctx.businessName.replace(/"/g, '\\"')} · ${ctx.designSystem.mood.replace(/"/g, '\\"')}
-        </footer>
+      <body
+        className={\`font-body relative ${fonts.bodyClass}\`}
+        data-page-tone="${ctx.designSystem.pageTone ?? "light"}"
+        data-nav-treatment="${ctx.designSystem.navTreatment ?? "solid"}"
+        data-motion-preset="${motionPreset}"
+      >
+        ${grainOverlay ? `<div className="grain-overlay pointer-events-none fixed inset-0 z-[100]" aria-hidden />` : ""}
+        ${smoothScroll ? "<SmoothScroll>{site}</SmoothScroll>" : "{site}"}
       </body>
     </html>
   );
 }
 `;
+}
+
+function defaultChromeSpec(
+  ctx: SiteContext,
+  links: Array<{ slug: string; label: string }>
+): ChromeSpec {
+  return {
+    footer: {
+      layout: "two-column",
+      tagline: ctx.expandedBrief.tagline,
+      ctaLabel: ctx.expandedBrief.primaryCta,
+      ctaHref: "/contact",
+      showMood: true,
+      linkGroups: [{ label: "Explore", slugs: links.map((l) => l.slug) }],
+    },
+    nav: { compactOnScroll: true, shadowOnScroll: true },
+    announcement: {
+      message: ctx.expandedBrief.secondaryCta ?? `Welcome to ${ctx.businessName}`,
+      href: "/contact",
+    },
+    stickyMobileCta: {
+      label: ctx.expandedBrief.primaryCta,
+      href: "/contact",
+    },
+    newsletter: {
+      headline: "Stay in the loop",
+      subcopy: ctx.expandedBrief.tagline,
+      placeholder: "you@example.com",
+      buttonLabel: "Subscribe",
+    },
+    immersive: { smoothScroll: true, grainOverlay: true },
+  };
 }
 
 async function copyDir(src: string, dest: string): Promise<void> {
@@ -199,12 +317,19 @@ export async function generateReactProject(
       {
         name: "generated-site",
         private: true,
-        scripts: { dev: "next dev -p 3850", build: "next build", start: "next start -p 3850" },
+        scripts: {
+          dev: "next dev -p 3850",
+          build: "next build",
+          start: "next start -p 3850",
+          preview: "node scripts/serve-static.mjs",
+        },
         dependencies: {
           next: "^14.2.0",
           react: "^18.3.0",
           "react-dom": "^18.3.0",
           "framer-motion": "^11.0.0",
+          lenis: "^1.1.0",
+          "embla-carousel-react": "^8.5.0",
         },
         devDependencies: {
           "@types/node": "^22.0.0",
@@ -214,6 +339,7 @@ export async function generateReactProject(
           postcss: "^8.4.0",
           tailwindcss: "^3.4.0",
           typescript: "^5.7.0",
+          serve: "^14.2.6",
         },
       },
       null,
@@ -281,6 +407,20 @@ export default nextConfig;
   await fs.writeFile(path.join(projectPath, "app", "layout.tsx"), layoutTsx(ctx, pages), "utf8");
 
   for (const page of pages) {
+    for (const section of page.sections) {
+      if (section.customCodegen) {
+        const customDir = path.join(projectPath, "components", "custom");
+        await fs.mkdir(customDir, { recursive: true });
+        await fs.writeFile(
+          path.join(customDir, section.customCodegen.fileName),
+          section.customCodegen.source,
+          "utf8"
+        );
+      }
+    }
+  }
+
+  for (const page of pages) {
     const dir =
       page.slug === "home"
         ? path.join(projectPath, "app")
@@ -293,24 +433,21 @@ export default nextConfig;
   await fs.mkdir(path.join(projectPath, "lib"), { recursive: true });
   await fs.writeFile(
     path.join(projectPath, "lib", "site-data.json"),
-    JSON.stringify({ businessName: ctx.businessName, pages: reactPages }, null, 2),
+    JSON.stringify(
+      {
+        businessName: ctx.businessName,
+        pages: reactPages,
+        motionPlan: ctx.motionPlan,
+        layoutPlan: ctx.layoutPlan,
+        chromeSpec: ctx.chromeSpec,
+      },
+      null,
+      2
+    ),
     "utf8"
   );
 
   return { projectPath, outPath: path.join(projectPath, "out") };
 }
 
-export async function buildReactProject(projectPath: string): Promise<string> {
-  const { execSync } = await import("child_process");
-  try {
-    execSync("npm install", { cwd: projectPath, stdio: "pipe" });
-    execSync("npm run build", { cwd: projectPath, stdio: "pipe" });
-  } catch (err) {
-    const detail =
-      err && typeof err === "object" && "stderr" in err
-        ? String((err as { stderr?: Buffer }).stderr ?? "")
-        : "";
-    throw new Error(detail || (err instanceof Error ? err.message : String(err)));
-  }
-  return path.join(projectPath, "out");
-}
+export { buildReactProject } from "./build-project.js";

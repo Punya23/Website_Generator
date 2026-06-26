@@ -1,7 +1,9 @@
 import type { ExpandedBrief } from "../types.js";
 import { ExpandedBriefSchema } from "../types.js";
 import { llm } from "../llm/client.js";
+import { normalizeExpandedBrief } from "../llm/normalize-llm-output.js";
 import { allowMocks, requireLlm } from "../util/llm-required.js";
+import { recordFallback } from "../util/fallback-tracker.js";
 
 const EXPAND_SYSTEM = `You are a senior brand strategist. The user gives a 1-2 line business description.
 Expand it into a rich creative brief for a full production website — ANY industry, ANY scale.
@@ -77,10 +79,13 @@ export async function expandBrief(
       const raw = await llm.chat(
         EXPAND_SYSTEM,
         `User input:\n${rawBrief}\n\n${businessName ? `Preferred business name: ${businessName}` : "Extract the business name from the input."}`,
-        { jsonMode: true, temperature: 0.7, maxTokens: 4096 }
+        { jsonMode: true, temperature: 0.7, tokenRole: "expand" }
       );
-      return ExpandedBriefSchema.parse(JSON.parse(raw));
+      return ExpandedBriefSchema.parse(
+        normalizeExpandedBrief(JSON.parse(raw) as Record<string, unknown>)
+      );
     } catch (err) {
+      recordFallback("expand_brief");
       if (!allowMocks()) throw err instanceof Error ? err : new Error(String(err));
     }
   }

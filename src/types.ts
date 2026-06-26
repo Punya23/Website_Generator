@@ -1,8 +1,9 @@
 import { z } from "zod";
+import { coerceToString } from "./llm/normalize-llm-output.js";
 
 export const ThemeLayoutSchema = z.object({
   maxWidth: z.string(),
-  gridColumns: z.number().min(1).max(6),
+  gridColumns: z.coerce.number().min(1).max(6),
   sectionGap: z.string(),
   cardMinHeight: z.string(),
 });
@@ -17,6 +18,111 @@ export const MotionPresetSchema = z.enum([
 ]);
 
 export type MotionPreset = z.infer<typeof MotionPresetSchema>;
+
+export const SectionEntranceSchema = z.enum([
+  "reveal",
+  "stagger",
+  "scale-in",
+  "slide-left",
+  "none",
+]);
+
+export const SectionMotionConfigSchema = z.object({
+  entrance: SectionEntranceSchema,
+  staggerDelay: z.number().min(0).max(0.5).optional(),
+  parallax: z.boolean().optional(),
+  marquee: z.boolean().optional(),
+  presetOverride: MotionPresetSchema.optional(),
+});
+
+export type SectionMotionConfig = z.infer<typeof SectionMotionConfigSchema>;
+
+export const ChromeNavSpecSchema = z.object({
+  compactOnScroll: z.boolean(),
+  shadowOnScroll: z.boolean().optional(),
+});
+
+export const ChromeFooterSpecSchema = z.object({
+  layout: z.enum(["two-column", "centered", "cta-heavy"]),
+  tagline: z.string().optional(),
+  linkGroups: z
+    .array(z.object({ label: z.string(), slugs: z.array(z.string()) }))
+    .optional(),
+  ctaLabel: z.string(),
+  ctaHref: z.string(),
+  showMood: z.boolean(),
+});
+
+export const ChromeSpecSchema = z.object({
+  footer: ChromeFooterSpecSchema,
+  nav: ChromeNavSpecSchema,
+  announcement: z
+    .object({
+      message: z.string(),
+      href: z.string().optional(),
+    })
+    .optional(),
+  stickyMobileCta: z
+    .object({
+      label: z.string(),
+      href: z.string(),
+    })
+    .optional(),
+  newsletter: z
+    .object({
+      headline: z.string(),
+      subcopy: z.string().optional(),
+      placeholder: z.string().optional(),
+      buttonLabel: z.string().optional(),
+    })
+    .optional(),
+  immersive: z
+    .object({
+      smoothScroll: z.boolean().optional(),
+      grainOverlay: z.boolean().optional(),
+    })
+    .optional(),
+});
+
+export type ChromeSpec = z.infer<typeof ChromeSpecSchema>;
+
+export const SiteMotionPlanSchema = z.object({
+  globalPreset: MotionPresetSchema,
+  reducedMotion: z.enum(["respect", "minimal"]),
+  navScrollEnhance: z.boolean(),
+  sections: z.record(z.string(), SectionMotionConfigSchema),
+  chrome: z.object({
+    footer: SectionMotionConfigSchema,
+    nav: ChromeNavSpecSchema,
+  }),
+});
+
+export type SiteMotionPlan = z.infer<typeof SiteMotionPlanSchema>;
+
+export const LayoutVariantSchema = z.enum([
+  "default",
+  "full-bleed-left",
+  "centered-stack",
+  "split-offset",
+  "band-compact",
+  "band-wide",
+]);
+
+export type LayoutVariant = z.infer<typeof LayoutVariantSchema>;
+
+export const SectionLayoutSpecSchema = z.object({
+  variant: LayoutVariantSchema,
+  density: z.enum(["airy", "normal", "compact"]).optional(),
+  mediaPosition: z.enum(["background", "left", "right"]).optional(),
+});
+
+export type SectionLayoutSpec = z.infer<typeof SectionLayoutSpecSchema>;
+
+export const SiteLayoutPlanSchema = z.object({
+  sections: z.record(z.string(), SectionLayoutSpecSchema),
+});
+
+export type SiteLayoutPlan = z.infer<typeof SiteLayoutPlanSchema>;
 
 export const TypographyScaleSchema = z.object({
   display: z.string().optional(),
@@ -46,6 +152,14 @@ export const PageBlueprintSchema = z.object({
 
 export type PageBlueprint = z.infer<typeof PageBlueprintSchema>;
 
+export const CustomSectionCodegenSchema = z.object({
+  componentName: z.string(),
+  fileName: z.string(),
+  source: z.string(),
+});
+
+export type CustomSectionCodegen = z.infer<typeof CustomSectionCodegenSchema>;
+
 export const SectionInstanceSchema = z.object({
   id: z.string(),
   templateId: z.string(),
@@ -53,6 +167,9 @@ export const SectionInstanceSchema = z.object({
   props: z.record(z.unknown()),
   fullBleed: z.boolean().optional(),
   motion: z.string().optional(),
+  motionConfig: SectionMotionConfigSchema.optional(),
+  layoutSpec: SectionLayoutSpecSchema.optional(),
+  customCodegen: CustomSectionCodegenSchema.optional(),
 });
 
 export type SectionInstance = z.infer<typeof SectionInstanceSchema>;
@@ -66,6 +183,55 @@ export const ReactPageSchema = z.object({
 
 export type ReactPage = z.infer<typeof ReactPageSchema>;
 
+export const PageToneSchema = z.enum(["light", "dark", "warm", "cool"]);
+export const NavTreatmentSchema = z.enum(["glass-dark", "glass-light", "solid", "minimal"]);
+export const GradientMoodSchema = z.enum(["subtle", "vivid", "monochrome"]);
+export const AccentRoleSchema = z.enum(["sparing", "hero", "editorial"]);
+
+export const PalettePartialSchema = z.object({
+  vertical: z.preprocess((v) => coerceToString(v) ?? "", z.string()),
+  mood: z.preprocess((v) => coerceToString(v) ?? "", z.string()),
+  gradientMood: GradientMoodSchema.optional(),
+  accentRole: AccentRoleSchema.optional(),
+  colors: z.object({
+    bg: z.string(),
+    surface: z.string(),
+    text: z.string(),
+    muted: z.string(),
+    accent: z.string(),
+    accentSoft: z.string(),
+    gradientFrom: z.string(),
+    gradientTo: z.string(),
+  }),
+});
+
+export type PalettePartial = z.infer<typeof PalettePartialSchema>;
+
+export const TypographyPartialSchema = z.object({
+  fontHeading: z.string(),
+  fontBody: z.string(),
+  typography: TypographyScaleSchema.optional(),
+  sectionGapMode: z.enum(["tight", "normal", "airy"]).optional(),
+  layout: ThemeLayoutSchema.optional(),
+});
+
+export type TypographyPartial = z.infer<typeof TypographyPartialSchema>;
+
+export const NavSurfacePartialSchema = z.object({
+  pageTone: PageToneSchema.optional(),
+  navTreatment: NavTreatmentSchema.optional(),
+  surfaces: SurfaceModesSchema.optional(),
+  colors: z.object({
+    navBg: z.string(),
+    navText: z.string().optional(),
+    navMuted: z.string().optional(),
+    navActiveBg: z.string().optional(),
+    navActiveText: z.string().optional(),
+  }),
+});
+
+export type NavSurfacePartial = z.infer<typeof NavSurfacePartialSchema>;
+
 export const SiteThemeSchema = z.object({
   vertical: z.string(),
   mood: z.string(),
@@ -73,6 +239,10 @@ export const SiteThemeSchema = z.object({
   fontBody: z.string(),
   motionStyle: z.string().optional(),
   motionPreset: MotionPresetSchema.optional(),
+  pageTone: PageToneSchema.optional(),
+  navTreatment: NavTreatmentSchema.optional(),
+  gradientMood: GradientMoodSchema.optional(),
+  accentRole: AccentRoleSchema.optional(),
   layout: ThemeLayoutSchema.optional(),
   typography: TypographyScaleSchema.optional(),
   surfaces: SurfaceModesSchema.optional(),
@@ -147,6 +317,7 @@ export const SitePlanSchema = z.object({
   compositionStrategy: z.string(),
   avoidPatterns: z.array(z.string()),
   visualArchetype: z.string().optional(),
+  industryFamily: z.string().optional(),
   motionStyle: z.string().optional(),
 });
 
@@ -276,6 +447,30 @@ export const SiteContextSchema = z.object({
     )
     .default([]),
   reactPages: z.record(z.string(), ReactPageSchema).optional(),
+  motionPlan: SiteMotionPlanSchema.optional(),
+  chromeSpec: ChromeSpecSchema.optional(),
+  layoutPlan: SiteLayoutPlanSchema.optional(),
+  verticalProfile: z
+    .object({
+      profileId: z.enum([
+        "luxury-dark",
+        "clinical-light",
+        "corporate-light",
+        "editorial-light",
+        "warm-consumer",
+      ]),
+      pageTone: PageToneSchema,
+      heroBias: z.string(),
+      blueprintFamily: z.string(),
+      grainOverlay: z.boolean(),
+      industryFamily: z.string(),
+      copyHints: z.string().optional(),
+      imageHints: z.string().optional(),
+      ctaPatterns: z.array(z.string()).optional(),
+      proofPatterns: z.array(z.string()).optional(),
+    })
+    .optional(),
+  variationSeed: z.number().optional(),
 });
 
 export type SiteContext = z.infer<typeof SiteContextSchema>;
@@ -304,6 +499,13 @@ export interface QAResult {
   issues: QAIssue[];
 }
 
+export interface QaSummary {
+  passed: boolean;
+  hardCount: number;
+  softCount: number;
+  failedChecks: string[];
+}
+
 export interface GenerationResult {
   site: SiteSpec;
   siteContext: SiteContext;
@@ -314,6 +516,16 @@ export interface GenerationResult {
   reactProjectPath?: string;
   reactStaticOutPath?: string;
   outputMode?: "react" | "html";
+  buildSucceeded?: boolean;
+  degraded?: boolean;
+  previewSource?: "live-server" | "next-static" | "html-fallback";
+  qaSummary?: QaSummary;
+  jobId?: string;
+  variationSeed?: number;
+  verticalProfileId?: string;
+  siteSlug?: string;
+  publishedUrl?: string;
+  outBytes?: number;
 }
 
 export interface VisionPolishResult {

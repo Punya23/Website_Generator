@@ -6,58 +6,81 @@
   <title>Website Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Micro+5&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <div class="page">
     <header class="topbar">
-      <div class="topbar-brand">
-        <span class="topbar-mark" aria-hidden="true"></span>
-        <span>Website Generator</span>
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">Website Generator</span>
       </div>
     </header>
 
     <main class="main">
       <section class="hero">
-        <h1 class="hero-title">Build your site</h1>
-        <p class="hero-sub">Describe your business in a line or two. A full website appears.</p>
+        <p class="eyebrow">AI · React · minutes</p>
+        <h1 class="hero-title">Describe your business.<br />Receive a complete site.</h1>
+        <p class="hero-sub">A sentence or two is sufficient. Copy, structure, and design are composed for you.</p>
 
-        <div class="hero-card">
+        <div class="prompt-card">
           <label class="sr-only" for="brief">Your business</label>
           <textarea
             id="brief"
-            rows="3"
-            placeholder="e.g. Kalpvruksh Finserv — financial aggregator for mutual funds, loans, and insurance"
+            rows="5"
+            placeholder="Kalpvruksh Finserv — financial aggregator for mutual funds, loans, and insurance in Mumbai"
           ></textarea>
           <button type="button" class="generate" id="generate">
-            <span class="btn-label">Generate website</span>
+            <span class="btn-label">Generate</span>
             <span class="btn-spinner" hidden></span>
           </button>
         </div>
 
-        <div class="hero-examples" id="examples" aria-label="Example prompts"></div>
-        <div class="hero-seed">
-          <label for="variation-seed">Variation seed <span class="seed-hint">(optional — reuse for A/B)</span></label>
-          <input type="number" id="variation-seed" placeholder="Auto" inputmode="numeric" />
+        <div class="examples-wrap">
+          <span class="examples-label">Examples</span>
+          <div class="hero-examples" id="examples" aria-label="Example prompts"></div>
         </div>
+
+        <details class="seed-panel" id="seed-panel">
+          <summary class="seed-summary">Repeat the same design later</summary>
+          <div class="seed-body">
+            <p class="seed-explainer">
+              Leave empty for a new composition each time — layout, palette, and sections will vary.
+            </p>
+            <p class="seed-explainer">
+              Enter a number to lock the visual direction. The same brief with the same number reproduces the same result.
+            </p>
+            <label class="seed-field-label" for="variation-seed">Style code <span class="optional">optional</span></label>
+            <div class="seed-row">
+              <input
+                type="text"
+                id="variation-seed"
+                placeholder="Automatic"
+                inputmode="numeric"
+                autocomplete="off"
+              />
+              <button type="button" class="seed-last" id="use-last-seed" hidden title="Use code from last run">Last run</button>
+            </div>
+          </div>
+        </details>
       </section>
 
-      <section class="pipeline" aria-label="Generation pipeline">
+      <section class="pipeline" aria-label="Build progress">
         <div class="pipeline-head">
           <span class="pipeline-label">Pipeline</span>
-          <button type="button" class="ghost" id="clear-log">Clear</button>
+          <button type="button" class="text-btn" id="clear-log">Clear</button>
         </div>
-        <pre class="terminal" id="terminal" aria-live="polite"><span class="terminal-idle">Waiting for your brief…</span></pre>
+        <pre class="terminal" id="terminal" aria-live="polite"><span class="terminal-idle">Awaiting your brief.</span></pre>
       </section>
 
       <section class="preview" id="preview-panel" hidden>
         <div class="preview-head">
           <span id="preview-title">Preview</span>
           <div class="preview-actions">
-            <a class="ghost" id="export-json" href="/api/export?format=project" download="site-context.json">Export JSON</a>
-            <a class="ghost" id="export-react" href="/api/export?format=react" download="site.tsx">Export React</a>
-            <a class="ghost" id="open-tab" href="#" target="_blank" rel="noopener">Open ↗</a>
+            <a class="text-btn" id="open-tab" href="#" target="_blank" rel="noopener">Open</a>
+            <a class="text-btn" id="export-json" href="/api/export?format=project" download="site-context.json">JSON</a>
+            <a class="text-btn" id="export-react" href="/api/export?format=react" download="site.tsx">React</a>
           </div>
         </div>
         <iframe id="preview" title="Generated website preview" sandbox="allow-same-origin allow-scripts"></iframe>
@@ -65,7 +88,7 @@
 
       <section class="editor" id="editor-panel" hidden>
         <div class="editor-head">
-          <span class="pipeline-label">Site editor</span>
+          <span class="pipeline-label">Editor</span>
         </div>
         <div class="editor-grid">
           <div class="editor-theme">
@@ -73,15 +96,17 @@
             <label>Accent <input type="color" id="theme-accent" /></label>
             <label>Background <input type="color" id="theme-bg" /></label>
             <label>Heading font <input type="text" id="theme-heading-font" /></label>
-            <label>Motion <select id="theme-motion">
-              <option value="fade-up">Fade up</option>
-              <option value="stagger">Stagger</option>
-              <option value="scale-in">Scale in</option>
-              <option value="slide-left">Slide left</option>
-              <option value="parallax-hero">Parallax hero</option>
-              <option value="none">None</option>
-            </select></label>
-            <button type="button" class="ghost" id="apply-theme">Apply theme</button>
+            <label>Motion
+              <select id="theme-motion">
+                <option value="fade-up">Fade up</option>
+                <option value="stagger">Stagger</option>
+                <option value="scale-in">Scale in</option>
+                <option value="slide-left">Slide left</option>
+                <option value="parallax-hero">Parallax</option>
+                <option value="none">None</option>
+              </select>
+            </label>
+            <button type="button" class="text-btn" id="apply-theme">Apply</button>
           </div>
           <div class="editor-sections">
             <h3>Sections <span id="editor-page-label"></span></h3>

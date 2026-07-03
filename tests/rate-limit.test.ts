@@ -6,6 +6,7 @@ import {
   isOverCapacityError,
   isRateLimitError,
   isTransientLLMError,
+  parseAffordableMaxTokens,
   parseRetryAfterMs,
 } from "../src/llm/rate-limit.js";
 
@@ -53,5 +54,17 @@ describe("rate limit helpers", () => {
     expect(isInsufficientCreditsError(err402)).toBe(true);
     expect(isNonRetryableLLMError(err402)).toBe(true);
     expect(isTransientLLMError(err402)).toBe(false);
+  });
+
+  it("retries OpenRouter max_tokens cap 402 with affordable hint", () => {
+    const err = Object.assign(
+      new Error(
+        "402 This request requires more credits, or fewer max_tokens. You requested up to 4096 tokens, but can only afford 3301."
+      ),
+      { status: 402 }
+    );
+    expect(isInsufficientCreditsError(err)).toBe(true);
+    expect(isNonRetryableLLMError(err)).toBe(false);
+    expect(parseAffordableMaxTokens(err)).toBe(3301);
   });
 });

@@ -2,11 +2,15 @@ import type { ExpandedBrief, PageBlueprint, PagePlan, SiteContext } from "../typ
 import { PageBlueprintSchema } from "../types.js";
 import { llm } from "../llm/client.js";
 import { briefToContext } from "./expand-brief-agent.js";
-import { allowMocks, requireLlm } from "../util/llm-required.js";
-import { templateCatalogForPrompt, getTemplate } from "../section-templates/registry.js";
+import { allowMocks, requireLlm, strictLlmRequired, handleLlmFailure } from "../util/llm-required.js";
+import { getTemplate } from "../section-templates/registry.js";
 import { pipelineLog } from "../util/pipeline-log.js";
 import { enforceBlueprintWithPool } from "../design/enforce-blueprint.js";
 import { trimBlueprints } from "../design/blueprint-trim.js";
+import { isQualityPipeline } from "../llm/pipeline-speed.js";
+import { architectSiteBlueprints, type SiteArchitectOptions } from "./site-architect-agent.js";
+import { parseLlmJson } from "../llm/parse-json.js";
+import { recordFallback } from "../util/fallback-tracker.js";
 
 const CREATIVE_DIRECTOR_PROMPT = `You are the creative director for a premium marketing website (Framer/editorial quality).
 
@@ -33,6 +37,8 @@ Output JSON:
 export interface CreativeDirectorOptions {
   /** Skip LLM — pool + seed only (retry path). */
   poolOnly?: boolean;
+  /** Prior blueprint QA issues for architect retry */
+  qaIssues?: string[];
 }
 
 function poolBlueprint(page: PagePlan, ctx: SiteContext): PageBlueprint {
@@ -66,6 +72,12 @@ export async function directPageBlueprints(
   options: CreativeDirectorOptions = {}
 ): Promise<PageBlueprint[]> {
   requireLlm("creative direction");
+
+  if (isQualityPipeline() && !options.poolOnly) {
+    const architectOpts: SiteArchitectOptions = {};
+    if (options.qaIssues?.length) architectOpts.qaIssues = options.qaIssues;
+    return architectSiteBlueprints(ctx, pages, architectOpts);
+  }
 
   const profileLine = ctx.verticalProfile
     ? `verticalProfile: ${ctx.verticalProfile.profileId}
@@ -110,7 +122,7 @@ Return intents for ALL section slots on ALL pages.`,
         }
       );
 
-      const parsed = JSON.parse(raw);
+      const parsed = parseLlmJson(raw);
       const blueprints = trimBlueprints(
         pages.map((page) => {
           const llmBp = parseLlmIntents(parsed, page);
@@ -122,9 +134,13 @@ Return intents for ALL section slots on ALL pages.`,
       pipelineLog(`[pipeline] Creative director: ${blueprints.length} pool-enforced blueprints`);
       return blueprints;
     } catch (err) {
+      recordFallback("creative_director");
       pipelineLog(
         `[pipeline] Creative director LLM failed: ${err instanceof Error ? err.message : String(err)} — using pool blueprints`
       );
+      if (strictLlmRequired()) {
+        handleLlmFailure("creative director", err);
+      }
       if (!allowMocks()) {
         return trimBlueprints(pages.map((p) => poolBlueprint(p, ctx)), ctx);
       }

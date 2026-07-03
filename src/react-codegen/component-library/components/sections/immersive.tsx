@@ -9,6 +9,7 @@ import {
   MagneticButton,
   MonoTag,
   Reveal,
+  SectionBody,
   SectionDivider,
   SectionLabel,
   SplitRevealHeading,
@@ -131,19 +132,21 @@ export function HeroVideo(props: {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-bg/90 via-bg/30 to-transparent" />
       </div>
-      <Container className="relative flex min-h-[75vh] flex-col justify-end pb-16 pt-32">
-        <Reveal>
-          {props.label ? <MonoTag>{props.label}</MonoTag> : null}
-          <SplitRevealHeading text={props.headline} className="mt-4 max-w-3xl text-text" />
-          {props.subcopy ? <p className="mt-4 max-w-xl text-lg text-muted">{props.subcopy}</p> : null}
-          {props.cta ? (
-            <div className="mt-8">
-              <MagneticButton href={props.cta.href ?? "#contact"} className="bg-accent px-6 py-3 text-sm font-semibold text-white">
-                {props.cta.label}
-              </MagneticButton>
-            </div>
-          ) : null}
-        </Reveal>
+      <Container className="relative z-10 pb-16 pt-32">
+        <SectionBody>
+          <Reveal>
+            {props.label ? <MonoTag>{props.label}</MonoTag> : null}
+            <SplitRevealHeading text={props.headline} className="mt-4 max-w-3xl text-text" />
+            {props.subcopy ? <p className="mt-4 max-w-xl text-lg text-muted">{props.subcopy}</p> : null}
+            {props.cta ? (
+              <div className="mt-8">
+                <MagneticButton href={props.cta.href ?? "#contact"} className="bg-accent px-6 py-3 text-sm font-semibold text-white">
+                  {props.cta.label}
+                </MagneticButton>
+              </div>
+            ) : null}
+          </Reveal>
+        </SectionBody>
       </Container>
     </ImmersiveShell>
   );
@@ -231,16 +234,16 @@ export function PortfolioCarousel(props: {
         {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
         {props.headline ? <DisplayHeading className="mt-2">{props.headline}</DisplayHeading> : null}
       </Container>
-      <div className="mt-8 overflow-hidden pl-6 md:pl-[max(1.5rem,calc((100vw-var(--max-content))/2))]" ref={emblaRef}>
+      <div className="content-inset-left mt-8 overflow-hidden" ref={emblaRef}>
         <div className="flex gap-4">
           {props.slides.map((slide, i) => (
-            <div key={i} className="min-w-0 flex-[0_0_85%] sm:flex-[0_0_55%] lg:flex-[0_0_40%]">
-              <div className="group relative overflow-hidden rounded-2xl">
+            <div key={i} className="min-w-0 flex-[0_0_85%] sm:flex-[0_0_50%] lg:flex-[0_0_38%]">
+              <div className="section-media group relative overflow-hidden rounded-2xl">
                 {slide.image?.src ? (
                   <img
                     src={slide.image.src}
                     alt={slide.image.alt ?? slide.title}
-                    className="aspect-[4/5] w-full object-cover transition duration-500 group-hover:scale-105"
+                    className="aspect-[4/5] w-full object-cover"
                   />
                 ) : (
                   <div className="aspect-[4/5] w-full bg-accent/10" />
@@ -353,7 +356,7 @@ export function PricingToggle(props: {
             </button>
           </div>
         </div>
-        <Stagger className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Stagger className="card-grid sm:grid-cols-2 lg:grid-cols-3">
           {props.tiers.map((tier) => (
             <StaggerItem key={tier.name}>
               <div
@@ -401,7 +404,7 @@ export function StatsAnimated(props: {
       <Container>
         {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
         {props.headline ? <DisplayHeading className="mt-2 text-center">{props.headline}</DisplayHeading> : null}
-        <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="card-grid mt-10 sm:grid-cols-2 lg:grid-cols-4">
           {props.stats.map((stat) => (
             <AnimatedStat key={stat.label} value={stat.value} label={stat.label} />
           ))}
@@ -420,7 +423,7 @@ export function NewsletterBand(props: {
 }) {
   return (
     <ImmersiveShell id={props.id} templateId="newsletter_band" mode="band" className="border-t border-border bg-surface/60 py-section">
-      <Container className="max-w-2xl text-center">
+      <Container narrow="sm" className="text-center">
         <Reveal>
           <DisplayHeading as="h2">{props.headline}</DisplayHeading>
           {props.subcopy ? <p className="mt-3 text-muted">{props.subcopy}</p> : null}

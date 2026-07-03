@@ -1,5 +1,4 @@
-import { describe, it, expect } from "vitest";
-import { directMotionPlan } from "../src/agents/motion-director-agent.js";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { GENERIC_THEME } from "../src/agents/theme-agent.js";
 import { runMotionQA } from "../src/qa/motion-qa.js";
 import type { PageBlueprint, SiteContext } from "../src/types.js";
@@ -59,7 +58,24 @@ const blueprints: PageBlueprint[] = [
 ];
 
 describe("motion director agent", () => {
+  const env = process.env;
+
+  beforeEach(() => {
+    process.env = { ...env };
+    delete process.env.OPENROUTER_API_KEY;
+    delete process.env.GROQ_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.MISTRAL_API_KEY;
+    delete process.env.LLM_PROVIDER;
+  });
+
+  afterEach(() => {
+    process.env = env;
+  });
+
   it("produces motion plan that passes QA in mock mode", async () => {
+    vi.resetModules();
+    const { directMotionPlan } = await import("../src/agents/motion-director-agent.js");
     const plan = await directMotionPlan(mockCtx(), blueprints);
     expect(plan.globalPreset).toBeTruthy();
     expect(plan.sections.home_hero?.parallax).toBe(true);

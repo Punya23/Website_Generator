@@ -92,8 +92,29 @@ export function StaggerItem({
   );
 }
 
-export function Container({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`mx-auto w-full max-w-content px-6 md:px-10 ${className}`}>{children}</div>;
+export function Container({
+  children,
+  className = "",
+  narrow = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  /** Inner max-width while keeping outer rail padding aligned with nav/footer */
+  narrow?: false | "sm" | "md" | "lg";
+}) {
+  const innerClass =
+    narrow === "sm"
+      ? "content-narrow-sm"
+      : narrow === "md"
+        ? "content-narrow"
+        : narrow === "lg"
+          ? "content-narrow-lg"
+          : "";
+  return (
+    <div className={`content-rail ${className}`}>
+      {innerClass ? <div className={innerClass}>{children}</div> : children}
+    </div>
+  );
 }
 
 export function SectionLabel({ children }: { children: ReactNode }) {
@@ -118,7 +139,7 @@ export function DisplayHeading({ children, as: Tag = "h2", className = "" }: { c
 
 export function PrimaryButton({ href, children }: { href?: string; children: ReactNode }) {
   const cls =
-    "magnetic-btn inline-flex items-center justify-center rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90";
+    "magnetic-btn inline-flex items-center justify-center rounded-[var(--radius)] bg-accent px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90";
   if (href) {
     return (
       <a href={href} className={cls}>
@@ -142,7 +163,7 @@ export function MagneticButton({
   children: ReactNode;
   className?: string;
 }) {
-  const cls = `magnetic-btn inline-flex items-center justify-center rounded-full transition ${className}`;
+  const cls = `magnetic-btn inline-flex items-center justify-center rounded-[var(--radius)] transition ${className}`;
   if (href) {
     return (
       <motion.a
@@ -215,3 +236,4 @@ export {
   ScrollPinSection,
   TextScrub,
 } from "./premium";
+export { SplitHeroLayout, CardGrid, BentoGrid, SectionBody, ContentMeasure } from "./layout";

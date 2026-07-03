@@ -54,6 +54,8 @@ export function mergeDesignSystem(input: DesignCouncilInput): SiteTheme {
     typography: typography.typography,
     surfaces: navSurface.surfaces,
     layout: typography.layout,
+    radiusScale: typography.radiusScale,
+    shadowDepth: typography.shadowDepth,
     colors: {
       ...palette.colors,
       navBg: navSurface.colors.navBg,

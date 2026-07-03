@@ -16,8 +16,12 @@ import { repairBlueprints } from "../design/blueprint-repair.js";
 import {
   creativeDirectorPoolOnly,
   isFastPipeline,
+  isQualityPipeline,
   sectionFillConcurrency,
   skipDirectorRetries,
+  visionQaEnabled,
+  visionQaHomeOnly,
+  maxVisionRetries,
 } from "../llm/pipeline-speed.js";
 import { mapPool } from "../util/async-pool.js";
 import { attachMotionPlan } from "../agents/contracts/index.js";
@@ -31,13 +35,31 @@ import {
   runVisionRetryLoop,
 } from "./react-vision-retry.js";
 import {
-  generateCustomHeroSection,
-  shouldCodegenCustomHero,
+  generateBespokeSection,
+  shouldAttemptBespokeSection,
 } from "../agents/section-codegen-agent.js";
 
 export function getOutputMode(): "react" | "html" {
   const mode = (process.env.OUTPUT_MODE ?? "react").toLowerCase();
   return mode === "html" ? "html" : "react";
+}
+
+export function parseFailedCustomComponent(buildError: string): string | null {
+  const match = buildError.match(/components\/custom\/([^/\s'"]+\.tsx)/);
+  return match?.[1] ?? null;
+}
+
+/** Drops a broken bespoke section's customCodegen so it falls back to its already-valid
+ *  fixed-template render (writePageTsx uses the template component whenever customCodegen is absent). */
+export function dropCustomCodegenByFileName(reactPages: Record<string, ReactPage>, fileName: string): boolean {
+  for (const page of Object.values(reactPages)) {
+    const section = page.sections.find((s) => s.customCodegen?.fileName === fileName);
+    if (section) {
+      section.customCodegen = undefined;
+      return true;
+    }
+  }
+  return false;
 }
 
 export interface ReactPipelineResult {
@@ -55,7 +77,11 @@ export async function runReactPipeline(
   options: { previewBasePath?: string } = {}
 ): Promise<ReactPipelineResult> {
   const pages = ctx.sitePlan.pages;
-  if (isFastPipeline()) {
+  if (isQualityPipeline()) {
+    pipelineLog(
+      `[pipeline] Quality mode: site architect (GLM), Gemini section copy, concurrency ×${sectionFillConcurrency()}`
+    );
+  } else if (isFastPipeline()) {
     pipelineLog(
       `[pipeline] Fast mode: parallel sections (×${sectionFillConcurrency()}), unified section LLM, pool blueprints`
     );
@@ -74,16 +100,23 @@ export async function runReactPipeline(
     );
   }
   if (!blueprintQa.passed) {
+    const issueMessages = blueprintQa.issues.map((i) => i.message);
     pipelineLog(
-      `[pipeline] Blueprint QA failed (${blueprintQa.issues.map((i) => i.message).join("; ")}); regenerating from profile pool…`
+      `[pipeline] Blueprint QA failed (${issueMessages.join("; ")}); ${isQualityPipeline() ? "architect retry…" : "regenerating from profile pool…"}`
     );
-    blueprints = await timedStep("site", "creative director (pool retry)", () =>
-      directPageBlueprints(ctx, pages, { poolOnly: true })
-    );
+    if (isQualityPipeline()) {
+      blueprints = await timedStep("site", "site architect (QA retry)", () =>
+        directPageBlueprints(ctx, pages, { qaIssues: issueMessages })
+      );
+    } else {
+      blueprints = await timedStep("site", "creative director (pool retry)", () =>
+        directPageBlueprints(ctx, pages, { poolOnly: true })
+      );
+    }
     blueprintQa = runBlueprintQA(blueprints, ctx);
     if (!blueprintQa.passed) {
       pipelineLog(
-        `[pipeline] Blueprint QA still failing after pool retry — applying deterministic repair…`
+        `[pipeline] Blueprint QA still failing — applying deterministic repair…`
       );
       blueprints = repairBlueprints(blueprints, ctx);
       blueprintQa = runBlueprintQA(blueprints, ctx);
@@ -155,9 +188,9 @@ export async function runReactPipeline(
       fillSectionProps(ctx, job.blueprint.slug, job.section, registry)
     );
 
-    if (shouldCodegenCustomHero(ctx, job.blueprint.slug, job.section, job.sectionIndex)) {
-      const custom = await timedStep(job.blueprint.slug, `${job.section.id}: custom hero`, () =>
-        generateCustomHeroSection(ctx, instance)
+    if (shouldAttemptBespokeSection(ctx, job.section)) {
+      const custom = await timedStep(job.blueprint.slug, `${job.section.id}: bespoke codegen`, () =>
+        generateBespokeSection(ctx, instance)
       );
       if (custom) {
         instance = { ...instance, customCodegen: custom };
@@ -196,19 +229,47 @@ export async function runReactPipeline(
   }
 
   pipelineLog("[pipeline] Generating React project…");
-  const { projectPath } = await generateReactProject(ctx, reactPages, outputDir, {
-    basePath: options.previewBasePath,
-  });
+  let projectPath = (
+    await generateReactProject(ctx, reactPages, outputDir, { basePath: options.previewBasePath })
+  ).projectPath;
 
   let previewPath = projectPath;
   let buildSucceeded = false;
-  try {
-    previewPath = await buildReactProject(projectPath);
-    buildSucceeded = true;
-    pipelineLog(`[pipeline] React build complete → ${previewPath}`);
-  } catch (err) {
+  let lastBuildError = "";
+
+  // Bespoke sections fail independently — a page with several bespoke sections can need one
+  // targeted retry per broken section, so this budget is generous rather than tight.
+  const MAX_BUILD_ATTEMPTS = 6;
+  for (let attempt = 0; attempt < MAX_BUILD_ATTEMPTS; attempt++) {
+    try {
+      previewPath = await buildReactProject(projectPath);
+      buildSucceeded = true;
+      pipelineLog(`[pipeline] React build complete → ${previewPath}`);
+      break;
+    } catch (err) {
+      lastBuildError = err instanceof Error ? err.message : String(err);
+      pipelineLog(
+        `[pipeline] React build failed (attempt ${attempt + 1}): ${lastBuildError.slice(0, 400)}`
+      );
+
+      const brokenFile =
+        attempt < MAX_BUILD_ATTEMPTS - 1 ? parseFailedCustomComponent(lastBuildError) : null;
+      if (brokenFile && dropCustomCodegenByFileName(reactPages, brokenFile)) {
+        pipelineLog(
+          `[pipeline] Dropping bespoke section ${brokenFile} after build failure — falling back to its template render…`
+        );
+        projectPath = (
+          await generateReactProject(ctx, reactPages, outputDir, { basePath: options.previewBasePath })
+        ).projectPath;
+        continue;
+      }
+      break;
+    }
+  }
+
+  if (!buildSucceeded) {
     pipelineLog(
-      `[pipeline] React build skipped (${err instanceof Error ? err.message : String(err)}) — using HTML preview fallback`
+      `[pipeline] React build skipped (${lastBuildError.slice(0, 400)}) — using HTML preview fallback`
     );
     pipelineLog(
       `[pipeline] Failed React project kept at ${projectPath} (npm run build && npm run preview — open /preview/)`
@@ -229,56 +290,61 @@ export async function runReactPipeline(
   qaResults.__layout__ = layoutQa;
   qaResults.__blueprint__ = blueprintQa;
 
-  if (buildSucceeded && llm.supportsVision) {
-    try {
-      const vision = await buildAndVisionQa(ctx, previewPath, "home");
-      qaResults.__vision__ = {
-        passed: vision.passed,
-        issues: vision.issues,
-      };
-      if (vision.issues.length > 0) {
-        pipelineLog(
-          `[pipeline] Vision QA: ${vision.issues.map((i) => i.message).join("; ")}`
-        );
-      }
+  if (buildSucceeded && llm.supportsVision && visionQaEnabled()) {
+    const pagesToCheck = visionQaHomeOnly() ? ["home"] : Object.keys(reactPages);
 
-      if (!vision.passed) {
-        const retry = await runVisionRetryLoop(
-          ctx,
-          reactPages,
-          blueprints,
-          registry,
-          previewPath,
-          outputDir,
-          vision.issues,
-          { previewBasePath: options.previewBasePath }
-        );
-        if (retry) {
-          qaResults.__vision_retry__ = {
+    for (const pageSlug of pagesToCheck) {
+      if (!reactPages[pageSlug]) continue;
+      try {
+        let vision = await buildAndVisionQa(ctx, previewPath, pageSlug);
+        qaResults[`__vision_${pageSlug}__`] = { passed: vision.passed, issues: vision.issues };
+        if (vision.issues.length > 0) {
+          pipelineLog(
+            `[pipeline] Vision QA (${pageSlug}): ${vision.issues.map((i) => i.message).join("; ")}`
+          );
+        }
+
+        let retriesLeft = maxVisionRetries();
+        while (!vision.passed && retriesLeft > 0) {
+          retriesLeft--;
+          const retry = await runVisionRetryLoop(
+            ctx,
+            reactPages,
+            blueprints,
+            registry,
+            previewPath,
+            outputDir,
+            vision.issues,
+            { previewBasePath: options.previewBasePath, pageSlug }
+          );
+          if (!retry) break;
+
+          qaResults[`__vision_retry_${pageSlug}__`] = {
             passed: retry.qa.passed,
             issues: retry.qa.issues,
           };
           pipelineLog(
-            `[pipeline] Vision retry applied: ${retry.applied.join(", ")} — ${retry.qa.passed ? "passed" : "still failing"}`
+            `[pipeline] Vision retry (${pageSlug}): ${retry.applied.join(", ")} — ${retry.qa.passed ? "passed" : "still failing"}`
           );
           if (retry.buildSucceeded) {
             previewPath = retry.previewPath;
           }
+          vision = retry.qa;
         }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        pipelineLog(`[pipeline] Vision QA failed (${pageSlug}): ${message}`);
+        qaResults[`__vision_${pageSlug}__`] = {
+          passed: false,
+          issues: [
+            {
+              severity: "hard",
+              code: "VISION_QA_ERROR",
+              message: `Vision QA failed: ${message}`,
+            },
+          ],
+        };
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      pipelineLog(`[pipeline] Vision QA failed: ${message}`);
-      qaResults.__vision__ = {
-        passed: false,
-        issues: [
-          {
-            severity: "hard",
-            code: "VISION_QA_ERROR",
-            message: `Vision QA failed: ${message}`,
-          },
-        ],
-      };
     }
   }
 

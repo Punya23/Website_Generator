@@ -120,7 +120,7 @@ Generate 2-8 blocks for this section only. IDs must start with "${section.id}_".
       {
         jsonMode: true,
         temperature: 0.8,
-        maxTokens: 4096,
+        tokenRole: "section",
         model: llm.getSectionModel(),
       }
     );
@@ -157,7 +157,7 @@ BLOCKS: ${JSON.stringify(blocks.map((b) => ({ id: b.id, type: b.type })))}`,
       {
         jsonMode: true,
         temperature: 0.35,
-        maxTokens: 2048,
+        tokenRole: "composition",
         model: llm.getCompositionModel(),
       }
     );

@@ -3,7 +3,7 @@ import type { SiteContext } from "../types.js";
 import type { BlueprintSection } from "./page-composer-agent.js";
 import { llm } from "../llm/client.js";
 import { briefToContext } from "./expand-brief-agent.js";
-import { allowMocks, requireLlm } from "../util/llm-required.js";
+import { allowMocks, requireLlm, strictLlmRequired, handleLlmFailure } from "../util/llm-required.js";
 import { getTemplate, validateCopyProps } from "../section-templates/registry.js";
 import { COPY_PROP_SCHEMAS } from "../section-templates/schemas.js";
 import { freezeSnapshot, type SectionCopySnapshot } from "./contracts/index.js";
@@ -23,15 +23,16 @@ import { writeSectionCopy } from "./copywriter-agent.js";
 import { curateSectionMedia } from "./media-curator-agent.js";
 import type { MediaRegistry } from "../media/media-registry.js";
 
-const UNIFIED_PROMPT = `You are a section content agent for ONE website section.
+const UNIFIED_PROMPT = `You are a section content agent for ONE premium React marketing section (Framer quality).
 
 OUTPUT: JSON props with ALL copy fields AND image/imageQuery fields for this template.
 - All string fields must be plain strings, never JSON arrays
-- Use imageQuery (never src) — one string per image
-- Match vertical image hints for stock photo queries
-- Compelling visitor-facing copy — never copy section intent verbatim
+- Use imageQuery (never src) — descriptive stock photo queries matching vertical imageHints
+- Write specific copy for THIS business — never generic filler or placeholder names
+- headline must NOT repeat section intent verbatim
+- Avoid: seamless, innovative, world-class, cutting-edge, empower, elevate
 
-Return { "props": { ... } } or a flat props object.`;
+Return { "props": { ... } } or a flat props object. Output valid JSON only.`;
 
 export async function fillSectionCopyAndMedia(
   ctx: SiteContext,
@@ -94,6 +95,7 @@ Fields: ${schemaHint.join(", ")}`,
     pipelineLog(
       `[pipeline] Unified section ${section.id} failed: ${err instanceof Error ? err.message : String(err)} — split agents`
     );
+    if (strictLlmRequired()) handleLlmFailure(`unified section ${section.id}`, err);
     const copy = await writeSectionCopy(ctx, pageSlug, section);
     const media = await curateSectionMedia(ctx, pageSlug, section, copy, registry);
     return { copy, media };

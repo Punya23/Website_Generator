@@ -4,6 +4,7 @@ import { extractBriefIntent, contentFocusBoost, type BriefIntent } from "./brief
 import { isTemplateRelevant } from "./template-relevance.js";
 import type { VerticalProfileId } from "./vertical-profiles.js";
 import { pipelineLog } from "../util/pipeline-log.js";
+import { homeSectionBudget } from "../llm/pipeline-speed.js";
 
 export const HOME_SECTION_BUDGET = { min: 5, max: 6 } as const;
 
@@ -149,7 +150,7 @@ function compressHomeToBudget(
   sections: PageBlueprint["sections"],
   ctx: SiteContext
 ): PageBlueprint["sections"] {
-  const { max } = HOME_SECTION_BUDGET;
+  const { max } = homeSectionBudget();
   if (sections.length <= max) return sections;
 
   const contentFocus =

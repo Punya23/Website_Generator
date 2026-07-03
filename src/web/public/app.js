@@ -44,6 +44,7 @@ const themeBg = document.getElementById("theme-bg");
 const themeHeadingFont = document.getElementById("theme-heading-font");
 const themeMotion = document.getElementById("theme-motion");
 const applyThemeBtn = document.getElementById("apply-theme");
+const useLastSeedBtn = document.getElementById("use-last-seed");
 
 let abortController = null;
 let editorState = null;
@@ -66,7 +67,7 @@ function setLoading(on) {
 }
 
 function renderExamples() {
-  for (const ex of EXAMPLES) {
+  EXAMPLES.forEach((ex) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "example-chip";
@@ -77,7 +78,14 @@ function renderExamples() {
       briefEl.focus();
     });
     examplesEl.appendChild(btn);
-  }
+  });
+}
+
+function showLastSeedButton(seed) {
+  if (!useLastSeedBtn || seed == null) return;
+  lastVariationSeed = seed;
+  useLastSeedBtn.hidden = false;
+  useLastSeedBtn.textContent = String(seed);
 }
 
 function refreshPreview(url) {
@@ -249,7 +257,7 @@ async function generate() {
     if (seedRaw) {
       const parsed = Number(seedRaw);
       if (!Number.isFinite(parsed)) {
-        appendLog("Variation seed must be a number.", true);
+        appendLog("Style code must be a number, or leave the field empty.", true);
         setLoading(false);
         return;
       }
@@ -287,17 +295,17 @@ async function generate() {
         if (json.type === "done" || json.type === "degraded") {
           const degraded = json.type === "degraded" || json.degraded;
           if (json.variationSeed != null) {
-            lastVariationSeed = json.variationSeed;
-            if (seedEl && !seedEl.value) seedEl.placeholder = String(json.variationSeed);
+            showLastSeedButton(json.variationSeed);
+            if (seedEl && !seedEl.value.trim()) {
+              seedEl.placeholder = String(json.variationSeed);
+            }
           }
           appendLog(
-            `${degraded ? "Degraded" : "Done"} in ${(json.timingMs / 1000).toFixed(1)}s — ${json.pages?.length ?? 0} pages`,
+            `${degraded ? "Completed with warnings" : "Complete"} · ${(json.timingMs / 1000).toFixed(1)}s · ${json.pages?.length ?? 0} pages`,
             degraded
           );
-          if (json.verticalProfileId || json.variationSeed != null) {
-            appendLog(
-              `Profile: ${json.verticalProfileId ?? "—"} · seed: ${json.variationSeed ?? "—"}`
-            );
+          if (json.variationSeed != null) {
+            appendLog(`Style code ${json.variationSeed} — retain to reproduce this composition`);
           }
           if (json.siteSlug) {
             appendLog(`Site slug: ${json.siteSlug}`);
@@ -348,7 +356,15 @@ async function generate() {
 
 generateBtn.addEventListener("click", generate);
 clearLogBtn.addEventListener("click", () => {
-  terminalEl.innerHTML = '<span class="terminal-idle">Waiting for your brief…</span>';
+  terminalEl.innerHTML = '<span class="terminal-idle">Awaiting your brief.</span>';
+});
+
+useLastSeedBtn?.addEventListener("click", () => {
+  if (lastVariationSeed != null && seedEl) {
+    seedEl.value = String(lastVariationSeed);
+    document.getElementById("seed-panel")?.setAttribute("open", "");
+    seedEl.focus();
+  }
 });
 briefEl.addEventListener("keydown", (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") generate();

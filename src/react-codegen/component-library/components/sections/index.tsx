@@ -9,6 +9,9 @@ import {
   PrimaryButton,
   MagneticButton,
   SplitRevealHeading,
+  SplitHeroLayout,
+  CardGrid,
+  SectionBody,
   Reveal,
   SectionLabel,
   Stagger,
@@ -73,23 +76,55 @@ export function HeroEditorial(props: {
   const parallax = useSectionParallax(props.id);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "18%"]);
-  const variant = props.layoutVariant ?? "full-bleed-left";
+  const rawVariant = props.layoutVariant ?? "full-bleed-left";
+  const variant = rawVariant === "split-offset" ? "split-offset" : rawVariant;
   const minH = props.density === "compact" ? "min-h-[55vh]" : props.density === "airy" ? "min-h-[80vh]" : "min-h-[70vh]";
 
   if (variant === "centered-stack") {
     return (
       <SectionShell id={props.id} templateId="hero_editorial" mode="bleed" layoutVariant={variant} className={`${minH} bg-bg`}>
-        <Container className={`flex ${minH} flex-col items-center justify-center text-center`}>
-          <Reveal>
-            {props.label ? <MonoTag>{props.label}</MonoTag> : null}
-            <DisplayHeading as="h1" className="mt-4 max-w-3xl">{props.headline}</DisplayHeading>
-            {props.subcopy ? <p className="mt-4 max-w-xl text-lg text-muted">{props.subcopy}</p> : null}
-            {props.cta ? (
-              <div className="mt-8">
-                <PrimaryButton href={props.cta.href ?? "#contact"}>{props.cta.label}</PrimaryButton>
+        <Container className="py-section text-center">
+          <SectionBody className={`flex ${minH} flex-col items-center justify-center`}>
+            <Reveal>
+              {props.label ? <MonoTag>{props.label}</MonoTag> : null}
+              <DisplayHeading as="h1" className="mt-4 max-w-3xl mx-auto">{props.headline}</DisplayHeading>
+              {props.subcopy ? <p className="mt-4 max-w-xl mx-auto text-lg text-muted">{props.subcopy}</p> : null}
+              {props.cta ? (
+                <div className="mt-8">
+                  <PrimaryButton href={props.cta.href ?? "#contact"}>{props.cta.label}</PrimaryButton>
+                </div>
+              ) : null}
+            </Reveal>
+          </SectionBody>
+        </Container>
+      </SectionShell>
+    );
+  }
+
+  if (variant === "full-bleed-left" && props.image?.src) {
+    return (
+      <SectionShell id={props.id} templateId="hero_editorial" mode="bleed" layoutVariant={variant} className="overflow-hidden bg-bg py-section">
+        <Container>
+          <SplitHeroLayout
+            mediaRight={props.mediaPosition !== "left"}
+            copy={
+              <Reveal>
+                {props.label ? <MonoTag>{props.label}</MonoTag> : null}
+                <DisplayHeading as="h1" className="mt-4">{props.headline}</DisplayHeading>
+                {props.subcopy ? <p className="mt-4 text-lg text-muted">{props.subcopy}</p> : null}
+                {props.cta ? (
+                  <div className="mt-8">
+                    <PrimaryButton href={props.cta.href ?? "#contact"}>{props.cta.label}</PrimaryButton>
+                  </div>
+                ) : null}
+              </Reveal>
+            }
+            media={
+              <div className="section-media aspect-[4/5] max-h-[min(72vh,640px)]">
+                <img src={props.image.src} alt={props.image.alt ?? props.headline} className="h-full w-full rounded-2xl object-cover shadow-2xl" />
               </div>
-            ) : null}
-          </Reveal>
+            }
+          />
         </Container>
       </SectionShell>
     );
@@ -97,27 +132,32 @@ export function HeroEditorial(props: {
 
   if (variant === "split-offset") {
     return (
-      <SectionShell id={props.id} templateId="hero_editorial" mode="bleed" layoutVariant={variant} className="hero-split-offset overflow-hidden bg-bg py-16 md:py-24">
+      <SectionShell id={props.id} templateId="hero_editorial" mode="bleed" layoutVariant={variant} className="hero-split-offset overflow-hidden bg-bg py-section">
         <Container>
-          <div className="grid items-center gap-8 lg:grid-cols-2">
-            <Reveal>
-              {props.label ? <MonoTag>{props.label}</MonoTag> : null}
-              <DisplayHeading as="h1" className="mt-4">{props.headline}</DisplayHeading>
-              {props.subcopy ? <p className="mt-4 text-lg text-muted">{props.subcopy}</p> : null}
-              {props.cta ? (
-                <div className="mt-8">
-                  <PrimaryButton href={props.cta.href ?? "#contact"}>{props.cta.label}</PrimaryButton>
-                </div>
-              ) : null}
-            </Reveal>
-            <div className="relative lg:-mr-16 lg:translate-y-4">
-              {props.image?.src ? (
-                <img src={props.image.src} alt={props.image.alt ?? props.headline} className="w-full rounded-2xl object-cover shadow-2xl" />
-              ) : (
-                <div className="aspect-[4/5] w-full rounded-2xl bg-accent/10" />
-              )}
-            </div>
-          </div>
+          <SplitHeroLayout
+            mediaRight
+            copy={
+              <Reveal>
+                {props.label ? <MonoTag>{props.label}</MonoTag> : null}
+                <DisplayHeading as="h1" className="mt-4">{props.headline}</DisplayHeading>
+                {props.subcopy ? <p className="mt-4 text-lg text-muted">{props.subcopy}</p> : null}
+                {props.cta ? (
+                  <div className="mt-8">
+                    <PrimaryButton href={props.cta.href ?? "#contact"}>{props.cta.label}</PrimaryButton>
+                  </div>
+                ) : null}
+              </Reveal>
+            }
+            media={
+              <div className="section-media aspect-[4/5] max-h-[min(72vh,640px)]">
+                {props.image?.src ? (
+                  <img src={props.image.src} alt={props.image.alt ?? props.headline} className="h-full w-full rounded-2xl object-cover shadow-2xl" />
+                ) : (
+                  <div className="h-full min-h-[280px] w-full rounded-2xl bg-accent/10" />
+                )}
+              </div>
+            }
+          />
         </Container>
       </SectionShell>
     );
@@ -138,7 +178,8 @@ export function HeroEditorial(props: {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
       </div>
-      <Container className={`relative z-10 flex ${minH} flex-col justify-end pb-16 pt-32`}>
+      <Container className="relative z-10 pb-16 pt-32">
+        <SectionBody className={`flex ${minH} flex-col justify-end`}>
         <Reveal>
           {props.label ? <MonoTag>{props.label}</MonoTag> : null}
           <SplitRevealHeading text={props.headline} as="h1" className="mt-4 max-w-4xl text-white" />
@@ -151,6 +192,7 @@ export function HeroEditorial(props: {
             </div>
           ) : null}
         </Reveal>
+        </SectionBody>
       </Container>
     </SectionShell>
   );
@@ -168,79 +210,40 @@ export function HeroSplitCinematic(props: {
   density?: "airy" | "normal" | "compact";
   mediaPosition?: "background" | "left" | "right";
 }) {
-  const variant = props.layoutVariant ?? "default";
+  const variant =
+    props.layoutVariant === "split-offset" ? "split-offset" : props.layoutVariant === "centered-stack" ? "centered-stack" : "full-bleed-left";
   const mediaRight = props.mediaPosition !== "left";
   const minH = props.density === "compact" ? "min-h-[50vh]" : "min-h-[60vh]";
 
-  if (variant === "split-offset") {
-    return (
-      <SectionShell id={props.id} templateId="hero_split_cinematic" mode="bleed" layoutVariant={variant} className="hero-split-offset overflow-hidden py-12">
-        <Container>
-          <div className={`grid items-center gap-10 lg:grid-cols-2 ${minH}`}>
-            <Reveal>
-              {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
-              <DisplayHeading as="h1">{props.headline}</DisplayHeading>
-              {props.subcopy ? <p className="mt-4 text-lg text-muted">{props.subcopy}</p> : null}
-              {props.body ? <p className="mt-4 text-muted">{props.body}</p> : null}
-              {props.cta ? (
-                <div className="mt-8">
-                  <PrimaryButton href={props.cta.href ?? "#"}>{props.cta.label}</PrimaryButton>
-                </div>
-              ) : null}
-            </Reveal>
-            <div className="relative lg:-mt-8 lg:translate-x-8">
-              {props.image?.src ? (
-                <Media src={props.image.src!} alt={props.image.alt ?? props.headline ?? "Hero image"} className="w-full rounded-xl object-cover shadow-xl" />
-              ) : (
-                <div className="aspect-video w-full rounded-xl bg-accent/10" />
-              )}
-            </div>
-          </div>
-        </Container>
-      </SectionShell>
-    );
-  }
-
-  const textCol = (
-    <div className={`flex flex-col justify-center bg-surface px-8 py-16 lg:px-16 ${minH}`}>
-      <Reveal>
-        {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
-        <DisplayHeading as="h1">{props.headline}</DisplayHeading>
-        {props.subcopy ? <p className="mt-4 text-lg text-muted">{props.subcopy}</p> : null}
-        {props.body ? <p className="mt-4 text-muted">{props.body}</p> : null}
-        {props.cta ? (
-          <div className="mt-8">
-            <PrimaryButton href={props.cta.href ?? "#"}>{props.cta.label}</PrimaryButton>
-          </div>
-        ) : null}
-      </Reveal>
-    </div>
+  const copyBlock = (
+    <Reveal>
+      {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
+      <DisplayHeading as="h1">{props.headline}</DisplayHeading>
+      {props.subcopy ? <p className="mt-4 text-lg text-muted">{props.subcopy}</p> : null}
+      {props.body ? <p className="mt-4 text-muted">{props.body}</p> : null}
+      {props.cta ? (
+        <div className="mt-8">
+          <PrimaryButton href={props.cta.href ?? "#"}>{props.cta.label}</PrimaryButton>
+        </div>
+      ) : null}
+    </Reveal>
   );
-  const mediaCol = (
-    <div className={`relative min-h-[320px] ${minH}`}>
+
+  const mediaBlock = (
+    <div className="section-media aspect-video max-h-[min(50vh,480px)]">
       {props.image?.src ? (
-        <Media src={props.image.src!} alt={props.image.alt ?? props.headline ?? "Section image"} className="h-full w-full object-cover" />
+        <Media src={props.image.src!} alt={props.image.alt ?? props.headline ?? "Hero image"} className="h-full w-full rounded-xl object-cover shadow-xl" />
       ) : (
-        <div className="h-full w-full bg-accent/10" />
+        <div className="h-full min-h-[240px] w-full rounded-xl bg-accent/10" />
       )}
     </div>
   );
 
   return (
-    <SectionShell id={props.id} templateId="hero_split_cinematic" mode="bleed" layoutVariant={variant}>
-      <div className={`grid ${minH} lg:grid-cols-2`}>
-        {mediaRight ? (
-          <>
-            {textCol}
-            {mediaCol}
-          </>
-        ) : (
-          <>
-            {mediaCol}
-            {textCol}
-          </>
-        )}
-      </div>
+    <SectionShell id={props.id} templateId="hero_split_cinematic" mode="bleed" layoutVariant={variant} className="overflow-hidden py-section">
+      <Container>
+        <SplitHeroLayout mediaRight={mediaRight} className={minH} copy={copyBlock} media={mediaBlock} />
+      </Container>
     </SectionShell>
   );
 }
@@ -249,11 +252,13 @@ export function IntroStatement(props: { id?: string; label?: string; headline: s
   return (
     <SectionShell id={props.id} templateId="intro_statement" mode="editorial" className="py-section">
       <Container>
-        <Reveal>
-          {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
-          <DisplayHeading className="max-w-4xl">{props.headline}</DisplayHeading>
-          <p className="mt-6 max-w-3xl text-xl leading-relaxed text-muted">{props.body}</p>
-        </Reveal>
+        <SectionBody>
+          <Reveal>
+            {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
+            <DisplayHeading className="max-w-4xl">{props.headline}</DisplayHeading>
+            <p className="mt-6 max-w-3xl text-xl leading-relaxed text-muted">{props.body}</p>
+          </Reveal>
+        </SectionBody>
       </Container>
     </SectionShell>
   );
@@ -264,7 +269,7 @@ export function StatsMarquee(props: { id?: string; label?: string; stats: Array<
     <SectionShell id={props.id} templateId="stats_marquee" mode="band" className="border-y border-border bg-surface/50 py-12">
       <Container>
         {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
-        <Stagger className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <Stagger className="card-grid sm:grid-cols-2 lg:grid-cols-4">
           {props.stats.map((s, i) => (
             <StaggerItem key={i} className="border-l-2 border-accent pl-6">
               <div className="font-display text-4xl font-bold text-accent">{s.value}</div>
@@ -288,35 +293,42 @@ export function ServicesShowcase(props: {
   return (
     <SectionShell id={props.id} templateId="services_showcase" mode="contained" className="py-section">
       <Container>
-        <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
-          <Reveal>
-            {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
-            <DisplayHeading>{props.headline}</DisplayHeading>
-            <div className="mt-6 space-y-4">
-              {props.paragraphs.map((p, i) => (
-                <p key={i} className="text-muted leading-relaxed">
-                  {p}
-                </p>
-              ))}
-            </div>
-            {props.cta ? (
-              <div className="mt-8">
-                <PrimaryButton href={props.cta.href ?? "#contact"}>{props.cta.label}</PrimaryButton>
+        <SplitHeroLayout
+          mediaRight
+          copy={
+            <Reveal>
+              {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
+              <DisplayHeading>{props.headline}</DisplayHeading>
+              <div className="mt-6 space-y-4">
+                {props.paragraphs.map((p, i) => (
+                  <p key={i} className="leading-relaxed text-muted">
+                    {p}
+                  </p>
+                ))}
               </div>
-            ) : null}
-          </Reveal>
-          <Reveal delay={0.1}>
-            {props.image?.src ? (
-              <img
-                src={props.image.src}
-                alt={props.image.alt ?? props.headline}
-                className="aspect-[4/5] w-full rounded-sm object-cover shadow-2xl"
-              />
-            ) : (
-              <div className="aspect-[4/5] w-full rounded-sm bg-accent/10" />
-            )}
-          </Reveal>
-        </div>
+              {props.cta ? (
+                <div className="mt-8">
+                  <PrimaryButton href={props.cta.href ?? "#contact"}>{props.cta.label}</PrimaryButton>
+                </div>
+              ) : null}
+            </Reveal>
+          }
+          media={
+            <Reveal delay={0.1}>
+              <div className="section-media aspect-[4/5] max-h-[min(72vh,560px)]">
+                {props.image?.src ? (
+                  <img
+                    src={props.image.src}
+                    alt={props.image.alt ?? props.headline}
+                    className="h-full w-full rounded-sm object-cover shadow-2xl"
+                  />
+                ) : (
+                  <div className="h-full min-h-[280px] w-full rounded-sm bg-accent/10" />
+                )}
+              </div>
+            </Reveal>
+          }
+        />
       </Container>
     </SectionShell>
   );
@@ -337,12 +349,12 @@ export function FeatureBento(props: {
             <DisplayHeading className="mb-10">{props.headline}</DisplayHeading>
           </Reveal>
         ) : null}
-        <Stagger className="grid auto-rows-[minmax(180px,auto)] gap-4 md:grid-cols-4">
+        <Stagger className="card-grid auto-rows-[minmax(180px,auto)] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {props.items.map((item, i) => (
             <StaggerItem
               key={i}
               className={`surface-elevated overflow-hidden rounded-lg p-6 ${
-                item.span === "wide" ? "md:col-span-2" : item.span === "large" ? "md:col-span-2 md:row-span-2" : ""
+                item.span === "wide" ? "sm:col-span-2" : item.span === "large" ? "sm:col-span-2 sm:row-span-2 lg:col-span-2 lg:row-span-2" : ""
               }`}
             >
               {item.image?.src ? (
@@ -373,7 +385,7 @@ export function PortfolioStrip(props: {
             <DisplayHeading className="mb-10">{props.headline}</DisplayHeading>
           </Reveal>
         ) : null}
-        <Stagger className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Stagger className="card-grid sm:grid-cols-2 lg:grid-cols-3">
           {props.projects.map((p, i) => (
             <StaggerItem key={i} className="group">
               <MonoTag>{String(i + 1).padStart(2, "0")}</MonoTag>
@@ -442,7 +454,7 @@ export function PricingTiers(props: {
             <DisplayHeading className="mb-10 text-center">{props.headline}</DisplayHeading>
           </Reveal>
         ) : null}
-        <Stagger className="grid gap-6 md:grid-cols-3">
+        <Stagger className="card-grid sm:grid-cols-2 lg:grid-cols-3">
           {props.tiers.map((tier, i) => (
             <StaggerItem
               key={i}
@@ -482,7 +494,7 @@ export function FaqAccordion(props: {
 }) {
   return (
     <SectionShell id={props.id} templateId="faq_accordion" mode="contained" className="py-section">
-      <Container className="max-w-3xl">
+      <Container narrow="md">
         {props.headline ? (
           <Reveal>
             {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
@@ -506,6 +518,7 @@ export function FaqAccordion(props: {
 
 export function CtaBand(props: {
   id?: string;
+  label?: string;
   headline: string;
   subcopy?: string;
   cta: CtaField;
@@ -520,11 +533,7 @@ export function CtaBand(props: {
         ? "py-28 md:py-32"
         : "py-20";
   const isCentered = variant === "centered-stack" || variant === "default";
-  const containerClass = isCentered
-    ? "mx-auto max-w-3xl text-center"
-    : variant === "band-wide"
-      ? "max-w-5xl text-left"
-      : "max-w-2xl text-left";
+  const narrowSize = isCentered ? "md" : variant === "band-wide" ? "lg" : "sm";
 
   return (
     <SectionShell
@@ -534,8 +543,9 @@ export function CtaBand(props: {
       layoutVariant={variant}
       className={`cta-gradient ${pad} text-white`}
     >
-      <Container className={containerClass}>
+      <Container narrow={narrowSize} className={isCentered ? "text-center" : "text-left"}>
         <Reveal>
+          {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
           <DisplayHeading className={`text-white ${variant === "band-wide" ? "text-display" : ""}`}>
             {props.headline}
           </DisplayHeading>
@@ -571,20 +581,24 @@ export function ContactSplit(props: {
   return (
     <SectionShell id={props.id} templateId="contact_split" mode="contained" className="py-section">
       <Container>
-        <div className="grid gap-12 lg:grid-cols-2">
-          <Reveal>
-            {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
-            <DisplayHeading>{props.headline}</DisplayHeading>
-            {props.subcopy ? <p className="mt-4 text-muted">{props.subcopy}</p> : null}
-            <div className="mt-8 space-y-3 text-muted">
-              {props.email ? <p>✉ {props.email}</p> : null}
-              {props.phone ? <p>☎ {props.phone}</p> : null}
-              {props.address ? <p>📍 {props.address}</p> : null}
-              {props.hours ? <p>🕐 {props.hours}</p> : null}
-            </div>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+        <SplitHeroLayout
+          mediaRight={false}
+          copy={
+            <Reveal>
+              {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
+              <DisplayHeading>{props.headline}</DisplayHeading>
+              {props.subcopy ? <p className="mt-4 text-muted">{props.subcopy}</p> : null}
+              <div className="mt-8 space-y-3 text-muted">
+                {props.email ? <p>✉ {props.email}</p> : null}
+                {props.phone ? <p>☎ {props.phone}</p> : null}
+                {props.address ? <p>📍 {props.address}</p> : null}
+                {props.hours ? <p>🕐 {props.hours}</p> : null}
+              </div>
+            </Reveal>
+          }
+          media={
+            <Reveal delay={0.1}>
+              <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
               {(props.formFields ?? [
                 { label: "Name", type: "text", required: true },
                 { label: "Email", type: "email", required: true },
@@ -613,8 +627,9 @@ export function ContactSplit(props: {
                 {props.submitLabel ?? "Send"}
               </button>
             </form>
-          </Reveal>
-        </div>
+            </Reveal>
+          }
+        />
       </Container>
     </SectionShell>
   );
@@ -700,7 +715,7 @@ export function FooterCta(props: {
         layoutVariant={variant}
         className={`bg-text text-bg ${pad}`}
       >
-        <Container className="mx-auto max-w-3xl text-center">
+        <Container narrow="md" className="text-center">
           <Reveal>
             <DisplayHeading className="text-bg">{props.headline}</DisplayHeading>
             {props.subcopy ? <p className="mt-3 max-w-xl mx-auto text-bg/80">{props.subcopy}</p> : null}
@@ -779,7 +794,7 @@ export function TeamGrid(props: {
             <DisplayHeading className="mb-10">{props.headline}</DisplayHeading>
           </Reveal>
         ) : null}
-        <Stagger className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <Stagger className="card-grid sm:grid-cols-2 lg:grid-cols-3">
           {props.members.map((m, i) => (
             <StaggerItem key={i}>
               {m.image?.src ? (

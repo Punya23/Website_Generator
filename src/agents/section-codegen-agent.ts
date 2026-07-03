@@ -1,17 +1,26 @@
 import type { CustomSectionCodegen, SectionInstance, SiteContext } from "../types.js";
 import { transformSync } from "esbuild";
 import { llm } from "../llm/client.js";
-import { allowMocks, requireLlm } from "../util/llm-required.js";
+import { useBespokeSectionCodegen } from "../llm/pipeline-speed.js";
+import { strictLlmRequired, handleLlmFailure, requireLlm } from "../util/llm-required.js";
+import { recordFallback } from "../util/fallback-tracker.js";
 import { pipelineLog } from "../util/pipeline-log.js";
 
-import { heroVariantShellSource } from "../section-templates/hero-variants.js";
-
-const HERO_TEMPLATES = new Set([
-  "hero_editorial",
-  "hero_split_cinematic",
-  "hero_spotlight",
-  "hero_video",
+/**
+ * Section kinds with nontrivial embedded interactivity (slider state, drag comparison,
+ * toggle/accordion state) are excluded from bespoke codegen — reauthoring their JS behavior
+ * from scratch each generation is high risk for low visual payoff versus the well-tested
+ * fixed components. Everything else is eligible.
+ */
+const BESPOKE_CODEGEN_EXCLUDED = new Set([
+  "testimonial_carousel",
+  "portfolio_carousel",
+  "before_after",
+  "pricing_toggle",
+  "faq_accordion",
+  "horizontal_gallery",
 ]);
+
 const FORBIDDEN_PATTERNS = [
   /\beval\s*\(/,
   /dangerouslySetInnerHTML/,
@@ -23,54 +32,55 @@ const FORBIDDEN_PATTERNS = [
   /fs\./,
 ];
 
-const CUSTOM_HERO_PROMPT = `You generate ONE bespoke React hero section for a premium marketing site.
+const BESPOKE_SECTION_PROMPT = `You generate ONE bespoke React section component for a premium marketing site (Framer quality). You are given the section's creative intent and the exact props it will receive — write a visually distinctive implementation, not a generic card/grid.
 
 Output ONLY valid TSX source — no markdown fences, no explanation.
 
 Rules:
 - First line MUST be exactly: "use client";
 - Do NOT repeat use client anywhere else (no bare use client; without quotes).
-- Import only from "react", "framer-motion", and "@/components/primitives" (Container, DisplayHeading, MonoTag, PrimaryButton, Reveal, SectionLabel).
+- Import ONLY from "react", "framer-motion", and "@/components/primitives" — using EXACTLY these prop names (anything not listed here does not exist, do not invent props):
+  Container({ children, className?, narrow?: false|"sm"|"md"|"lg" })
+  SectionBody({ children, className? })
+  ContentMeasure({ children, size?: "sm"|"md"|"lg"|"full", className? })
+  DisplayHeading({ children, as?: "h1"|"h2"|"h3", className? })
+  SplitRevealHeading({ text: string, as?: "h1"|"h2"|"h3", className? })  — takes a text STRING prop, not children
+  SectionLabel({ children })  — children only, no className or id
+  MonoTag({ children })  — children only, no className or id
+  PrimaryButton({ href?, children })  — no className
+  MagneticButton({ href?, children, className? })
+  SectionDivider({ variant?: "angle"|"fade" })  — no children
+  Reveal({ children, className?, delay?: number })
+  Stagger({ children, className? })
+  StaggerItem({ children, className? })  — no delay prop
+  SplitHeroLayout({ copy: ReactNode, media: ReactNode, mediaRight?: boolean, className? })  — prop names are exactly "copy" and "media", nothing else
+  CardGrid({ children, columns?: 2|3|4, className? })
+  BentoGrid({ children, className? })
+  CursorSpotlight({ children, className?, intensity?: number })
+  GlassPanel({ children, className? })
+  NoiseGradientBg({ children?, className?, strong?: boolean })
+  TextScrub({ text: string, className? })  — takes a text STRING prop, not children
+  ScrollPinSection({ children, media?: ReactNode, className?, minHeight?: string })
+  HorizontalScrollTrack({ children, className? })
 - Do NOT import React (no default or named React import). Use named hooks from "react" only when needed (e.g. useRef).
-- Primitives: SectionLabel and MonoTag only accept children (no className/id). PrimaryButton accepts href + children only. Use wrapper <div> or <section> for layout classes.
-- Export default function CustomHomeHero(props: HeroProps) — include the HeroProps type block before the component.
+- Export default function <ComponentName>(props: <TypeName>) using the exact names given below — include the type block before the component, matching the given props type exactly (do not add or remove fields).
+- Every prop in the type is optional (marked with ?) — every nested field access must use optional chaining (props.cta?.label, props.image?.src) or a fallback (??). Never write props.cta.label or props.image.src directly.
 - Use semantic Tailwind tokens: bg-bg, text-text, text-muted, bg-accent, text-white, border-border.
-- Editorial asymmetry: offset headline, optional parallax image via useScroll/useTransform.
-- One primary CTA from props.cta.
-- No external URLs except props.image?.src in <img>.
-- Keep under 120 lines.`;
+- Render EVERY item in every array prop you're given — the count is already correct, don't drop items or invent new ones.
+- Use props exactly as given — do not invent fields not present in the props JSON.
+- One primary CTA if a cta prop is present.
+- No external URLs except *.src fields already present in props.
+- Keep under 140 lines.`;
 
-export function shouldCodegenCustomHero(
+export function shouldAttemptBespokeSection(
   ctx: SiteContext,
-  pageSlug: string,
-  section: { templateId: string; id: string },
-  sectionIndex: number
+  section: { templateId: string; id: string }
 ): boolean {
-  if (pageSlug !== "home" || sectionIndex !== 0) return false;
-  if (!HERO_TEMPLATES.has(section.templateId)) return false;
-
-  if (process.env.CUSTOM_HERO_CODEGEN !== "1") return false;
-
-  return true;
+  if (BESPOKE_CODEGEN_EXCLUDED.has(section.templateId)) return false;
+  return useBespokeSectionCodegen();
 }
 
 const USE_CLIENT_LINE = /^\s*("use client"|'use client'|use client)\s*;?\s*$/i;
-
-const HERO_PROPS_TYPE = `type HeroProps = {
-  id?: string;
-  label?: string;
-  headline?: string;
-  subcopy?: string;
-  body?: string;
-  image?: { src?: string; alt?: string };
-  video?: { poster?: { src?: string; alt?: string } };
-  cta?: { label: string; href?: string };
-  layoutVariant?: string;
-  density?: "airy" | "normal" | "compact";
-  mediaPosition?: "background" | "left" | "right";
-};`;
-
-const HERO_PROPS_TYPE_START = /type\s+HeroProps\s*=\s*\{/;
 
 function findMatchingBraceClose(source: string, openIndex: number): number {
   let depth = 0;
@@ -85,8 +95,12 @@ function findMatchingBraceClose(source: string, openIndex: number): number {
   return -1;
 }
 
-function replaceHeroPropsTypeBlock(body: string): string {
-  const match = HERO_PROPS_TYPE_START.exec(body);
+function typeStartRegex(typeName: string): RegExp {
+  return new RegExp(`type\\s+${typeName}\\s*=\\s*\\{`);
+}
+
+function replaceTypeBlock(body: string, typeName: string, typeBlock: string): string {
+  const match = typeStartRegex(typeName).exec(body);
   if (!match) return body;
 
   const braceStart = body.indexOf("{", match.index);
@@ -97,28 +111,29 @@ function replaceHeroPropsTypeBlock(body: string): string {
   while (end < body.length && /\s/.test(body[end]!)) end++;
   if (body[end] === ";") end++;
 
-  return body.slice(0, match.index) + HERO_PROPS_TYPE + body.slice(end);
+  return body.slice(0, match.index) + typeBlock + body.slice(end);
 }
 
-function stripOrphanTypeFields(body: string): string {
+function stripOrphanTypeFields(body: string, typeName: string): string {
+  const startRe = new RegExp(`^type\\s+${typeName}\\s*=`);
   const lines = body.split("\n");
   const out: string[] = [];
-  let afterHeroPropsClose = false;
+  let afterTypeClose = false;
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (/^type\s+HeroProps\s*=/.test(trimmed)) {
-      afterHeroPropsClose = false;
+    if (startRe.test(trimmed)) {
+      afterTypeClose = false;
       out.push(line);
       continue;
     }
-    if (afterHeroPropsClose && /^\w+\?:/.test(trimmed)) {
+    if (afterTypeClose && /^\w+\??:/.test(trimmed)) {
       continue;
     }
-    if (trimmed === "};" && out.some((l) => /^type\s+HeroProps\s*=/.test(l.trim()))) {
-      afterHeroPropsClose = true;
-    } else if (trimmed && !/^\w+\?:/.test(trimmed)) {
-      afterHeroPropsClose = false;
+    if (trimmed === "};" && out.some((l) => startRe.test(l.trim()))) {
+      afterTypeClose = true;
+    } else if (trimmed && !/^\w+\??:/.test(trimmed)) {
+      afterTypeClose = false;
     }
     out.push(line);
   }
@@ -126,31 +141,31 @@ function stripOrphanTypeFields(body: string): string {
   return out.join("\n");
 }
 
-function cleanupTrailingHeroPropsGarbage(body: string): string {
-  const idx = body.indexOf(HERO_PROPS_TYPE);
+function cleanupTrailingTypeGarbage(body: string, typeBlock: string): string {
+  const idx = body.indexOf(typeBlock);
   if (idx < 0) return body;
 
-  const head = body.slice(0, idx + HERO_PROPS_TYPE.length);
-  let tail = body.slice(idx + HERO_PROPS_TYPE.length);
+  const head = body.slice(0, idx + typeBlock.length);
+  let tail = body.slice(idx + typeBlock.length);
 
-  while (/^\s*\w+\?:[^\n]*\n/.test(tail) || /^\s*\};\s*\n/.test(tail)) {
+  while (/^\s*\w+\??:[^\n]*\n/.test(tail) || /^\s*\};\s*\n/.test(tail)) {
     tail = tail
-      .replace(/^\s*\w+\?:[^\n]*\n/, "")
+      .replace(/^\s*\w+\??:[^\n]*\n/, "")
       .replace(/^\s*\};\s*\n/, "");
   }
 
   return head + tail;
 }
 
-function normalizeHeroPropsType(body: string): string {
+function normalizePropsType(body: string, typeName: string, typeBlock: string): string {
   let out = body;
-  if (HERO_PROPS_TYPE_START.test(out)) {
-    out = replaceHeroPropsTypeBlock(out);
+  if (typeStartRegex(typeName).test(out)) {
+    out = replaceTypeBlock(out, typeName, typeBlock);
   }
-  return stripOrphanTypeFields(out);
+  return stripOrphanTypeFields(out, typeName);
 }
 
-function normalizeHeroImports(body: string): string {
+function normalizeImports(body: string): string {
   let out = body.replace(
     /^\s*import\s+\{\s*React\s*\}\s+from\s+['"]react['"];\s*\n?/gm,
     ""
@@ -175,29 +190,29 @@ function normalizeHeroImports(body: string): string {
   return out.replace(/\n{3,}/g, "\n\n");
 }
 
-function ensureTypedHeroProps(body: string): string {
-  let out = normalizeHeroImports(body);
-  out = normalizeHeroPropsType(out);
+function ensureTypedProps(body: string, typeName: string, typeBlock: string): string {
+  let out = normalizeImports(body);
+  out = normalizePropsType(out, typeName, typeBlock);
 
-  if (!/\bHeroProps\b/.test(out)) {
+  if (!new RegExp(`\\b${typeName}\\b`).test(out)) {
     const lines = out.split("\n");
     let insertAt = 0;
     for (let i = 0; i < lines.length; i++) {
       if (lines[i]!.trim().startsWith("import ")) insertAt = i + 1;
     }
-    lines.splice(insertAt, 0, "", HERO_PROPS_TYPE);
+    lines.splice(insertAt, 0, "", typeBlock);
     out = lines.join("\n");
   }
 
   out = out.replace(
-    /export default function (Custom\w+)\(\s*props\s*(?::\s*HeroProps)?\s*\)/g,
-    "export default function $1(props: HeroProps)"
+    /export default function (\w+)\(\s*props\s*(?::\s*\w+)?\s*\)/,
+    (_m, name: string) => `export default function ${name}(props: ${typeName})`
   );
 
-  return cleanupTrailingHeroPropsGarbage(out);
+  return cleanupTrailingTypeGarbage(out, typeBlock);
 }
 
-export function sanitizeCustomHeroSource(source: string): string {
+export function sanitizeBespokeSource(source: string, typeName: string, typeBlock: string): string {
   const withoutFences = source
     .trim()
     .replace(/^```(?:tsx|typescript)?\n?/i, "")
@@ -210,10 +225,27 @@ export function sanitizeCustomHeroSource(source: string): string {
     .join("\n")
     .replace(/^\n+/, "");
 
-  return `"use client";\n\n${ensureTypedHeroProps(body)}`;
+  return `"use client";\n\n${ensureTypedProps(body, typeName, typeBlock)}`;
 }
 
-export function validateCustomHeroSource(source: string): string | null {
+function hasOrphanTypeFields(source: string, typeName: string): boolean {
+  const match = typeStartRegex(typeName).exec(source);
+  if (!match) return false;
+
+  const braceStart = source.indexOf("{", match.index);
+  const braceEnd = findMatchingBraceClose(source, braceStart);
+  if (braceEnd < 0) return false;
+
+  let scan = braceEnd + 1;
+  while (scan < source.length && /\s/.test(source[scan]!)) scan++;
+  if (source[scan] === ";") scan++;
+
+  const rest = source.slice(scan);
+  const nextLine = rest.split("\n").find((l) => l.trim().length > 0)?.trim() ?? "";
+  return /^\w+\??:/.test(nextLine);
+}
+
+export function validateBespokeSource(source: string, typeName: string): string | null {
   const trimmed = source.trim();
   if (!trimmed.includes("export default")) {
     return "Missing export default";
@@ -224,7 +256,7 @@ export function validateCustomHeroSource(source: string): string | null {
   if (/^use client\s*;?\s*$/im.test(trimmed)) {
     return "Invalid bare use client directive (must be quoted)";
   }
-  if (/export default function Custom\w+\(\s*props\s*\)/.test(trimmed)) {
+  if (/export default function \w+\(\s*props\s*\)/.test(trimmed)) {
     return "Untyped props parameter";
   }
   if (/<SectionLabel\s+[^>]*(className|id)=/.test(trimmed)) {
@@ -236,18 +268,12 @@ export function validateCustomHeroSource(source: string): string | null {
   if (/<PrimaryButton\s+[^>]*className=/.test(trimmed)) {
     return "PrimaryButton does not accept className";
   }
-  if (
-    /type HeroProps\s*=\s*\{/.test(trimmed) &&
-    !/type HeroProps\s*=\s*\{[\s\S]*?id\??:\s*string/.test(trimmed)
-  ) {
-    return "HeroProps missing id field";
+  const typeMatches = trimmed.match(new RegExp(`type\\s+${typeName}\\s*=`, "g"));
+  if (typeMatches && typeMatches.length > 1) {
+    return `Duplicate ${typeName} type blocks`;
   }
-  const heroPropsMatches = trimmed.match(/type\s+HeroProps\s*=/g);
-  if (heroPropsMatches && heroPropsMatches.length > 1) {
-    return "Duplicate HeroProps type blocks";
-  }
-  if (hasOrphanHeroTypeFields(trimmed)) {
-    return "Orphan HeroProps fields outside type block";
+  if (hasOrphanTypeFields(trimmed, typeName)) {
+    return `Orphan ${typeName} fields outside type block`;
   }
   if (/import\s+\{[^}]*\bReact\b[^}]*\}\s+from\s+['"]react['"]/.test(trimmed)) {
     return "Invalid React named import";
@@ -272,24 +298,7 @@ export function validateCustomHeroSource(source: string): string | null {
   return null;
 }
 
-function hasOrphanHeroTypeFields(source: string): boolean {
-  const match = HERO_PROPS_TYPE_START.exec(source);
-  if (!match) return false;
-
-  const braceStart = source.indexOf("{", match.index);
-  const braceEnd = findMatchingBraceClose(source, braceStart);
-  if (braceEnd < 0) return false;
-
-  let scan = braceEnd + 1;
-  while (scan < source.length && /\s/.test(source[scan]!)) scan++;
-  if (source[scan] === ";") scan++;
-
-  const rest = source.slice(scan);
-  const nextLine = rest.split("\n").find((l) => l.trim().length > 0)?.trim() ?? "";
-  return /^\w+\?:/.test(nextLine);
-}
-
-export function checkCustomHeroSyntax(source: string): string | null {
+export function checkBespokeSyntax(source: string): string | null {
   if (/import\s+\{[^}]*\bReact\b[^}]*\}\s+from\s+['"]react['"]/.test(source)) {
     return "Invalid React named import";
   }
@@ -301,59 +310,6 @@ export function checkCustomHeroSyntax(source: string): string | null {
   }
 }
 
-function mockCustomHeroSource(_props: Record<string, unknown>): string {
-  return `"use client";
-
-import { useRef } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { Container, DisplayHeading, MonoTag, PrimaryButton, Reveal } from "@/components/primitives";
-
-type HeroProps = {
-  id?: string;
-  label?: string;
-  headline?: string;
-  subcopy?: string;
-  body?: string;
-  image?: { src?: string; alt?: string };
-  cta?: { label: string; href?: string };
-};
-
-export default function CustomHomeHero(props: HeroProps) {
-  const ref = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "18%"]);
-  const sub = props.subcopy ?? props.body ?? "";
-
-  return (
-    <section id={props.id} ref={ref} className="relative min-h-[88vh] overflow-hidden bg-bg">
-      <motion.div style={{ y }} className="absolute inset-0 opacity-90">
-        {props.image?.src ? (
-          <img src={props.image.src} alt={props.image.alt ?? ""} className="h-full w-full object-cover" />
-        ) : (
-          <div className="absolute inset-0 bg-accent/10" />
-        )}
-      </motion.div>
-      <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/85 to-transparent" />
-      <Container className="relative z-10 flex min-h-[88vh] items-end pb-20 pt-32 md:items-center md:pb-28">
-        <div className="max-w-2xl md:translate-x-6">
-          <Reveal>
-            {props.label ? <MonoTag>{props.label}</MonoTag> : null}
-            <DisplayHeading className="text-display leading-tight">{props.headline ?? "Welcome"}</DisplayHeading>
-            {sub ? <p className="mt-5 max-w-lg text-lg text-muted">{sub}</p> : null}
-            {props.cta ? (
-              <div className="mt-8">
-                <PrimaryButton href={props.cta?.href ?? "/contact"}>{props.cta?.label}</PrimaryButton>
-              </div>
-            ) : null}
-          </Reveal>
-        </div>
-      </Container>
-    </section>
-  );
-}
-`;
-}
-
 function componentNameForSection(sectionId: string): { componentName: string; fileName: string } {
   const base = sectionId
     .split(/[^a-z0-9]+/i)
@@ -363,61 +319,135 @@ function componentNameForSection(sectionId: string): { componentName: string; fi
   return { componentName: `Custom${base}`, fileName: `Custom${base}.tsx` };
 }
 
-export async function generateCustomHeroSection(
+/** Infer a lenient prop type string from the section's already-validated props JSON —
+ *  this is the type contract the bespoke component must accept. `id` is always included
+ *  since assemble-project.ts merges it into customCodegen sections' props at render time. */
+/** Nested object/array-of-object types render fully inline (single line) — never multi-line.
+ *  Only the outermost type produced by objectTypeLiteral() spans multiple lines. This keeps
+ *  exactly one line in the whole type block ending in "};" (the real close), which
+ *  stripOrphanTypeFields()/replaceTypeBlock() rely on to find the type's true end — a nested
+ *  multi-line block would introduce an inner "};"-looking line and corrupt the type. */
+function inlineTsType(value: unknown): string {
+  if (value === null || value === undefined) return "unknown";
+  if (typeof value === "string") return "string";
+  if (typeof value === "number") return "number";
+  if (typeof value === "boolean") return "boolean";
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "unknown[]";
+    return `${inlineTsType(value[0])}[]`;
+  }
+  if (typeof value === "object") return inlineObjectType(value as Record<string, unknown>);
+  return "unknown";
+}
+
+function inlineObjectType(obj: Record<string, unknown>): string {
+  const fields = Object.entries(obj)
+    .filter(([, v]) => v !== undefined)
+    .map(([k, v]) => {
+      const key = /^[A-Za-z_$][\w$]*$/.test(k) ? k : JSON.stringify(k);
+      return `${key}?: ${inlineTsType(v)}`;
+    });
+  if (fields.length === 0) return "Record<string, unknown>";
+  return `{ ${fields.join("; ")} }`;
+}
+
+function objectTypeLiteral(obj: Record<string, unknown>, indent: string): string {
+  const lines = Object.entries(obj)
+    .filter(([, v]) => v !== undefined)
+    .map(([k, v]) => {
+      const key = /^[A-Za-z_$][\w$]*$/.test(k) ? k : JSON.stringify(k);
+      return `${indent}${key}?: ${inlineTsType(v)};`;
+    });
+  if (lines.length === 0) return "Record<string, unknown>";
+  return `{\n${lines.join("\n")}\n${indent.slice(2)}}`;
+}
+
+export function inferPropsType(props: Record<string, unknown>, typeName: string): string {
+  const withId = { id: (props as { id?: unknown }).id ?? "", ...props };
+  return `type ${typeName} = ${objectTypeLiteral(withId, "  ")};`;
+}
+
+function buildUserPrompt(
+  ctx: SiteContext,
+  instance: SectionInstance,
+  componentName: string,
+  typeName: string,
+  typeBlock: string,
+  priorError?: string
+): string {
+  const errorBlock = priorError
+    ? `\n\nPrevious code failed validation: ${priorError}\nFix and return valid TSX only.`
+    : "";
+  return `Business: ${ctx.businessName}
+Mood: ${ctx.designSystem.mood}
+Vertical: ${ctx.designSystem.vertical}
+Section kind: ${instance.templateId}
+Section intent: ${instance.intent || "engaging section for this business"}
+Component name: ${componentName}
+Type name: ${typeName}
+
+Props type (match exactly — do not add or remove fields):
+${typeBlock}
+
+Props JSON (render exactly this data, every array item):
+${JSON.stringify(instance.props, null, 2)}${errorBlock}`;
+}
+
+export async function generateBespokeSection(
   ctx: SiteContext,
   instance: SectionInstance
 ): Promise<CustomSectionCodegen | null> {
-  const props = instance.props;
+  if (!llm.isAvailable) {
+    requireLlm("bespoke section codegen");
+    return null;
+  }
+
   const { componentName, fileName } = componentNameForSection(instance.id);
+  const typeName = `${componentName}Props`;
+  const typeBlock = inferPropsType(instance.props, typeName);
 
   let source: string | null = null;
-
-  if (llm.isAvailable) {
-    try {
-      const raw = await llm.chat(
-        CUSTOM_HERO_PROMPT,
-        `Business: ${ctx.businessName}
-Mood: ${ctx.designSystem.mood}
-Vertical: ${ctx.designSystem.vertical}
-Props JSON:
-${JSON.stringify(props, null, 2)}`,
-        { temperature: 0.5, maxTokens: 4096, model: llm.getCompositionModel() }
-      );
-      source = sanitizeCustomHeroSource(raw);
-    } catch {
-      if (!allowMocks()) pipelineLog("[pipeline] Custom hero codegen LLM failed; using template fallback");
-    }
-  } else if (!allowMocks()) {
-    requireLlm("custom hero codegen");
+  try {
+    const raw = await llm.chat(
+      BESPOKE_SECTION_PROMPT,
+      buildUserPrompt(ctx, instance, componentName, typeName, typeBlock),
+      { temperature: 0.5, tokenRole: "composition", model: llm.getHeroCodegenModel() }
+    );
+    source = sanitizeBespokeSource(raw, typeName, typeBlock);
+  } catch (err) {
+    if (strictLlmRequired()) handleLlmFailure("bespoke section codegen", err);
+    recordFallback("section_codegen");
+    pipelineLog(`[pipeline] Bespoke codegen LLM failed for ${instance.id}; using template fallback`);
+    return null;
   }
 
-  if (!source) {
-    source = heroVariantShellSource(instance.templateId);
-  } else {
-    source = sanitizeCustomHeroSource(source);
-  }
+  let validationError = validateBespokeSource(source, typeName);
+  if (!validationError) validationError = checkBespokeSyntax(source);
 
-  let validationError = validateCustomHeroSource(source);
-  if (!validationError) {
-    validationError = checkCustomHeroSyntax(source);
-  }
   if (validationError) {
-    pipelineLog(`[pipeline] Custom hero validation failed (${validationError}); using variant shell`);
-    source = heroVariantShellSource(instance.templateId);
-    validationError = validateCustomHeroSource(source);
-    if (!validationError) validationError = checkCustomHeroSyntax(source);
-    if (validationError) {
-      source = mockCustomHeroSource(props);
-      validationError = validateCustomHeroSource(source);
-      if (!validationError) validationError = checkCustomHeroSyntax(source);
+    try {
+      const retryRaw = await llm.chat(
+        BESPOKE_SECTION_PROMPT,
+        buildUserPrompt(ctx, instance, componentName, typeName, typeBlock, validationError),
+        { temperature: 0.3, tokenRole: "composition", model: llm.getHeroCodegenModel() }
+      );
+      source = sanitizeBespokeSource(retryRaw, typeName, typeBlock);
+      validationError = validateBespokeSource(source, typeName);
+      if (!validationError) validationError = checkBespokeSyntax(source);
+    } catch {
+      /* fall through to template fallback */
     }
-    if (validationError) return null;
   }
 
-  pipelineLog(`[pipeline] Custom hero codegen: ${componentName}`);
-  const renamed = source.replace(
-    /export default function Custom\w+/,
-    `export default function ${componentName}`
-  );
+  if (validationError) {
+    pipelineLog(
+      `[pipeline] Bespoke codegen validation failed for ${instance.id} (${validationError}); using template fallback`
+    );
+    recordFallback("section_codegen");
+    return null;
+  }
+
+  pipelineLog(`[pipeline] Bespoke section codegen: ${componentName}`);
+  const renamed = source.replace(/export default function \w+/, `export default function ${componentName}`);
   return { componentName, fileName, source: renamed };
 }

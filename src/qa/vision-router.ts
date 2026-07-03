@@ -3,7 +3,7 @@ import type { QAIssue } from "../types.js";
 export interface VisionSectionFix {
   sectionId: string;
   pageSlug: string;
-  domain: "copy" | "layout";
+  domain: "copy" | "layout" | "regen";
   suggestion?: string;
 }
 
@@ -19,12 +19,13 @@ function matches(text: string, keywords: string[]): boolean {
   return keywords.some((k) => lower.includes(k));
 }
 
-function classifyIssue(issue: QAIssue): keyof VisionFixPlan | "copy" | "layout" | null {
+function classifyIssue(issue: QAIssue): keyof VisionFixPlan | "copy" | "layout" | "regen" | null {
   const code = (issue.code ?? "").toUpperCase();
   const msg = `${issue.code ?? ""} ${issue.message ?? ""} ${issue.suggestion ?? ""}`;
 
   if (code.includes("NAV_CONTRAST") || code.includes("VISUAL_NAV")) return "design";
   if (code.includes("MOTION_MONOTONY") || code.includes("VISUAL_MOTION")) return "motion";
+  if (code.includes("GENERIC_TEMPLATE")) return "regen";
   if (code.includes("COPY_WEAK") || code.includes("VISUAL_COPY")) return "copy";
   if (code.includes("SPACING") || code.includes("VISUAL_SPACING") || code.includes("VISUAL_LAYOUT")) {
     return "layout";
@@ -33,6 +34,9 @@ function classifyIssue(issue: QAIssue): keyof VisionFixPlan | "copy" | "layout" 
 
   if (matches(msg, ["nav", "contrast", "unreadable", "glass", "gradient"])) return "design";
   if (matches(msg, ["motion", "animation", "monotonous", "static", "animate"])) return "motion";
+  if (matches(msg, ["generic", "templated", "cookie-cutter", "cookie cutter", "interchangeable", "stock"])) {
+    return "regen";
+  }
   if (matches(msg, ["footer", "nav link", "chrome"])) return "chrome";
   if (matches(msg, ["headline", "copy", "text", "typo", "weak wording", "illegible text"])) return "copy";
   if (matches(msg, ["spacing", "gap", "cramped", "overflow", "alignment", "misaligned", "crowded"])) {
@@ -60,7 +64,7 @@ export function routeVisionIssues(issues: QAIssue[], pageSlug: string): VisionFi
     if (domain === "design") plan.design = true;
     else if (domain === "motion") plan.motion = true;
     else if (domain === "chrome") plan.chrome = true;
-    else if ((domain === "copy" || domain === "layout") && issue.sectionId) {
+    else if ((domain === "copy" || domain === "layout" || domain === "regen") && issue.sectionId) {
       const key = `${issue.sectionId}:${domain}`;
       if (!seenSections.has(key)) {
         seenSections.add(key);

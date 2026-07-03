@@ -58,7 +58,7 @@ BLOCK IDS: ${content.map((c) => c.id).join(", ")}`,
       jsonMode: true,
       temperature: 0.2,
       model: llm.getFixModel(),
-      maxTokens: 4096,
+      tokenRole: "composition",
     }
   );
 

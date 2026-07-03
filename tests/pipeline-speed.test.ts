@@ -27,4 +27,12 @@ describe("pipeline-speed", () => {
     process.env.SECTION_FILL_CONCURRENCY = "8";
     expect(sectionFillConcurrency()).toBe(8);
   });
+
+  it("quality mode overrides fast pipeline", () => {
+    process.env.PIPELINE_QUALITY = "1";
+    process.env.PIPELINE_FAST = "1";
+    expect(isFastPipeline()).toBe(false);
+    expect(creativeDirectorPoolOnly()).toBe(false);
+    expect(skipDirectorRetries()).toBe(false);
+  });
 });

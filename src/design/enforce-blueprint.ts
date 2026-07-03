@@ -4,6 +4,9 @@ import { pickBlueprintFromPool } from "./blueprint-pools.js";
 import type { VerticalProfileId } from "./vertical-profiles.js";
 import { pickHomeHeroTemplate } from "../section-templates/hero-variants.js";
 import { filterPoolSequence } from "./brief-intent.js";
+import { getTemplate } from "../section-templates/registry.js";
+import { pipelineLog } from "../util/pipeline-log.js";
+import { isQualityPipeline } from "../llm/pipeline-speed.js";
 
 /** Map site plan archetype/strategy to blueprint pool family. */
 export function resolvePoolProfileId(ctx: SiteContext): VerticalProfileId {
@@ -27,6 +30,87 @@ export function resolvePoolProfileId(ctx: SiteContext): VerticalProfileId {
   return base;
 }
 
+const HERO_PREFIX = "hero_";
+
+function reindexSections(
+  slug: string,
+  sections: PageBlueprint["sections"]
+): PageBlueprint["sections"] {
+  return sections.map((s, i) => ({
+    ...s,
+    id: `${slug}_s${i}_${s.templateId.replace(/_/g, "")}`,
+  }));
+}
+
+function nearestPoolTemplate(
+  poolSections: PageBlueprint["sections"],
+  index: number
+): string {
+  return poolSections[index]?.templateId ?? poolSections[0]?.templateId ?? "intro_statement";
+}
+
+/**
+ * LLM blueprint wins when valid; pool repairs unknown IDs, missing hero, or short pages.
+ */
+export function validateAndMergeBlueprint(
+  page: PagePlan,
+  ctx: SiteContext,
+  llmBp: PageBlueprint,
+  poolBp?: PageBlueprint
+): PageBlueprint {
+  const profileId = resolvePoolProfileId(ctx);
+  const seed = ctx.variationSeed ?? Date.now();
+  const pool =
+    poolBp ?? pickBlueprintFromPool(page, ctx.expandedBrief, profileId, seed);
+
+  let sections = llmBp.sections.map((s, i) => {
+    let templateId = s.templateId;
+    if (!getTemplate(templateId)) {
+      templateId = nearestPoolTemplate(pool.sections, i);
+      pipelineLog(
+        `[pipeline] Blueprint repair: unknown template "${s.templateId}" → ${templateId} on ${page.slug}`
+      );
+    }
+    return {
+      id: s.id,
+      templateId,
+      intent: s.intent?.trim() || pool.sections[i]?.intent || page.goal,
+    };
+  });
+
+  if (page.slug === "home" && sections.length > 0 && !sections[0]!.templateId.startsWith(HERO_PREFIX)) {
+    sections[0] = {
+      ...sections[0]!,
+      templateId: pickHomeHeroTemplate(ctx),
+      intent: sections[0]!.intent || page.goal,
+    };
+    pipelineLog(`[pipeline] Blueprint repair: home hero injected on ${page.slug}`);
+  }
+
+  const filtered = filterPoolSequence(
+    sections.map((s) => ({ templateId: s.templateId, intent: s.intent })),
+    ctx
+  );
+  if (filtered.length >= 2) {
+    sections = filtered.map((s, i) => ({
+      id: sections[i]?.id ?? `${page.slug}_s${i}_${s.templateId.replace(/_/g, "")}`,
+      templateId: s.templateId,
+      intent: s.intent,
+    }));
+  }
+
+  if (sections.length < 2) {
+    sections = pool.sections.slice(0, Math.max(2, pool.sections.length));
+    pipelineLog(`[pipeline] Blueprint repair: padded ${page.slug} from pool (${sections.length} sections)`);
+  }
+
+  return PageBlueprintSchema.parse({
+    slug: page.slug,
+    rhythm: llmBp.rhythm?.trim() || pool.rhythm,
+    sections: reindexSections(page.slug, sections),
+  });
+}
+
 /** Pool defines template sequence; LLM supplies intents where useful. */
 export function enforceBlueprintWithPool(
   page: PagePlan,
@@ -36,6 +120,10 @@ export function enforceBlueprintWithPool(
   const profileId = resolvePoolProfileId(ctx);
   const seed = ctx.variationSeed ?? Date.now();
   const poolBp = pickBlueprintFromPool(page, ctx.expandedBrief, profileId, seed);
+
+  if (llmBlueprint?.sections?.length && isQualityPipeline()) {
+    return validateAndMergeBlueprint(page, ctx, llmBlueprint, poolBp);
+  }
 
   const filteredSections = filterPoolSequence(
     poolBp.sections.map((s) => ({ templateId: s.templateId, intent: s.intent })),

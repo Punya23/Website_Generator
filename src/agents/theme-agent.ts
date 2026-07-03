@@ -92,7 +92,7 @@ export async function generateTheme(
       const raw = await llm.chat(
         THEME_SYSTEM,
         `Business: ${businessName}\nBrief: ${businessBrief}\nUser input: ${rawBrief ?? businessBrief}`,
-        { jsonMode: true, temperature: 0.65 }
+        { jsonMode: true, temperature: 0.65, tokenRole: "design" }
       );
       return ensureReadableTheme(SiteThemeSchema.parse(JSON.parse(raw)));
     } catch {

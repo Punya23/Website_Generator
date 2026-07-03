@@ -21,6 +21,8 @@ export interface StructuredPipelineEvent {
   error?: string;
   message?: string;
   tokens?: { prompt: number; completion: number; total: number };
+  estimatedCostUsd?: number;
+  costCapUsd?: number;
   fallbacks?: Record<string, number>;
 }
 

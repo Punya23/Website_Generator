@@ -12,42 +12,76 @@ import {
 import { extractBriefIntentFromText } from "../design/brief-intent.js";
 import { isOptionalPageRelevant } from "../design/template-relevance.js";
 import { recordFallback } from "../util/fallback-tracker.js";
+import { parseLlmJson } from "../llm/parse-json.js";
+import { chatJsonWithRetry } from "../llm/json-agent.js";
+import { isQualityPipeline } from "../llm/pipeline-speed.js";
+import { getOutputMode } from "../orchestrator/react-pipeline.js";
 
 const ALLOWED_BLOCK_TYPES = PLANNER_BLOCK_TYPES.join(", ");
 
-const PLANNER_SYSTEM = `You are a website information architect. Design a unique site structure for this business.
+const PLANNER_REACT_SYSTEM = `You are a website information architect. Design page structure for a premium React marketing site.
 
-Think through what pages matter, what each page must accomplish, how navigation should read at a glance, and what overall visual/layout personality suits the brand.
+Output valid JSON only (no markdown, no comments). Plain strings — no double quotes inside string values. Max 15 words per string field.
 
-Output valid JSON:
 {
   "pages": [
     {
-      "slug": "home|about|services|contact|team|pricing|faq|gallery",
-      "title": "page heading for the page itself",
-      "navLabel": "short label for the navigation bar — clear and scannable",
+      "slug": "home",
+      "title": "Home",
+      "navLabel": "Home",
       "goal": "what this page must accomplish",
-      "minBlocks": number (total content blocks target for page, usually 8-24),
-      "layoutHint": "your creative direction for how this page should feel spatially",
-      "contentFocus": ["topics to cover in depth"],
-      "sections": [
-        { "id": "home_hero", "intent": "...", "blockTypes": ["headline", "text"] },
-        { "id": "home_proof", "intent": "...", "blockTypes": ["stat", "feature"] }
-      ]
-
-Allowed blockTypes values ONLY: ${ALLOWED_BLOCK_TYPES}
-Never use invented types like card, button, accordion, profileCard, backgroundImage.
+      "minBlocks": 12,
+      "layoutHint": "spatial feel for this page",
+      "contentFocus": ["topic one", "topic two"]
     }
   ],
-  "compositionStrategy": "how layout rhythm should differ from a generic template",
-  "avoidPatterns": ["what to avoid for this specific business"],
-  "visualArchetype": "free-form name e.g. salon-luxury-dark, dental-clinical-light, finance-corporate-light",
-  "industryFamily": "short slug for vertical (salon, dental, finance, etc.)",
-  "motionStyle": "how motion should feel on scroll"
+  "compositionStrategy": "how layout rhythm differs from a generic template",
+  "avoidPatterns": ["pattern to avoid"],
+  "visualArchetype": "e.g. salon-luxury-dark, dental-clinical-light",
+  "industryFamily": "short vertical slug",
+  "motionStyle": "how scroll motion should feel"
 }
 
 Include home, about, services, and contact. Add optional pages only if genuinely needed.
-Derive everything from the business — not stereotypes.`;
+Do NOT include sections or blockTypes — component layout is chosen later.`;
+
+const PLANNER_HTML_SYSTEM = `You are a website information architect. Design a unique site structure for this business.
+
+Output valid JSON only (no markdown, no comments). Plain strings — no double quotes inside string values.
+
+{
+  "pages": [
+    {
+      "slug": "home",
+      "title": "Home",
+      "navLabel": "Home",
+      "goal": "what this page must accomplish",
+      "minBlocks": 12,
+      "layoutHint": "spatial feel for this page",
+      "contentFocus": ["topics to cover"],
+      "sections": [
+        { "id": "home_hero", "intent": "Opening hero", "blockTypes": ["headline", "text"] },
+        { "id": "home_main", "intent": "Main content", "blockTypes": ["feature", "stat"] }
+      ]
+    }
+  ],
+  "compositionStrategy": "how layout rhythm differs from a generic template",
+  "avoidPatterns": ["pattern to avoid"],
+  "visualArchetype": "e.g. salon-luxury-dark, dental-clinical-light",
+  "industryFamily": "short vertical slug",
+  "motionStyle": "how scroll motion should feel"
+}
+
+Allowed blockTypes ONLY: ${ALLOWED_BLOCK_TYPES}
+Never use invented types like card, button, accordion, profileCard, backgroundImage.
+Include home, about, services, and contact. Derive everything from the business.`;
+
+function plannerSystemPrompt(): string {
+  if (isQualityPipeline() || getOutputMode() === "react") {
+    return PLANNER_REACT_SYSTEM;
+  }
+  return PLANNER_HTML_SYSTEM;
+}
 
 function defaultSections(
   slug: string,
@@ -210,25 +244,42 @@ function parseSitePlan(raw: unknown, brief: ExpandedBrief): SitePlan {
   return SitePlanSchema.parse(normalizePlannerJson(raw, brief));
 }
 
+function validateCorePages(plan: SitePlan, brief: ExpandedBrief): SitePlan {
+  const slugs = new Set(plan.pages.map((p) => p.slug));
+  for (const core of CORE_PAGE_KINDS) {
+    if (!slugs.has(core)) {
+      if (!allowMocks()) throw new Error(`Site plan missing required page: ${core}`);
+      return mockPlan(brief);
+    }
+  }
+  return plan;
+}
+
+function plannerUserPrompt(brief: ExpandedBrief, parseError?: string): string {
+  const retryBlock = parseError
+    ? `\n\nPRIOR RESPONSE WAS INVALID JSON (${parseError}). Return ONLY strict JSON matching the schema — no prose, no markdown.`
+    : "";
+  return `${briefToContext(brief)}${retryBlock}`;
+}
+
 export async function planSite(brief: ExpandedBrief): Promise<SitePlan> {
   requireLlm("site planning");
 
   if (llm.isAvailable) {
     try {
-      const raw = await llm.chat(
-        PLANNER_SYSTEM,
-        briefToContext(brief),
-        { jsonMode: true, temperature: 0.6, tokenRole: "plan", model: llm.getCompositionModel() }
+      const parsed = await chatJsonWithRetry(
+        "site planner",
+        plannerSystemPrompt(),
+        (parseError) => plannerUserPrompt(brief, parseError),
+        {
+          tokenRole: "plan",
+          model: llm.getCompositionModel(),
+          initialTemperature: 0.6,
+          maxAttempts: 2,
+        },
+        (raw) => parseLlmJson(raw)
       );
-      const plan = parseSitePlan(JSON.parse(raw), brief);
-      const slugs = new Set(plan.pages.map((p) => p.slug));
-      for (const core of CORE_PAGE_KINDS) {
-        if (!slugs.has(core)) {
-          if (!allowMocks()) throw new Error(`Site plan missing required page: ${core}`);
-          return mockPlan(brief);
-        }
-      }
-      return plan;
+      return validateCorePages(parseSitePlan(parsed, brief), brief);
     } catch (err) {
       recordFallback("site_planner");
       if (!allowMocks()) throw err instanceof Error ? err : new Error(String(err));

@@ -39,7 +39,7 @@ export function SiteNav({
 
   return (
     <header className={`site-nav sticky top-0 z-50 border-b border-border/60 ${showScrolled ? "is-scrolled" : ""} ${navSpec?.compactOnScroll && scrolled ? "py-2" : ""}`}>
-      <div className="mx-auto flex max-w-content items-center justify-between px-6 py-4 md:px-10">
+      <div className="content-rail flex items-center justify-between py-4">
         <Link href="/" className="font-display text-lg font-bold text-nav-text">
           {businessName}
         </Link>

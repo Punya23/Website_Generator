@@ -1,8 +1,8 @@
 import type { PageBlueprint, SiteContext } from "../types.js";
 import type { QAIssue, QAResult } from "../types.js";
 import { getTemplate } from "../section-templates/registry.js";
-import { HOME_SECTION_BUDGET } from "../design/blueprint-trim.js";
 import { extractBriefIntent } from "../design/brief-intent.js";
+import { homeSectionBudget } from "../llm/pipeline-speed.js";
 
 const HERO_PREFIX = "hero_";
 const PREMIUM_TEMPLATES = new Set(["hero_spotlight", "scroll_showcase", "horizontal_gallery"]);
@@ -134,12 +134,13 @@ export function runBlueprintQA(
     }
 
     if (bp.slug === "home") {
+      const budget = homeSectionBudget();
       const count = bp.sections.length;
-      if (count < HOME_SECTION_BUDGET.min || count > HOME_SECTION_BUDGET.max) {
+      if (count < budget.min || count > budget.max) {
         issues.push({
           severity: "soft",
           code: "HOME_SECTION_BUDGET",
-          message: `Home has ${count} sections (target ${HOME_SECTION_BUDGET.min}–${HOME_SECTION_BUDGET.max})`,
+          message: `Home has ${count} sections (target ${budget.min}–${budget.max})`,
         });
       }
     }

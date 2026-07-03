@@ -64,6 +64,38 @@ describe("vision router", () => {
     expect(plan.sections[0]?.domain).toBe("layout");
   });
 
+  it("routes generic-template issues to the regen domain with sectionId", () => {
+    const plan = routeVisionIssues(
+      [
+        {
+          severity: "hard",
+          code: "VISUAL_GENERIC_TEMPLATE",
+          message: "This hero looks like every other generated site",
+          sectionId: "home_hero",
+        },
+      ],
+      "home"
+    );
+    expect(plan.sections).toHaveLength(1);
+    expect(plan.sections[0]?.domain).toBe("regen");
+    expect(plan.sections[0]?.sectionId).toBe("home_hero");
+  });
+
+  it("routes generic/templated keyword messages to regen even without a matching code", () => {
+    const plan = routeVisionIssues(
+      [
+        {
+          severity: "hard",
+          code: "VISUAL_UNKNOWN",
+          message: "Section feels generic and interchangeable with any competitor site",
+          sectionId: "home_bento",
+        },
+      ],
+      "home"
+    );
+    expect(plan.sections[0]?.domain).toBe("regen");
+  });
+
   it("ignores soft issues", () => {
     const plan = routeVisionIssues(
       [{ severity: "soft", code: "VISUAL_MINOR", message: "minor nit" }],

@@ -33,7 +33,7 @@ function breakMonotony(sections: SectionInstance[], pageSlug: string): SectionIn
       lastTemplate = section.templateId;
     }
 
-    if (run >= 3) {
+    if (run >= 2) {
       out.push({
         id: `${section.id}_break`,
         templateId: "intro_statement",

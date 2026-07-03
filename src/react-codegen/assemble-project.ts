@@ -74,7 +74,35 @@ ${sectionsJsx}
 `;
 }
 
-function themeCssVars(theme: SiteTheme): string {
+function radiusValue(scale: SiteTheme["radiusScale"]): string {
+  switch (scale) {
+    case "sharp":
+      return "0.25rem";
+    case "soft":
+      return "0.5rem";
+    case "pill":
+      return "9999px";
+    case "rounded":
+    default:
+      return "0.75rem";
+  }
+}
+
+function shadowValue(depth: SiteTheme["shadowDepth"]): string {
+  switch (depth) {
+    case "flat":
+      return "none";
+    case "elevated":
+      return "0 12px 40px rgba(0, 0, 0, 0.12)";
+    case "dramatic":
+      return "0 24px 64px rgba(0, 0, 0, 0.22)";
+    case "soft":
+    default:
+      return "0 4px 24px rgba(0, 0, 0, 0.06)";
+  }
+}
+
+export function themeCssVars(theme: SiteTheme): string {
   const c = theme.colors;
   const gap =
     theme.sectionGapMode === "tight" ? "3.5rem" : theme.sectionGapMode === "airy" ? "7rem" : "5rem";
@@ -97,6 +125,8 @@ function themeCssVars(theme: SiteTheme): string {
   --nav-blur: ${navBlur};
   --max-content: ${theme.layout?.maxWidth ?? "1200px"};
   --section-gap: ${gap};
+  --radius: ${radiusValue(theme.radiusScale)};
+  --shadow: ${shadowValue(theme.shadowDepth)};
   --font-display: '${theme.fontHeading}', Georgia, serif;
   --font-body: '${theme.fontBody}', system-ui, sans-serif;
 ${generateFontLayout(theme).typeScaleCss.split("\n").map((l) => l).join("\n")}
@@ -324,12 +354,20 @@ export async function generateReactProject(
           preview: "node scripts/serve-static.mjs",
         },
         dependencies: {
-          next: "^14.2.0",
+          next: "14.2.18",
           react: "^18.3.0",
           "react-dom": "^18.3.0",
           "framer-motion": "^11.0.0",
           lenis: "^1.1.0",
           "embla-carousel-react": "^8.5.0",
+        },
+        optionalDependencies: {
+          ...(process.platform === "darwin"
+            ? {
+                [process.arch === "arm64" ? "@next/swc-darwin-arm64" : "@next/swc-darwin-x64"]:
+                  "14.2.18",
+              }
+            : {}),
         },
         devDependencies: {
           "@types/node": "^22.0.0",

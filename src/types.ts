@@ -207,12 +207,17 @@ export const PalettePartialSchema = z.object({
 
 export type PalettePartial = z.infer<typeof PalettePartialSchema>;
 
+export const RadiusScaleSchema = z.enum(["sharp", "soft", "rounded", "pill"]);
+export const ShadowDepthSchema = z.enum(["flat", "soft", "elevated", "dramatic"]);
+
 export const TypographyPartialSchema = z.object({
   fontHeading: z.string(),
   fontBody: z.string(),
   typography: TypographyScaleSchema.optional(),
   sectionGapMode: z.enum(["tight", "normal", "airy"]).optional(),
   layout: ThemeLayoutSchema.optional(),
+  radiusScale: RadiusScaleSchema.optional(),
+  shadowDepth: ShadowDepthSchema.optional(),
 });
 
 export type TypographyPartial = z.infer<typeof TypographyPartialSchema>;
@@ -247,6 +252,8 @@ export const SiteThemeSchema = z.object({
   typography: TypographyScaleSchema.optional(),
   surfaces: SurfaceModesSchema.optional(),
   sectionGapMode: z.enum(["tight", "normal", "airy"]).optional(),
+  radiusScale: RadiusScaleSchema.optional(),
+  shadowDepth: ShadowDepthSchema.optional(),
   colors: z.object({
     bg: z.string(),
     surface: z.string(),

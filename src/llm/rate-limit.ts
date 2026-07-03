@@ -21,9 +21,25 @@ export function isInsufficientCreditsError(err: unknown): boolean {
   return INSUFFICIENT_CREDITS_RE.test(extractErrorMessage(err));
 }
 
+/** OpenRouter 402 when max_tokens exceeds per-request credit reservation — retry lower. */
+export function isOpenRouterMaxTokensCapError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const status = "status" in err ? err.status : undefined;
+  if (status !== 402) return false;
+  return /fewer max_tokens|can only afford/i.test(extractErrorMessage(err));
+}
+
+export function parseAffordableMaxTokens(err: unknown): number | null {
+  const match = extractErrorMessage(err).match(/can only afford\s+(\d+)/i);
+  if (!match?.[1]) return null;
+  const n = Number.parseInt(match[1], 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 /** Do not retry billing/auth errors — each attempt may still charge or waste time. */
 export function isNonRetryableLLMError(err: unknown): boolean {
-  return isInsufficientCreditsError(err);
+  if (!isInsufficientCreditsError(err)) return false;
+  return !isOpenRouterMaxTokensCapError(err);
 }
 
 export function isRateLimitError(err: unknown): boolean {

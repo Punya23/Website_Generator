@@ -7,12 +7,14 @@ export type FallbackAgent =
   | "typography"
   | "nav_surface"
   | "creative_director"
+  | "site_architect"
   | "expand_brief"
   | "site_planner"
   | "design_refine"
   | "chrome_director"
   | "motion_director"
-  | "layout_director";
+  | "layout_director"
+  | "section_codegen";
 
 const counts: Record<string, number> = {};
 

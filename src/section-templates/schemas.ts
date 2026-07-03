@@ -5,6 +5,7 @@ import {
   coerceToStringArray,
   normalizeCopyProps,
 } from "../llm/normalize-llm-output.js";
+import { repairTemplateProps } from "./repair-props.js";
 
 const layoutFields = {
   layoutVariant: LayoutVariantSchema.optional(),
@@ -17,18 +18,23 @@ export function coerceImageQuery(val: unknown): string | undefined {
   return coerceToString(val);
 }
 
+/** LLMs often return image as a plain search string instead of { imageQuery }. */
+export function coerceImageField(val: unknown): unknown {
+  if (val === null || val === undefined) return val;
+  if (typeof val === "string") {
+    const q = coerceToString(val);
+    return q ? { imageQuery: q } : {};
+  }
+  if (typeof val === "object" && !Array.isArray(val)) return val;
+  return val;
+}
+
 const zStr = z.preprocess((v) => coerceToString(v) ?? "", z.string());
 const zStrOpt = z.preprocess(coerceToString, z.string().optional());
 const zStrArr = z.preprocess(
   (v) => coerceToStringArray(v) ?? [],
   z.array(z.string())
 );
-
-const imageField = z.object({
-  src: z.string().optional(),
-  imageQuery: z.preprocess(coerceImageQuery, z.string().optional()),
-  alt: z.string().optional(),
-});
 
 const ctaField = z.object({
   label: zStr,
@@ -39,6 +45,19 @@ const statItem = z.object({
   value: zStr,
   label: zStr,
 });
+
+const imageObjectSchema = z.object({
+  src: z.string().optional(),
+  imageQuery: z.preprocess(coerceImageQuery, z.string().optional()),
+  alt: z.string().optional(),
+});
+
+const imageField = z.preprocess(coerceImageField, imageObjectSchema);
+
+const galleryImageField = z.preprocess(
+  coerceImageField,
+  imageObjectSchema.extend({ caption: z.string().optional() })
+);
 
 export const HeroEditorialPropsSchema = z.object({
   label: zStrOpt,
@@ -73,8 +92,11 @@ export const StatsMarqueePropsSchema = z.object({
 export const ServicesShowcasePropsSchema = z.object({
   label: z.string().optional(),
   headline: z.string(),
-  paragraphs: z.array(z.string()).min(1).max(3),
-  image: imageField,
+  paragraphs: z.preprocess(
+    (v) => coerceToStringArray(v) ?? [],
+    z.array(z.string()).min(1).max(3)
+  ),
+  image: imageField.optional(),
   cta: ctaField.optional(),
 });
 
@@ -143,6 +165,7 @@ export const FaqAccordionPropsSchema = z.object({
 });
 
 export const CtaBandPropsSchema = z.object({
+  label: z.string().optional(),
   headline: z.string(),
   subcopy: z.string().optional(),
   cta: ctaField,
@@ -165,12 +188,12 @@ export const FooterCtaPropsSchema = z.object({
 
 export const ContactSplitPropsSchema = z.object({
   label: z.string().optional(),
-  headline: z.string(),
-  subcopy: z.string().optional(),
-  email: z.string().optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  hours: z.string().optional(),
+  headline: zStr,
+  subcopy: zStrOpt,
+  email: zStrOpt,
+  phone: zStrOpt,
+  address: zStrOpt,
+  hours: zStrOpt,
   formFields: z
     .array(
       z.object({
@@ -208,7 +231,7 @@ export const TeamGridPropsSchema = z.object({
 export const GalleryMasonryPropsSchema = z.object({
   label: z.string().optional(),
   headline: z.string().optional(),
-  images: z.array(imageField.extend({ caption: z.string().optional() })).min(3).max(12),
+  images: z.array(galleryImageField).min(3).max(12),
 });
 
 export const HeroVideoPropsSchema = z.object({
@@ -504,11 +527,11 @@ export const COPY_PROP_SCHEMAS = {
 export function validateCopyProps(templateId: string, props: unknown): Record<string, unknown> {
   const schema = COPY_PROP_SCHEMAS[templateId as TemplateId];
   if (!schema) throw new Error(`Unknown template: ${templateId}`);
-  const normalized = normalizeCopyProps(
+  const repaired = repairTemplateProps(
     templateId,
     (props ?? {}) as Record<string, unknown>
   );
-  return schema.parse(normalized) as Record<string, unknown>;
+  return schema.parse(repaired) as Record<string, unknown>;
 }
 
 export type TemplateId = keyof typeof TEMPLATE_PROP_SCHEMAS;

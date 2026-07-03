@@ -5,7 +5,8 @@ import { generatePalette } from "./palette-agent.js";
 import { generateTypography } from "./typography-agent.js";
 import { generateNavSurface } from "./nav-surface-agent.js";
 import { mergeDesignSystem } from "./merge-design.js";
-import { allowMocks, requireLlm } from "../util/llm-required.js";
+import { allowMocks, requireLlm, handleLlmFailure } from "../util/llm-required.js";
+import { recordFallback } from "../util/fallback-tracker.js";
 import { ensureReadableTheme } from "../theme/contrast.js";
 import { GENERIC_THEME, slugifyIndustry } from "./theme-agent.js";
 import { pipelineLog } from "../util/pipeline-log.js";
@@ -60,6 +61,8 @@ export async function generateDesignSystem(
     pipelineLog(
       `[pipeline] Design system merge failed: ${err instanceof Error ? err.message : String(err)} — using profile theme`
     );
+    if (!allowMocks()) handleLlmFailure("design system", err);
+    recordFallback("palette");
     if (profile) {
       const { mockPaletteForProfile, mockNavForProfile, mockTypographyForProfile } = await import(
         "../design/vertical-profiles.js"
@@ -89,12 +92,6 @@ export async function generateDesignSystem(
         navSurface: mockNavForProfile(profile),
         brief: briefStub,
         verticalProfile: profile,
-      });
-    }
-    if (!allowMocks()) {
-      return ensureReadableTheme({
-        ...GENERIC_THEME,
-        vertical: slugifyIndustry(businessBrief),
       });
     }
     return ensureReadableTheme({ ...GENERIC_THEME, vertical: slugifyIndustry(businessBrief) });

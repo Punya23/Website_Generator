@@ -9,6 +9,17 @@ const execAsync = promisify(exec);
 const DEFAULT_TIMEOUT_MS = Number(process.env.REACT_BUILD_TIMEOUT_MS ?? 300_000);
 const CACHE_ROOT = path.resolve("output", ".react-build-cache");
 
+function swcPlatformPackage(): string | null {
+  if (process.platform === "darwin") {
+    return process.arch === "arm64" ? "@next/swc-darwin-arm64" : "@next/swc-darwin-x64";
+  }
+  if (process.platform === "linux") {
+    return process.arch === "arm64" ? "@next/swc-linux-arm64-gnu" : "@next/swc-linux-x64-gnu";
+  }
+  if (process.platform === "win32") return "@next/swc-win32-x64-msvc";
+  return null;
+}
+
 async function packageHash(projectPath: string): Promise<string> {
   const pkg = await fs.readFile(path.join(projectPath, "package.json"), "utf8");
   return crypto.createHash("sha256").update(pkg).digest("hex").slice(0, 16);
@@ -45,6 +56,14 @@ export async function buildReactProject(
 
   if (!modulesReady) {
     await runCommand("npm install", projectPath, timeoutMs);
+    const swcPkg = swcPlatformPackage();
+    if (swcPkg) {
+      try {
+        await runCommand(`npm install ${swcPkg}@14.2.18 --save-optional --no-audit --no-fund`, projectPath, timeoutMs);
+      } catch {
+        /* optional — build may still succeed */
+      }
+    }
     try {
       await fs.mkdir(cacheDir, { recursive: true });
       await copyNodeModules(projectModules, cachedModules);

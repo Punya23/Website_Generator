@@ -3,7 +3,7 @@ import type { SiteContext } from "../types.js";
 import type { BlueprintSection } from "./page-composer-agent.js";
 import { llm } from "../llm/client.js";
 import { briefToContext } from "./expand-brief-agent.js";
-import { allowMocks, requireLlm } from "../util/llm-required.js";
+import { allowMocks, requireLlm, strictLlmRequired, handleLlmFailure } from "../util/llm-required.js";
 import { getTemplate, validateCopyProps } from "../section-templates/registry.js";
 import { COPY_PROP_SCHEMAS } from "../section-templates/schemas.js";
 import { freezeSnapshot, type SectionCopySnapshot } from "./contracts/index.js";
@@ -12,29 +12,36 @@ import type { VerticalDesignProfile } from "../design/vertical-profiles.js";
 import { pipelineLog } from "../util/pipeline-log.js";
 import { padCopyArraysFromDefaults } from "../llm/normalize-llm-output.js";
 import { recordFallback } from "../util/fallback-tracker.js";
+import { parseLlmJson } from "../llm/parse-json.js";
+import { chatJsonWithRetry } from "../llm/json-agent.js";
 
-const COPY_PROMPT = `You are an editorial copywriter for ONE website section.
+const COPY_PROMPT = `You are an editorial copywriter for ONE premium marketing website section (Framer / Webflow quality).
 
-INPUT (read-only): brief, section intent, template type, mood.
-OUTPUT (your only job): JSON props object with copy fields only.
-FORBIDDEN: Do not output imageQuery, src, colors, or layout fields.
+INPUT: business brief, section intent, React template type, brand mood.
+OUTPUT: JSON props with copy fields ONLY — compelling, specific, visitor-facing.
 
-Rules:
-- All string fields must be plain strings, never JSON arrays
-- headline: compelling visitor-facing copy — NEVER copy section intent verbatim
-- label: optional short tag (2-4 words), do not duplicate headline
-- body/paragraphs/subcopy: concise editorial tone, max 2-3 sentences each
-- cta: { label, href } when template needs CTA
-- For image templates: omit image field entirely (media agent handles images)
+FORBIDDEN: imageQuery, src, colors, layout fields. Never copy section intent verbatim.
 
-Required shapes (include ALL required fields for the template):
+Quality rules:
+- Write for THIS business only — use services, location, and differentiators from the brief
+- headline: punchy, specific (not "Welcome to Our Services" or "Quality You Can Trust")
+- Avoid generic SaaS filler: seamless, innovative, cutting-edge, world-class, elevate, empower
+- label: 2–4 words, editorial (e.g. "Since 2018", "Our craft")
+- body/subcopy: vivid but concise — max 2 sentences unless template needs a list
+- stats: believable numbers tied to the vertical (clients, years, satisfaction %)
+- testimonials: realistic names and roles for the industry — not "John Doe" or "A valued client"
+- CTAs: action verbs from brief primaryCta when relevant
+
+Required shapes (include ALL required fields):
 - text_marquee: { "phrases": ["phrase one", "phrase two", "phrase three"] }
 - team_grid: { "headline": "...", "members": [{ "name": "...", "role": "...", "bio": "..." }] }
 - faq_accordion: { "headline": "...", "items": [{ "question": "...", "answer": "..." }] }
 - services_showcase: { "headline": "...", "paragraphs": ["...", "..."] }
 - testimonial_featured: { "quote": "...", "author": "...", "role": "..." }
 - stats_marquee: { "stats": [{ "value": "...", "label": "..." }] }
-- feature_bento: { "headline": "...", "items": [{ "title": "...", "description": "..." }] }`;
+- feature_bento: { "headline": "...", "items": [{ "title": "...", "description": "..." }] }
+
+Output valid JSON only.`;
 
 export async function writeSectionCopy(
   ctx: SiteContext,
@@ -68,9 +75,11 @@ Proof style: ${profile.proofPatterns.join(", ")}
 Page tone: ${profile.pageTone}`
         : "";
       const pagePlan = ctx.sitePlan.pages.find((p) => p.slug === pageSlug);
-      const raw = await llm.chat(
-        COPY_PROMPT,
-        `${briefToContext(snapshot.brief)}
+      const buildUser = (parseError?: string) => {
+        const retry = parseError
+          ? `\nPRIOR RESPONSE WAS INVALID JSON (${parseError}). Return ONLY strict JSON.`
+          : "";
+        return `${briefToContext(snapshot.brief)}
 PAGE: ${snapshot.pageSlug}
 PAGE GOAL: ${pagePlan?.goal ?? "convert visitors"}
 CONTENT FOCUS: ${pagePlan?.contentFocus?.join(", ") ?? "general"}
@@ -81,14 +90,21 @@ Vertical profile: ${ctx.verticalProfile?.profileId ?? "generic"}
 ${profileHints}
 Variation seed: ${ctx.variationSeed ?? "none"}
 Copy fields only: ${schemaHint.join(", ")}
-Avoid: ${snapshot.avoidPatterns.join("; ")}`,
-        { jsonMode: true, temperature: 0.75, tokenRole: "section", model: llm.getSectionModel() }
+Avoid: ${snapshot.avoidPatterns.join("; ")}${retry}`;
+      };
+
+      const parsed = await chatJsonWithRetry(
+        `copywriter ${section.id}`,
+        COPY_PROMPT,
+        buildUser,
+        { tokenRole: "section", model: llm.getSectionModel(), initialTemperature: 0.75 },
+        (raw) => {
+          const data = parseLlmJson<Record<string, unknown>>(raw);
+          return data.props && typeof data.props === "object"
+            ? (data.props as Record<string, unknown>)
+            : data;
+        }
       );
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
-      const payload =
-        parsed.props && typeof parsed.props === "object"
-          ? (parsed.props as Record<string, unknown>)
-          : parsed;
       const defaults = stripMediaFields(
         mockPropsForTemplate(
           section.templateId,
@@ -99,7 +115,7 @@ Avoid: ${snapshot.avoidPatterns.join("; ")}`,
         )
       );
       const merged = padCopyArraysFromDefaults(
-        mergeCopyWithDefaults(payload, defaults),
+        mergeCopyWithDefaults(parsed, defaults),
         defaults
       );
       return stripMediaFields(validateCopyProps(section.templateId, merged));
@@ -108,6 +124,9 @@ Avoid: ${snapshot.avoidPatterns.join("; ")}`,
       pipelineLog(
         `[pipeline] Copywriter ${section.id} failed: ${err instanceof Error ? err.message : String(err)} — using mock copy`
       );
+      if (strictLlmRequired()) {
+        handleLlmFailure(`copywriter ${section.id}`, err);
+      }
       if (!allowMocks()) {
         const mock = stripMediaFields(
           mockPropsForTemplate(

@@ -3,9 +3,12 @@ import type { PageBlueprint, SiteMotionPlan, SiteContext } from "../types.js";
 import { SiteMotionPlanSchema } from "../types.js";
 import { llm } from "../llm/client.js";
 import { allowMocks, requireLlm } from "../util/llm-required.js";
+import { recordFallback } from "../util/fallback-tracker.js";
 import { pipelineLog } from "../util/pipeline-log.js";
 import { getTemplate } from "../section-templates/registry.js";
 import { pickFrom } from "../design/variation.js";
+import { parseLlmJson } from "../llm/parse-json.js";
+import { chatJsonWithRetry } from "../llm/json-agent.js";
 import { coerceSectionEntrance, normalizeMotionPlan, resolveMotionPreset } from "../motion/presets.js";
 import {
   defaultSectionMotion,
@@ -33,7 +36,7 @@ Rules:
 - chrome.nav: compactOnScroll true, shadowOnScroll true when navScrollEnhance
 - reducedMotion: respect
 
-Output JSON only:
+Output JSON only (flat sections map — NOT nested by page slug):
 {
   "globalPreset": "...",
   "reducedMotion": "respect",
@@ -44,6 +47,67 @@ Output JSON only:
     "nav": { "compactOnScroll": true, "shadowOnScroll": true }
   }
 }`;
+
+const PER_PAGE_SECTION_THRESHOLD = 10;
+
+function compactMotionSectionList(blueprints: PageBlueprint[]): string {
+  return blueprints
+    .map(
+      (bp) =>
+        `Page ${bp.slug}:\n` +
+        bp.sections
+          .map((s) => {
+            const t = getTemplate(s.templateId);
+            return `  ${s.id}: ${s.templateId} (${t?.defaultMotion ?? "fade"})`;
+          })
+          .join("\n")
+    )
+    .join("\n\n");
+}
+
+function motionUserPrompt(
+  snapshot: MotionDirectorSnapshot,
+  ctx: SiteContext,
+  sectionList: string,
+  parseError?: string
+): string {
+  const retry = parseError
+    ? `\nPRIOR RESPONSE WAS INVALID JSON (${parseError}). Return ONLY valid flat JSON with top-level "sections" map.`
+    : "";
+  return `Business: ${snapshot.businessName}
+Motion style: ${snapshot.sitePlan.motionStyle ?? snapshot.designSystem.motionStyle ?? "staggered reveals"}
+Mood: ${snapshot.designSystem.mood}
+Global preset hint: ${snapshot.designSystem.motionPreset ?? "stagger"}
+Vertical profile: ${ctx.verticalProfile?.profileId ?? "generic"}
+Variation seed: ${ctx.variationSeed ?? "none"}
+
+Sections (id: templateId):
+${sectionList}
+${snapshot.chromeSpec ? `Chrome footer layout: ${snapshot.chromeSpec.footer.layout}` : ""}${retry}`;
+}
+
+/** Accept flat sections or page-nested { home: { sections: {...} } } from LLM. */
+export function flattenMotionSectionsPayload(raw: unknown): Record<string, unknown> {
+  const payload = unwrapAgentPayload(raw);
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return {};
+
+  const obj = payload as Record<string, unknown>;
+  if (obj.sections && typeof obj.sections === "object" && !Array.isArray(obj.sections)) {
+    return obj.sections as Record<string, unknown>;
+  }
+
+  const merged: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (!val || typeof val !== "object" || Array.isArray(val)) continue;
+    const page = val as Record<string, unknown>;
+    if (page.sections && typeof page.sections === "object" && !Array.isArray(page.sections)) {
+      Object.assign(merged, page.sections as Record<string, unknown>);
+    } else if ("entrance" in page || "parallax" in page || "marquee" in page) {
+      merged[key] = page;
+    }
+  }
+  return merged;
+}
 
 function mockMotionPlan(ctx: SiteContext, blueprints: PageBlueprint[]): SiteMotionPlan {
   const presetPool: SiteMotionPlan["globalPreset"][] = [
@@ -113,10 +177,7 @@ function sanitizeLlmMotionPlan(
 
   const obj = payload as Record<string, unknown>;
   const sections: SiteMotionPlan["sections"] = { ...fallback.sections };
-  const rawSections =
-    obj.sections && typeof obj.sections === "object" && !Array.isArray(obj.sections)
-      ? (obj.sections as Record<string, unknown>)
-      : {};
+  const rawSections = flattenMotionSectionsPayload(payload);
 
   for (const [id, cfg] of Object.entries(rawSections)) {
     if (!cfg || typeof cfg !== "object" || Array.isArray(cfg)) continue;
@@ -166,6 +227,32 @@ function sanitizeLlmMotionPlan(
   return SiteMotionPlanSchema.parse(plan);
 }
 
+async function directMotionPlanForPage(
+  ctx: SiteContext,
+  snapshot: MotionDirectorSnapshot,
+  blueprint: PageBlueprint
+): Promise<SiteMotionPlan["sections"]> {
+  const sectionList =
+    `Page ${blueprint.slug}:\n` +
+    blueprint.sections
+      .map((s) => {
+        const t = getTemplate(s.templateId);
+        return `  ${s.id}: ${s.templateId} (${t?.defaultMotion ?? "fade"})`;
+      })
+      .join("\n");
+
+  const raw = await chatJsonWithRetry(
+    `motion director (${blueprint.slug})`,
+    MOTION_PROMPT,
+    (parseError) => motionUserPrompt(snapshot, ctx, sectionList, parseError),
+    { tokenRole: "composition", initialTemperature: 0.45 },
+    (r) => parseLlmJson(r)
+  );
+
+  const plan = sanitizeLlmMotionPlan(raw, ctx, [blueprint]);
+  return plan.sections;
+}
+
 export async function directMotionPlan(
   ctx: SiteContext,
   blueprints: PageBlueprint[]
@@ -181,43 +268,49 @@ export async function directMotionPlan(
   });
 
   if (llm.isAvailable) {
+    const totalSections = blueprints.reduce((n, bp) => n + bp.sections.length, 0);
+    const usePerPage = totalSections > PER_PAGE_SECTION_THRESHOLD;
+
     try {
-      const sectionList = blueprints
-        .map(
-          (bp) =>
-            `Page ${bp.slug} (${bp.rhythm}):\n` +
-            bp.sections
-              .map((s) => {
-                const t = getTemplate(s.templateId);
-                return `  - ${s.id}: ${s.templateId} (${t?.defaultMotion ?? "fade"}) — ${s.intent}`;
-              })
-              .join("\n")
-        )
-        .join("\n\n");
+      if (usePerPage) {
+        pipelineLog(
+          `[pipeline] Motion director: per-page mode (${totalSections} sections across ${blueprints.length} pages)`
+        );
+        const base = mockMotionPlan(ctx, blueprints);
+        const sections: SiteMotionPlan["sections"] = { ...base.sections };
+        for (const bp of blueprints) {
+          try {
+            const pageSections = await directMotionPlanForPage(ctx, snapshot, bp);
+            Object.assign(sections, pageSections);
+          } catch (err) {
+            pipelineLog(
+              `[pipeline] Motion director ${bp.slug} failed: ${err instanceof Error ? err.message : String(err)} — page defaults`
+            );
+            recordFallback("motion_director");
+          }
+        }
+        const plan = SiteMotionPlanSchema.parse({ ...base, sections });
+        pipelineLog(`[pipeline] Motion director: ${Object.keys(plan.sections).length} sections choreographed`);
+        return plan;
+      }
 
-      const raw = await llm.chat(
+      const sectionList = compactMotionSectionList(blueprints);
+      const raw = await chatJsonWithRetry(
+        "motion director",
         MOTION_PROMPT,
-        `Business: ${snapshot.businessName}
-Motion style: ${snapshot.sitePlan.motionStyle ?? snapshot.designSystem.motionStyle ?? "staggered reveals"}
-Mood: ${snapshot.designSystem.mood}
-Global preset hint: ${snapshot.designSystem.motionPreset ?? "stagger"}
-Vertical profile: ${ctx.verticalProfile?.profileId ?? "generic"}
-Variation seed: ${ctx.variationSeed ?? "none"}
-
-Blueprints:
-${sectionList}
-
-${snapshot.chromeSpec ? `Chrome footer layout: ${snapshot.chromeSpec.footer.layout}` : ""}`,
-        { jsonMode: true, temperature: 0.45, tokenRole: "composition" }
+        (parseError) => motionUserPrompt(snapshot, ctx, sectionList, parseError),
+        { tokenRole: "composition", initialTemperature: 0.45 },
+        (r) => parseLlmJson(r)
       );
 
-      const plan = sanitizeLlmMotionPlan(JSON.parse(raw), ctx, blueprints);
+      const plan = sanitizeLlmMotionPlan(raw, ctx, blueprints);
       pipelineLog(`[pipeline] Motion director: ${Object.keys(plan.sections).length} sections choreographed`);
       return plan;
     } catch (err) {
       pipelineLog(
         `[pipeline] Motion director LLM failed: ${err instanceof Error ? err.message : String(err)} — using default choreography`
       );
+      recordFallback("motion_director");
     }
   } else {
     if (!allowMocks()) requireLlm("motion director");

@@ -11,7 +11,7 @@ import { expandBrief } from "../agents/expand-brief-agent.js";
 import { planSite, getPagePlan } from "../agents/site-planner-agent.js";
 import { generateDesignSystem } from "../agents/design-director-agent.js";
 import { refineDesignSystem } from "../agents/design-refine-agent.js";
-import { skipSecondDesignRefine } from "../llm/pipeline-speed.js";
+import { skipSecondDesignRefine, isQualityPipeline } from "../llm/pipeline-speed.js";
 import { runDesignQA } from "../qa/react-qa.js";
 import { buildPageSections } from "../agents/section-builder-agent.js";
 import { applyFixes, applyContentPatches, applySectionScopedFixes } from "../agents/fix-agent.js";
@@ -54,6 +54,7 @@ import {
 } from "../hosting/publish-site.js";
 import { cleanupAfterPublish } from "../hosting/cleanup-artifacts.js";
 import { siteSlugFromName } from "../hosting/slug.js";
+import { hashString } from "../design/variation.js";
 
 const MAX_QA_RETRIES = 3;
 
@@ -264,7 +265,11 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   const expanded = await expandBrief(options.businessBrief, options.businessName);
   pipelineLog("[pipeline] Expanding brief… done");
 
-  const variationSeed = options.variationSeed ?? Date.now();
+  const variationSeed =
+    options.variationSeed ??
+    (isQualityPipeline()
+      ? hashString(crypto.randomUUID())
+      : Date.now());
   pipelineLog("[pipeline] Planning site structure…");
   const sitePlan = await planSite(expanded);
   pipelineLog(`[pipeline] Site plan ready (${sitePlan.pages.length} pages)`);
@@ -354,11 +359,9 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   const enableVision = options.enableVisionPolish !== false;
 
   if (outputMode === "react") {
-    pipelineLog("[pipeline] Output mode: React (Framer-parity)");
     const reactOut = path.resolve("output", "_playground-react");
-    const reactResult = await runReactPipeline(ctx, registry, reactOut, {
-      previewBasePath: "/preview",
-    });
+    pipelineLog("[pipeline] Output mode: React (Framer-parity)");
+    const reactResult = await runReactPipeline(ctx, registry, reactOut, { previewBasePath: "/preview" });
     reactProjectPath = reactResult.projectPath;
     buildSucceeded = reactResult.buildSucceeded;
     if (reactResult.buildSucceeded) {
@@ -533,7 +536,13 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     (outputMode === "react" && buildSucceeded === false) ||
     hardPipelineQa ||
     !qaSummary.passed ||
-    totalFallbacks() > 8;
+    (isQualityPipeline() ? totalFallbacks() > 0 : totalFallbacks() > 8);
+
+  const estimatedCostUsd = llm.getEstimatedCostUsd();
+  const costCap = llm.getCostCapUsd();
+  pipelineLog(
+    `[pipeline] LLM cost estimate: ~$${estimatedCostUsd.toFixed(4)}${costCap ? ` (cap $${costCap})` : ""} — ${llm.getTokenUsage().total} tokens`
+  );
 
   const previewSource: GenerationResult["previewSource"] =
     outputMode === "react"
@@ -549,6 +558,8 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     durationMs: timingMs,
     message: degraded ? "generation degraded" : "generation succeeded",
     tokens: llm.getTokenUsage(),
+    estimatedCostUsd,
+    costCapUsd: costCap ?? undefined,
     fallbacks: Object.keys(fallbackSummary).length > 0 ? fallbackSummary : undefined,
   });
 

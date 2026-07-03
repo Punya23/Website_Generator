@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import {
   Container,
   DisplayHeading,
@@ -8,6 +8,7 @@ import {
   MonoTag,
   Reveal,
   SectionLabel,
+  SplitHeroLayout,
   SplitRevealHeading,
 } from "../primitives";
 import {
@@ -53,6 +54,30 @@ function PremiumShell({
   );
 }
 
+function HeroMedia({
+  image,
+  headline,
+  className = "aspect-[4/5] max-h-[min(72vh,640px)]",
+}: {
+  image?: ImageField;
+  headline: string;
+  className?: string;
+}) {
+  return (
+    <div className={`section-media ${className}`}>
+      {image?.src ? (
+        <img
+          src={image.src}
+          alt={image.alt ?? headline}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <div className="h-full min-h-[280px] w-full bg-accent/10" />
+      )}
+    </div>
+  );
+}
+
 export function HeroSpotlight(props: {
   id?: string;
   label?: string;
@@ -64,9 +89,11 @@ export function HeroSpotlight(props: {
   density?: "airy" | "normal" | "compact";
   mediaPosition?: "background" | "left" | "right";
 }) {
-  const variant = props.layoutVariant ?? "split-offset";
-  const minH =
-    props.density === "compact" ? "min-h-[70vh]" : props.density === "airy" ? "min-h-[92vh]" : "min-h-[85vh]";
+  const rawVariant = props.layoutVariant ?? "full-bleed-left";
+  const variant =
+    rawVariant === "split-offset" || rawVariant === "default" ? "full-bleed-left" : rawVariant;
+  const padY =
+    props.density === "compact" ? "py-12 md:py-16" : props.density === "airy" ? "py-20 md:py-28" : "py-16 md:py-24";
   const reduce = useReducedMotion();
   const imageRight = props.mediaPosition !== "left";
 
@@ -74,13 +101,13 @@ export function HeroSpotlight(props: {
     <Reveal>
       {props.label ? <MonoTag>{props.label}</MonoTag> : null}
       {reduce ? (
-        <DisplayHeading as="h1" className="mt-4 max-w-3xl">
+        <DisplayHeading as="h1" className="mt-4 max-w-2xl">
           {props.headline}
         </DisplayHeading>
       ) : (
-        <SplitRevealHeading text={props.headline} as="h1" className="mt-4 max-w-3xl" />
+        <SplitRevealHeading text={props.headline} as="h1" className="mt-4 max-w-2xl" />
       )}
-      {props.subcopy ? <p className="mt-5 max-w-xl text-lg text-muted">{props.subcopy}</p> : null}
+      {props.subcopy ? <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted">{props.subcopy}</p> : null}
       {props.cta ? (
         <div className="mt-8">
           <MagneticButton
@@ -94,22 +121,6 @@ export function HeroSpotlight(props: {
     </Reveal>
   );
 
-  const imageBlock = (
-    <Reveal delay={0.08}>
-      {props.image?.src ? (
-        <motion.img
-          src={props.image.src}
-          alt={props.image.alt ?? props.headline}
-          className={`aspect-[4/5] w-full rounded-2xl object-cover shadow-2xl ${variant === "split-offset" ? "lg:translate-y-6" : ""}`}
-          whileHover={{ scale: 1.02 }}
-          transition={{ type: "spring", stiffness: 200, damping: 24 }}
-        />
-      ) : (
-        <div className="aspect-[4/5] w-full rounded-2xl bg-accent/10" />
-      )}
-    </Reveal>
-  );
-
   if (variant === "centered-stack") {
     return (
       <PremiumShell
@@ -117,44 +128,16 @@ export function HeroSpotlight(props: {
         templateId="hero_spotlight"
         mode="bleed"
         layoutVariant={variant}
-        className={`relative overflow-hidden bg-bg ${minH}`}
+        className="relative overflow-hidden bg-bg"
       >
         <NoiseGradientBg strong className="absolute inset-0">
-          <CursorSpotlight className={`flex ${minH} w-full`} intensity={0.42}>
-            <Container className={`flex ${minH} flex-col items-center justify-center text-center`}>
-              {copyBlock}
-              <div className="mt-10 max-w-md">{imageBlock}</div>
-            </Container>
-          </CursorSpotlight>
-        </NoiseGradientBg>
-      </PremiumShell>
-    );
-  }
-
-  if (variant === "full-bleed-left") {
-    return (
-      <PremiumShell
-        id={props.id}
-        templateId="hero_spotlight"
-        mode="bleed"
-        layoutVariant={variant}
-        className={`relative overflow-hidden bg-bg ${minH}`}
-      >
-        <NoiseGradientBg strong className="absolute inset-0">
-          <CursorSpotlight className={`flex ${minH} w-full`} intensity={0.42}>
-            <Container className={`flex ${minH} items-center py-16 md:py-24`}>
-              <div className={`grid w-full items-center gap-10 ${imageRight ? "lg:grid-cols-[1.15fr_0.85fr]" : "lg:grid-cols-[0.85fr_1.15fr]"}`}>
-                {imageRight ? (
-                  <>
-                    {copyBlock}
-                    {imageBlock}
-                  </>
-                ) : (
-                  <>
-                    {imageBlock}
-                    {copyBlock}
-                  </>
-                )}
+          <CursorSpotlight className="w-full" intensity={0.42}>
+            <Container className={`${padY} text-center`}>
+              <div className="mx-auto max-w-3xl">{copyBlock}</div>
+              <div className="mx-auto mt-10 w-full max-w-md">
+                <Reveal delay={0.08}>
+                  <HeroMedia image={props.image} headline={props.headline} className="aspect-square max-h-[420px]" />
+                </Reveal>
               </div>
             </Container>
           </CursorSpotlight>
@@ -169,17 +152,20 @@ export function HeroSpotlight(props: {
       templateId="hero_spotlight"
       mode="bleed"
       layoutVariant={variant}
-      className={`relative overflow-hidden bg-bg ${minH}`}
+      className="relative overflow-hidden bg-bg"
     >
       <NoiseGradientBg strong className="absolute inset-0">
-        <CursorSpotlight className={`flex ${minH} w-full`} intensity={0.42}>
-          <Container className={`flex ${minH} items-center py-16 md:py-24`}>
-            <div className={`grid w-full items-center gap-10 lg:grid-cols-[1.1fr_0.9fr] ${imageRight ? "" : "[&>*:first-child]:order-2"}`}>
-              {copyBlock}
-              <div className={imageRight ? "relative lg:-mr-12 lg:translate-y-8" : "relative lg:-ml-12 lg:translate-y-8"}>
-                {imageBlock}
-              </div>
-            </div>
+        <CursorSpotlight className="w-full" intensity={0.42}>
+          <Container className={padY}>
+            <SplitHeroLayout
+              mediaRight={imageRight}
+              copy={copyBlock}
+              media={
+                <Reveal delay={0.08}>
+                  <HeroMedia image={props.image} headline={props.headline} />
+                </Reveal>
+              }
+            />
           </Container>
         </CursorSpotlight>
       </NoiseGradientBg>
@@ -262,7 +248,7 @@ export function HorizontalGallery(props: {
           {props.items.map((item, i) => (
             <div
               key={i}
-              className="w-[min(85vw,420px)] shrink-0 snap-center overflow-hidden rounded-2xl border border-border bg-surface shadow-lg"
+              className="w-[min(85vw,380px)] shrink-0 snap-center overflow-hidden rounded-2xl border border-border bg-surface shadow-lg"
             >
               {item.image?.src ? (
                 <img src={item.image.src} alt={item.title} className="aspect-[4/3] w-full object-cover" />

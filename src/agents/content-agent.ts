@@ -49,7 +49,7 @@ Content focus: ${pagePlan.contentFocus.join(", ")}
 Layout hint (for tone only, do NOT implement): ${pagePlan.layoutHint}
 
 Generate ${pagePlan.minBlocks}+ content blocks. Be thorough and specific to ${brief.businessName}.`,
-      { jsonMode: true, temperature: 0.85, maxTokens: 6144 }
+      { jsonMode: true, temperature: 0.85, tokenRole: "composition" }
     );
     const parsed = JSON.parse(raw) as { blocks: ContentBlock[] };
     return parsed.blocks;

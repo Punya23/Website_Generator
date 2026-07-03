@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   coerceLayoutVariant,
+  flattenLayoutSectionsPayload,
   sanitizeLlmLayoutPlan,
 } from "../src/agents/layout-director-agent.js";
 import { runLayoutQA } from "../src/qa/layout-qa.js";
@@ -73,6 +74,23 @@ describe("layout director agent", () => {
     expect(coerceLayoutVariant("full_bleed_left", "default")).toBe("full-bleed-left");
     expect(coerceLayoutVariant("centered", "default")).toBe("centered-stack");
     expect(coerceLayoutVariant("not-a-real-variant", "band-wide")).toBe("band-wide");
+  });
+
+  it("flattens page-nested layout sections from LLM", () => {
+    const flat = flattenLayoutSectionsPayload({
+      home: {
+        sections: {
+          home_s0_herospotlight: { variant: "split-offset", density: "airy" },
+        },
+      },
+      about: {
+        sections: {
+          about_s0_hero: { variant: "full-bleed-left", density: "normal" },
+        },
+      },
+    });
+    expect(flat.home_s0_herospotlight).toEqual({ variant: "split-offset", density: "airy" });
+    expect(flat.about_s0_hero).toEqual({ variant: "full-bleed-left", density: "normal" });
   });
 
   it("sanitizes malformed LLM layout output", () => {

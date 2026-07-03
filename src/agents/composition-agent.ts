@@ -97,7 +97,7 @@ ${JSON.stringify(blockSummary, null, 2)}`;
   const raw = await llm.chat(COMPOSITION_SYSTEM, userPrompt, {
     jsonMode: true,
     temperature: 0.35,
-    maxTokens: 2048,
+    tokenRole: "composition",
     model: llm.getCompositionModel(),
   });
 

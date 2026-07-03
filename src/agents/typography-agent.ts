@@ -5,7 +5,10 @@ import { mockTypographyForProfile } from "../design/vertical-profiles.js";
 import { pickTypographyFromSeed } from "../design/seed-design.js";
 import { TypographyPartialSchema } from "../types.js";
 import { llm } from "../llm/client.js";
-import { allowMocks, requireLlm } from "../util/llm-required.js";
+import { allowMocks, requireLlm, handleLlmFailure } from "../util/llm-required.js";
+import { parseLlmJson } from "../llm/parse-json.js";
+import { chatJsonWithRetry } from "../llm/json-agent.js";
+import { recordFallback } from "../util/fallback-tracker.js";
 import { GENERIC_THEME } from "./theme-agent.js";
 import { pipelineLog } from "../util/pipeline-log.js";
 import { validateAgentOutput, type AgentContract } from "./contracts/index.js";
@@ -27,12 +30,16 @@ Rules:
 - fontBody: readable body Google Font
 - sectionGapMode: tight | normal | airy (fashion/editorial → airy; corporate → normal)
 - layout: maxWidth, gridColumns, sectionGap, cardMinHeight
+- radiusScale: sharp | soft | rounded | pill — corner-radius language for cards, buttons, and media. Match the brand: editorial/luxury/architectural → sharp or soft; friendly/local/wellness → rounded or pill. Vary this across briefs — don't default to the same value every time.
+- shadowDepth: flat | soft | elevated | dramatic — how much surfaces lift off the page. Minimal/editorial brands → flat or soft; bold/premium brands → elevated or dramatic.
 
 Output JSON:
 {
   "fontHeading": "Google Font",
   "fontBody": "Google Font",
   "sectionGapMode": "tight|normal|airy",
+  "radiusScale": "sharp|soft|rounded|pill",
+  "shadowDepth": "flat|soft|elevated|dramatic",
   "typography": {
     "display": "Playfair Display",
     "heading": "Playfair Display",
@@ -88,21 +95,30 @@ export async function generateTypography(
         variationSeed !== undefined
           ? `\nVariation seed: ${variationSeed} — pick distinctive heading/body pairing within profile.`
           : "";
-      const raw = await llm.chat(
+      const temperature = variationSeed !== undefined ? 0.65 : 0.55;
+      const parsed = await chatJsonWithRetry(
+        "typography agent",
         TYPOGRAPHY_PROMPT,
-        `Business: ${businessName}\nBrief: ${businessBrief}\nMood: ${mood ?? "refined"}${profileHint}${seedHint}`,
-        { jsonMode: true, temperature: variationSeed !== undefined ? 0.65 : 0.55 }
-      );
-      const parsed = validateAgentOutput(
-        TYPOGRAPHY_CONTRACT,
-        normalizeTypographyPartial(JSON.parse(raw))
+        (parseError) => {
+          const retryBlock = parseError
+            ? `\nPRIOR RESPONSE WAS INVALID JSON (${parseError}). Return ONLY strict JSON matching the schema.`
+            : "";
+          return `Business: ${businessName}\nBrief: ${businessBrief}\nMood: ${mood ?? "refined"}${profileHint}${seedHint}${retryBlock}`;
+        },
+        { tokenRole: "design", initialTemperature: temperature },
+        (raw) =>
+          validateAgentOutput(
+            TYPOGRAPHY_CONTRACT,
+            normalizeTypographyPartial(parseLlmJson(raw))
+          )
       );
       return applyTypographySeed(parsed, verticalProfile?.profileId, variationSeed);
     } catch (err) {
       pipelineLog(
         `[pipeline] Typography agent failed: ${err instanceof Error ? err.message : String(err)} — using default typography`
       );
-      if (!allowMocks()) return mockTypography(businessBrief, verticalProfile, variationSeed);
+      if (!allowMocks()) handleLlmFailure("typography agent", err);
+      recordFallback("typography");
     }
   } else {
     if (!allowMocks()) requireLlm("typography agent");
@@ -142,10 +158,13 @@ function mockTypography(
     return applyTypographySeed(base, verticalProfile.profileId, variationSeed);
   }
   const editorial = /fashion|editorial|luxury|bridal/i.test(businessBrief);
+  const friendly = /local|wellness|community|family|cafe|gym/i.test(businessBrief);
   return {
     fontHeading: editorial ? "Playfair Display" : GENERIC_THEME.fontHeading,
     fontBody: GENERIC_THEME.fontBody,
     sectionGapMode: editorial ? "airy" : "normal",
+    radiusScale: editorial ? "sharp" : friendly ? "pill" : "rounded",
+    shadowDepth: editorial ? "flat" : "soft",
     layout: editorial
       ? { maxWidth: "1200px", gridColumns: 3, sectionGap: "5rem", cardMinHeight: "auto" }
       : GENERIC_THEME.layout,

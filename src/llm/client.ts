@@ -6,13 +6,20 @@ import {
   isOverCapacityError,
   isConnectionError,
   isNonRetryableLLMError,
+  isOpenRouterMaxTokensCapError,
   isTransientLLMError,
+  parseAffordableMaxTokens,
   parseRetryAfterMs,
   DEFAULT_GROQ_FALLBACK_MODEL,
 } from "./rate-limit.js";
-import { llmMaxRetries, maxTokensFor, type TokenRole } from "./token-budget.js";
+import { llmMaxRetries, resolveRequestMaxTokens, type TokenRole } from "./token-budget.js";
 import { normalizeLlmJsonContent } from "./parse-json.js";
-import { openRouterDefaults } from "./openrouter-models.js";
+import { openRouterDefaults, OPENROUTER_COST_DOWNGRADE_MODEL } from "./openrouter-models.js";
+import {
+  estimateCostUsd,
+  isOverCostCap,
+  pipelineCostCapUsd,
+} from "./cost-telemetry.js";
 
 export type LLMProvider = "groq" | "openai" | "mistral" | "openrouter" | "ollama";
 
@@ -153,6 +160,8 @@ export class LLMClient {
   private client: OpenAI | null;
   private models: (typeof DEFAULT_MODELS)[LLMProvider];
   private tokenUsage = { prompt: 0, completion: 0, total: 0 };
+  private usageByModel = new Map<string, { prompt: number; completion: number }>();
+  private costCapDowngrade = false;
 
   constructor() {
     this.provider = resolveProvider();
@@ -180,7 +189,7 @@ export class LLMClient {
       this.provider === "ollama"
         ? (process.env.LLM_MODEL ?? process.env.OLLAMA_MODEL ?? this.models.chat)
         : this.provider === "openrouter"
-          ? (process.env.LLM_MODEL ?? process.env.OPENROUTER_MODEL ?? this.models.chat)
+          ? (process.env.LLM_MODEL ?? process.env.OPENROUTER_MODEL ?? openRouterDefaults().chat)
           : this.provider === "mistral"
             ? (process.env.LLM_MODEL ?? process.env.MISTRAL_MODEL ?? this.models.chat)
             : this.provider === "groq"
@@ -199,7 +208,7 @@ export class LLMClient {
         : this.provider === "openrouter"
         ? (process.env.LLM_COMPOSITION_MODEL ??
           process.env.OPENROUTER_COMPOSITION_MODEL ??
-          this.models.composition)
+          openRouterDefaults().composition)
         : this.provider === "mistral"
           ? (process.env.LLM_COMPOSITION_MODEL ??
             process.env.MISTRAL_COMPOSITION_MODEL ??
@@ -267,19 +276,74 @@ export class LLMClient {
     return resolveModel(this.provider, this.getCompositionModel());
   }
 
+  getArchitectModel(): string {
+    const explicit =
+      process.env.LLM_ARCHITECT_MODEL ??
+      (this.provider === "openrouter" ? process.env.OPENROUTER_ARCHITECT_MODEL : undefined);
+    if (explicit) return resolveModel(this.provider, explicit);
+    if (this.provider === "openrouter") {
+      return openRouterDefaults().architect;
+    }
+    return resolveModel(this.provider, this.getCompositionModel());
+  }
+
+  getHeroCodegenModel(): string {
+    const explicit =
+      process.env.LLM_HERO_CODEGEN_MODEL ??
+      (this.provider === "openrouter" ? process.env.OPENROUTER_HERO_CODEGEN_MODEL : undefined);
+    if (explicit) return resolveModel(this.provider, explicit);
+    if (this.provider === "openrouter") {
+      return openRouterDefaults().heroCodegen;
+    }
+    return resolveModel(this.provider, this.getCompositionModel());
+  }
+
   getTokenUsage(): { prompt: number; completion: number; total: number } {
     return { ...this.tokenUsage };
   }
 
   resetTokenUsage(): void {
     this.tokenUsage = { prompt: 0, completion: 0, total: 0 };
+    this.usageByModel.clear();
+    this.costCapDowngrade = false;
   }
 
-  private recordUsage(usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number }): void {
+  getEstimatedCostUsd(): number {
+    return estimateCostUsd(this.usageByModel);
+  }
+
+  getCostCapUsd(): number | null {
+    return pipelineCostCapUsd();
+  }
+
+  private recordUsage(
+    model: string,
+    usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number }
+  ): void {
     if (!usage) return;
-    this.tokenUsage.prompt += usage.prompt_tokens ?? 0;
-    this.tokenUsage.completion += usage.completion_tokens ?? 0;
-    this.tokenUsage.total += usage.total_tokens ?? 0;
+    const prompt = usage.prompt_tokens ?? 0;
+    const completion = usage.completion_tokens ?? 0;
+    this.tokenUsage.prompt += prompt;
+    this.tokenUsage.completion += completion;
+    this.tokenUsage.total += usage.total_tokens ?? prompt + completion;
+    const prev = this.usageByModel.get(model) ?? { prompt: 0, completion: 0 };
+    this.usageByModel.set(model, {
+      prompt: prev.prompt + prompt,
+      completion: prev.completion + completion,
+    });
+    if (!this.costCapDowngrade && isOverCostCap(this.getEstimatedCostUsd())) {
+      this.costCapDowngrade = true;
+      console.warn(
+        `[llm] Cost cap $${pipelineCostCapUsd()} reached — downgrading remaining calls to ${OPENROUTER_COST_DOWNGRADE_MODEL}`
+      );
+    }
+  }
+
+  private resolveModelForRequest(requested: string): string {
+    if (this.costCapDowngrade && this.provider === "openrouter") {
+      return OPENROUTER_COST_DOWNGRADE_MODEL;
+    }
+    return resolveModel(this.provider, requested);
   }
 
   async chat(
@@ -310,26 +374,41 @@ export class LLMClient {
       { role: "user", content: user },
     ];
 
-    const model = resolveModel(
-      this.provider,
+    const model = this.resolveModelForRequest(
       modelOverride ?? options.model ?? this.getChatModel()
     );
+
+    const maxTokens = resolveRequestMaxTokens(options, this.provider);
 
     try {
       const response = await this.client!.chat.completions.create({
         model,
         temperature: options.temperature ?? 0.7,
-        max_tokens:
-          options.maxTokens ??
-          (options.tokenRole ? maxTokensFor(options.tokenRole) : defaultMaxTokens(this.provider)),
+        max_tokens: maxTokens,
         messages,
         response_format: options.jsonMode ? { type: "json_object" } : undefined,
       });
 
-      this.recordUsage(response.usage);
+      this.recordUsage(model, response.usage);
       const content = response.choices[0]?.message?.content ?? "";
       return options.jsonMode ? normalizeLlmJsonContent(content) : content;
     } catch (err: unknown) {
+      const affordable = parseAffordableMaxTokens(err);
+      if (isOpenRouterMaxTokensCapError(err) && affordable && attempt < MAX_RETRIES) {
+        const reduced = Math.min(maxTokens, Math.max(256, affordable - 64));
+        if (reduced < maxTokens) {
+          console.warn(
+            `[llm] OpenRouter max_tokens cap — retrying with ${reduced} (was ${maxTokens})`
+          );
+          return this.chatWithRetry(
+            system,
+            user,
+            { ...options, maxTokens: reduced },
+            attempt + 1,
+            modelOverride
+          );
+        }
+      }
       if (isNonRetryableLLMError(err)) {
         throw enhanceGroqModelError(err, model);
       }
@@ -387,7 +466,7 @@ export class LLMClient {
     attempt = 0
   ): Promise<string> {
     const MAX_RETRIES = llmMaxRetries();
-    const visionModel = options.model ?? this.getVisionModel();
+    const visionModel = this.resolveModelForRequest(options.model ?? this.getVisionModel()!);
     if (!visionModel) {
       throw new Error(
         `Vision QA is not supported on provider "${this.provider}" — use OpenAI or set GROQ_VISION_MODEL if available`
@@ -398,6 +477,7 @@ export class LLMClient {
       const response = await this.client!.chat.completions.create({
         model: visionModel,
         temperature: options.temperature ?? 0.3,
+        max_tokens: resolveRequestMaxTokens({ ...options, tokenRole: "vision" }, this.provider),
         messages: [
           { role: "system", content: system },
           {
@@ -414,7 +494,7 @@ export class LLMClient {
         response_format: { type: "json_object" },
       });
 
-      this.recordUsage(response.usage);
+      this.recordUsage(visionModel, response.usage);
       return normalizeLlmJsonContent(response.choices[0]?.message?.content ?? "");
     } catch (err: unknown) {
       if (isNonRetryableLLMError(err)) {
@@ -454,7 +534,7 @@ export class LLMClient {
     attempt = 0
   ): Promise<string> {
     const MAX_RETRIES = llmMaxRetries();
-    const visionModel = options.model ?? this.getVisionModel();
+    const visionModel = this.resolveModelForRequest(options.model ?? this.getVisionModel()!);
     if (!visionModel) {
       throw new Error(`Vision QA is not supported on provider "${this.provider}"`);
     }
@@ -463,6 +543,7 @@ export class LLMClient {
       const response = await this.client!.chat.completions.create({
         model: visionModel,
         temperature: options.temperature ?? 0.3,
+        max_tokens: resolveRequestMaxTokens({ ...options, tokenRole: "vision" }, this.provider),
         messages: [
           { role: "system", content: system },
           {
@@ -484,7 +565,7 @@ export class LLMClient {
         response_format: { type: "json_object" },
       });
 
-      this.recordUsage(response.usage);
+      this.recordUsage(visionModel, response.usage);
       return normalizeLlmJsonContent(response.choices[0]?.message?.content ?? "");
     } catch (err: unknown) {
       if (isNonRetryableLLMError(err)) {
@@ -510,12 +591,6 @@ export class LLMClient {
 export const llm = new LLMClient();
 
 export { resolveProvider, DEFAULT_MODELS, resolveGroqModel };
-
-function defaultMaxTokens(provider: LLMProvider | null): number {
-  if (provider === "ollama") return maxTokensFor("composition");
-  if (provider === "openrouter") return maxTokensFor("composition");
-  return provider === "groq" ? 3072 : 8192;
-}
 
 function enhanceGroqModelError(err: unknown, model: string): Error {
   if (

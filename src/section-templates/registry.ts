@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import { TEMPLATE_PROP_SCHEMAS, type TemplateId } from "./schemas.js";
+import { repairTemplateProps } from "./repair-props.js";
 
 export type SectionMode = "bleed" | "contained" | "editorial" | "band";
 
@@ -299,13 +300,48 @@ export function validateTemplateProps(
 ): Record<string, unknown> {
   const template = getTemplate(templateId);
   if (!template) throw new Error(`Unknown template: ${templateId}`);
-  return template.propsSchema.parse(props) as Record<string, unknown>;
+  const repaired = repairTemplateProps(
+    templateId,
+    (props ?? {}) as Record<string, unknown>
+  );
+  return template.propsSchema.parse(repaired) as Record<string, unknown>;
 }
 
 export { validateCopyProps } from "./schemas.js";
 
+/** Framer-grade templates — architect should prefer these on home */
+export const PREMIUM_TEMPLATE_IDS = [
+  "hero_spotlight",
+  "hero_editorial",
+  "hero_split_cinematic",
+  "hero_video",
+  "scroll_showcase",
+  "horizontal_gallery",
+  "testimonial_carousel",
+  "portfolio_carousel",
+  "stats_animated",
+  "before_after",
+  "pricing_toggle",
+  "text_marquee",
+] as const;
+
+export const IMMERSIVE_TEMPLATE_IDS = [
+  "hero_video",
+  "testimonial_carousel",
+  "portfolio_carousel",
+  "before_after",
+  "stats_animated",
+  "newsletter_band",
+] as const;
+
 export function templateCatalogForPrompt(): string {
-  return SECTION_TEMPLATES.map(
-    (t) => `- ${t.id}: ${t.description} (mode: ${t.sectionMode})`
-  ).join("\n");
+  const premium = new Set<string>(PREMIUM_TEMPLATE_IDS);
+  const lines = SECTION_TEMPLATES.map((t) => {
+    const tag = premium.has(t.id) ? " [premium]" : "";
+    return `- ${t.id}: ${t.description} (mode: ${t.sectionMode}, component: ${t.componentName})${tag}`;
+  });
+  return `PREMIUM (use 3+ on home when relevant): ${PREMIUM_TEMPLATE_IDS.join(", ")}
+
+CATALOG:
+${lines.join("\n")}`;
 }

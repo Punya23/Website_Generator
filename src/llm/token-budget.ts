@@ -3,7 +3,9 @@
  * LLM_BUDGET_MODE=1 (opt-in).
  */
 
-export type TokenRole = "expand" | "plan" | "composition" | "section" | "design" | "refine";
+import { isQualityPipeline } from "./pipeline-speed.js";
+
+export type TokenRole = "expand" | "plan" | "composition" | "section" | "design" | "refine" | "vision" | "architect";
 
 /** Aggressive call-skipping — opt-in only via LLM_BUDGET_MODE=1. */
 export function isBudgetMode(): boolean {
@@ -31,6 +33,8 @@ export function maxTokensFor(role: TokenRole): number {
       section: 1024,
       design: 1024,
       refine: 1024,
+      vision: 768,
+      architect: 3072,
     };
     return budget[role];
   }
@@ -39,11 +43,39 @@ export function maxTokensFor(role: TokenRole): number {
     expand: 3072,
     plan: 3072,
     composition: 3072,
-    section: 2048,
+    section: isQualityPipeline() ? 2560 : 2048,
     design: 2048,
     refine: 2048,
+    vision: 1024,
+    architect: 4096,
   };
   return standard[role];
+}
+
+/** OpenRouter prepaid accounts reject large max_tokens per request — cap proactively. */
+export function openRouterMaxTokensCap(): number {
+  const n = Number.parseInt(process.env.OPENROUTER_MAX_TOKENS ?? "2048", 10);
+  return Number.isFinite(n) && n > 0 ? n : 2048;
+}
+
+export function clampRequestMaxTokens(requested: number, provider: string | null): number {
+  if (provider !== "openrouter") return requested;
+  return Math.min(requested, openRouterMaxTokensCap());
+}
+
+export function resolveRequestMaxTokens(
+  options: { maxTokens?: number; tokenRole?: TokenRole },
+  provider: string | null
+): number {
+  const base =
+    options.maxTokens ??
+    (options.tokenRole ? maxTokensFor(options.tokenRole) : maxTokensFor("composition"));
+  if (provider === "openrouter" && (options.tokenRole === "architect" || options.tokenRole === "plan" || options.tokenRole === "composition")) {
+    // Full-site blueprint / director JSON needs more headroom than section copy
+    const cap = Math.max(openRouterMaxTokensCap(), 3072);
+    return Math.min(base, cap);
+  }
+  return clampRequestMaxTokens(base, provider);
 }
 
 /** Templates that get real LLM copy in budget mode (rest use profile mocks). */

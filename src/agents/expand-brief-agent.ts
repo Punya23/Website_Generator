@@ -3,6 +3,7 @@ import { ExpandedBriefSchema } from "../types.js";
 import { llm } from "../llm/client.js";
 import { normalizeExpandedBrief } from "../llm/normalize-llm-output.js";
 import { allowMocks, requireLlm } from "../util/llm-required.js";
+import { parseLlmJson } from "../llm/parse-json.js";
 import { recordFallback } from "../util/fallback-tracker.js";
 
 const EXPAND_SYSTEM = `You are a senior brand strategist. The user gives a 1-2 line business description.
@@ -82,7 +83,7 @@ export async function expandBrief(
         { jsonMode: true, temperature: 0.7, tokenRole: "expand" }
       );
       return ExpandedBriefSchema.parse(
-        normalizeExpandedBrief(JSON.parse(raw) as Record<string, unknown>)
+        normalizeExpandedBrief(parseLlmJson<Record<string, unknown>>(raw))
       );
     } catch (err) {
       recordFallback("expand_brief");

@@ -28,9 +28,9 @@ export { runLayoutQA } from "./qa/layout-qa.js";
 export { routeVisionIssues, visionFixPlanHasWork } from "./qa/vision-router.js";
 export { applyHtmlVisionRetry } from "./orchestrator/html-vision-retry.js";
 export {
-  generateCustomHeroSection,
-  shouldCodegenCustomHero,
-  validateCustomHeroSource,
+  generateBespokeSection,
+  shouldAttemptBespokeSection,
+  validateBespokeSource,
 } from "./agents/section-codegen-agent.js";
 export { directLayoutPlan } from "./agents/layout-director-agent.js";
 export { applyLayoutFixes, layoutSpecToProps } from "./agents/layout-fix-agent.js";

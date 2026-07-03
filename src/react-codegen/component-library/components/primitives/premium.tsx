@@ -62,7 +62,7 @@ export function GlassPanel({
 }) {
   return (
     <div
-      className={`rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur-md ${className}`}
+      className={`rounded-[var(--radius)] border border-white/10 bg-white/5 p-6 shadow-[var(--shadow)] backdrop-blur-md ${className}`}
     >
       {children}
     </div>
@@ -125,7 +125,7 @@ export function ScrollPinSection({
   return (
     <div className={`relative ${minHeight} ${className}`}>
       <div className="sticky top-0 flex min-h-screen items-center">
-        <div className="grid w-full items-center gap-10 lg:grid-cols-2">
+        <div className="grid w-full min-w-0 items-center gap-8 md:grid-cols-2 md:gap-10">
           <div className="py-section">{children}</div>
           {media ? <div className="relative">{media}</div> : null}
         </div>
@@ -144,7 +144,7 @@ export function HorizontalScrollTrack({
   return (
     <div
       className={`flex snap-x snap-mandatory gap-6 overflow-x-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
-      style={{ scrollPaddingInline: "1.5rem" } as CSSProperties}
+      style={{ scrollPaddingInline: "var(--content-padding)" } as CSSProperties}
     >
       {children}
     </div>

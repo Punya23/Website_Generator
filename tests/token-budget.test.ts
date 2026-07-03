@@ -4,6 +4,8 @@ import {
   isVisionEnabled,
   llmMaxRetries,
   maxTokensFor,
+  clampRequestMaxTokens,
+  resolveRequestMaxTokens,
   shouldUseLlmCopy,
 } from "../src/llm/token-budget.js";
 
@@ -15,6 +17,7 @@ describe("token budget", () => {
     delete process.env.SKIP_VISION;
     delete process.env.LLM_MAX_RETRIES;
     delete process.env.LLM_MAX_TOKENS;
+    delete process.env.OPENROUTER_MAX_TOKENS;
   });
 
   afterEach(() => {
@@ -56,5 +59,21 @@ describe("token budget", () => {
     expect(shouldUseLlmCopy("services_showcase", "home")).toBe(false);
     expect(shouldUseLlmCopy("hero_editorial", "home")).toBe(true);
     expect(shouldUseLlmCopy("intro_statement", "home")).toBe(true);
+  });
+
+  it("clamps OpenRouter max_tokens to safe prepaid cap", () => {
+    expect(clampRequestMaxTokens(4096, "openrouter")).toBe(2048);
+    expect(clampRequestMaxTokens(4096, "groq")).toBe(4096);
+    process.env.OPENROUTER_MAX_TOKENS = "1536";
+    expect(resolveRequestMaxTokens({ maxTokens: 4096 }, "openrouter")).toBe(1536);
+    expect(resolveRequestMaxTokens({ tokenRole: "section" }, "openrouter")).toBe(1536);
+  });
+
+  it("gives plan, architect, and composition roles 3072 floor on OpenRouter", () => {
+    process.env.OPENROUTER_MAX_TOKENS = "2048";
+    expect(resolveRequestMaxTokens({ tokenRole: "plan" }, "openrouter")).toBe(3072);
+    expect(resolveRequestMaxTokens({ tokenRole: "architect" }, "openrouter")).toBe(3072);
+    expect(resolveRequestMaxTokens({ tokenRole: "composition" }, "openrouter")).toBe(3072);
+    expect(resolveRequestMaxTokens({ tokenRole: "section" }, "openrouter")).toBe(2048);
   });
 });

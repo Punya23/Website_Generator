@@ -2,7 +2,9 @@
 import type { ChromeSpec, PageBlueprint, SiteContext } from "../types.js";
 import { ChromeSpecSchema } from "../types.js";
 import { llm } from "../llm/client.js";
-import { allowMocks, requireLlm } from "../util/llm-required.js";
+import { allowMocks, requireLlm, handleLlmFailure } from "../util/llm-required.js";
+import { recordFallback } from "../util/fallback-tracker.js";
+import { parseLlmJson } from "../llm/parse-json.js";
 import { pipelineLog } from "../util/pipeline-log.js";
 import {
   freezeSnapshot,
@@ -158,14 +160,15 @@ ${pages}`,
       );
 
       const spec = mergeChromeProfileDefaults(
-        validateAgentOutput(CHROME_CONTRACT, JSON.parse(raw)),
+        validateAgentOutput(CHROME_CONTRACT, parseLlmJson(raw)),
         ctx,
         blueprints
       );
       pipelineLog(`[pipeline] Chrome director: footer ${spec.footer.layout}`);
       return spec;
-    } catch {
-      if (!allowMocks()) throw new Error("Chrome director failed");
+    } catch (err) {
+      if (!allowMocks()) handleLlmFailure("chrome director", err);
+      recordFallback("chrome_director");
     }
   } else {
     if (!allowMocks()) requireLlm("chrome director");

@@ -18,7 +18,10 @@
   --color-gradient-to: #818cf8;
   --nav-blur: 12px;
   --max-content: 1200px;
+  --content-padding: clamp(1.25rem, 4vw, 2.5rem);
   --section-gap: 5rem;
+  --radius: 0.75rem;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
 }
 
 @layer base {
@@ -29,6 +32,7 @@
   body {
     @apply bg-bg text-text antialiased;
     font-family: var(--font-body), system-ui, sans-serif;
+    overflow-x: hidden;
   }
 }
 
@@ -52,7 +56,7 @@
 }
 
 .site-nav.is-scrolled {
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow);
 }
 
 [data-nav-treatment="glass-dark"] .site-nav.is-scrolled,
@@ -66,6 +70,93 @@
 
 .hero-split-offset {
   position: relative;
+}
+
+.section-shell {
+  width: 100%;
+  overflow-x: clip;
+}
+
+.section-body {
+  width: 100%;
+  min-width: 0;
+}
+
+@layer utilities {
+  .content-rail {
+    width: 100%;
+    max-width: var(--max-content);
+    margin-inline: auto;
+    padding-inline: var(--content-padding);
+  }
+
+  .content-inset-left {
+    padding-left: max(
+      var(--content-padding),
+      calc((100vw - min(100vw, var(--max-content))) / 2 + var(--content-padding))
+    );
+  }
+
+  .content-inset-right {
+    padding-right: max(
+      var(--content-padding),
+      calc((100vw - min(100vw, var(--max-content))) / 2 + var(--content-padding))
+    );
+  }
+
+  .content-narrow {
+    max-width: 48rem;
+    margin-inline: auto;
+    width: 100%;
+  }
+
+  .content-narrow-sm {
+    max-width: 42rem;
+    margin-inline: auto;
+    width: 100%;
+  }
+
+  .content-narrow-lg {
+    max-width: 64rem;
+    margin-inline: auto;
+    width: 100%;
+  }
+
+  .split-hero {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .split-hero > * {
+    min-width: 0;
+  }
+
+  .card-grid {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    gap: clamp(1rem, 2.5vw, 1.5rem);
+  }
+
+  .card-grid > * {
+    min-width: 0;
+  }
+
+  .section-media {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: var(--radius);
+  }
+
+  .section-media img,
+  .section-media video {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    object-fit: cover;
+  }
 }
 
 @layer utilities {
@@ -82,7 +173,7 @@
     padding-block: var(--section-gap);
   }
   .surface-elevated {
-    @apply bg-surface shadow-lg shadow-black/5;
+    @apply bg-surface shadow-[var(--shadow)];
   }
   .animate-marquee {
     animation: marquee var(--marquee-duration, 30s) linear infinite;

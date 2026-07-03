@@ -6,7 +6,9 @@ import {
   enforceProfileCoherence,
   type ProfileCoherenceInput,
 } from "../theme/profile-coherence.js";
-import { allowMocks, requireLlm } from "../util/llm-required.js";
+import { allowMocks, requireLlm, handleLlmFailure } from "../util/llm-required.js";
+import { parseLlmJson } from "../llm/parse-json.js";
+import { recordFallback } from "../util/fallback-tracker.js";
 import { pipelineLog } from "../util/pipeline-log.js";
 
 const REFINE_PROMPT = `You are a senior UI contrast reviewer for premium marketing sites.
@@ -57,14 +59,15 @@ export async function refineDesignSystem(
         `Business: ${businessName}\nBrief: ${businessBrief}${profileBlock}\n\nDraft theme:\n${JSON.stringify(theme, null, 2)}\n\nQA issues:\n${qa.issues.map((i) => i.message).join("; ") || "none"}`,
         { jsonMode: true, temperature: 0.35, tokenRole: "refine" }
       );
-      theme = ensureReadableTheme(SiteThemeSchema.parse(JSON.parse(raw)));
+      theme = ensureReadableTheme(SiteThemeSchema.parse(parseLlmJson(raw)));
       if (verticalProfile) {
         theme = enforceProfileCoherence(theme, verticalProfile, businessName);
       }
       qa = runDesignTokenQA(theme);
       pipelineLog(`[pipeline] Design refine: ${qa.passed ? "pass" : qa.issues.length + " issues"}`);
-    } catch {
-      if (!allowMocks()) throw new Error("Design refinement failed");
+    } catch (err) {
+      if (!allowMocks()) handleLlmFailure("design refinement", err);
+      recordFallback("design_refine");
       theme = mockRefine(theme);
       if (verticalProfile) {
         theme = enforceProfileCoherence(theme, verticalProfile, businessName);

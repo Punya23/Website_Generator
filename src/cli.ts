@@ -125,7 +125,9 @@ Environment (set in .env — see .env.example):
   LLM_PROVIDER=mistral|groq|openai                  Force a provider when multiple keys set
   PEXELS_API_KEY / PIXABAY_API_KEY  Optional extra image sources
   BUSINESS_NAME                   Optional override
-  CUSTOM_HERO_CODEGEN=1        Force bespoke home hero TSX
+  PIPELINE_FAST=1              Cheaper/faster tier (quality pipeline is the default)
+  BESPOKE_SECTION_CODEGEN=0    Disable bespoke per-section TSX codegen (on by default)
+  VISION_QA_HOME_ONLY=1        Restrict vision QA to the home page only, for cost
   SKIP_VISION=1                Skip vision QA + retry
   SKIP_PLAYWRIGHT_SETUP=1      Skip auto Chromium install on startup
   GROQ_VISION_MODEL=...        Vision model (default: llama-4-scout on Groq)

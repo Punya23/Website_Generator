@@ -1,28 +1,37 @@
 import { describe, it, expect } from "vitest";
-import { extractJsonPayload, normalizeLlmJsonContent, stripJsonFences } from "../src/llm/parse-json.js";
+import { parseLlmJson, repairLlmJson } from "../src/llm/parse-json.js";
 
-describe("normalizeLlmJsonContent", () => {
-  it("strips ```json fences", () => {
-    const raw = '```json\n{"pages":[]}\n```';
-    expect(normalizeLlmJsonContent(raw)).toBe('{"pages":[]}');
-    expect(JSON.parse(normalizeLlmJsonContent(raw))).toEqual({ pages: [] });
+describe("parseLlmJson", () => {
+  it("parses fenced JSON", () => {
+    const raw = '```json\n{"pages":[{"slug":"home"}]}\n```';
+    expect(parseLlmJson(raw)).toEqual({ pages: [{ slug: "home" }] });
   });
 
-  it("strips bare ``` fences", () => {
-    const raw = '```\n{"ok":true}\n```';
-    expect(JSON.parse(normalizeLlmJsonContent(raw))).toEqual({ ok: true });
-  });
-
-  it("extracts JSON when model adds preamble", () => {
-    const raw = 'Here is the plan:\n{"pages":[{"slug":"home"}]}';
-    expect(JSON.parse(normalizeLlmJsonContent(raw))).toEqual({
-      pages: [{ slug: "home" }],
+  it("repairs trailing commas", () => {
+    const raw = '{"pages":[{"slug":"home","sections":[{"templateId":"hero_spotlight",},],},]}';
+    const repaired = repairLlmJson(raw);
+    expect(JSON.parse(repaired)).toEqual({
+      pages: [{ slug: "home", sections: [{ templateId: "hero_spotlight" }] }],
+    });
+    expect(parseLlmJson(raw)).toEqual({
+      pages: [{ slug: "home", sections: [{ templateId: "hero_spotlight" }] }],
     });
   });
 
-  it("passes through valid raw JSON", () => {
-    const raw = '{"businessName":"Acme"}';
-    expect(stripJsonFences(raw)).toBe(raw);
-    expect(extractJsonPayload(raw)).toBe(raw);
+  it("extracts JSON from leading prose", () => {
+    const raw = 'Here is the blueprint:\n{"pages":[]}';
+    expect(parseLlmJson(raw)).toEqual({ pages: [] });
+  });
+
+  it("repairs trailing commas in large nested planner payload", () => {
+    const pages = Array.from({ length: 4 }, (_, i) => ({
+      slug: ["home", "about", "services", "contact"][i],
+      sections: [{ id: "s1", blockTypes: ["headline", "text"] }],
+    }));
+    const raw = JSON.stringify({ pages }).replace(
+      '"blockTypes":["headline","text"]',
+      '"blockTypes":["headline","text"],'
+    );
+    expect(parseLlmJson(raw)).toEqual({ pages });
   });
 });

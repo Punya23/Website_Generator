@@ -3,9 +3,11 @@ import type { PageBlueprint, SiteContext, SiteLayoutPlan, SectionLayoutSpec, Lay
 import { SiteLayoutPlanSchema } from "../types.js";
 import { llm } from "../llm/client.js";
 import { allowMocks, requireLlm } from "../util/llm-required.js";
+import { recordFallback } from "../util/fallback-tracker.js";
 import { pipelineLog } from "../util/pipeline-log.js";
 import { defaultLayoutForTemplate } from "../qa/layout-qa.js";
 import { parseLlmJson } from "../llm/parse-json.js";
+import { chatJsonWithRetry } from "../llm/json-agent.js";
 import {
   unwrapAgentPayload,
 } from "./contracts/index.js";
@@ -74,12 +76,61 @@ Rules:
 - Vary variants — never 3+ identical variants in a row on one page
 - split-offset only on hero templates
 
-Output JSON:
+Output JSON (flat sections map only — NOT nested by page slug):
 {
   "sections": {
-    "section_id": { "variant": "full-bleed-left", "density": "airy", "mediaPosition": "background" }
+    "home_s0_herospotlight": { "variant": "split-offset", "density": "airy", "mediaPosition": "background" }
   }
 }`;
+
+const PER_PAGE_SECTION_THRESHOLD = 10;
+
+function compactBlueprintList(blueprints: PageBlueprint[]): string {
+  return blueprints
+    .map(
+      (bp) =>
+        `Page ${bp.slug}:\n` + bp.sections.map((s) => `  ${s.id}: ${s.templateId}`).join("\n")
+    )
+    .join("\n\n");
+}
+
+function layoutUserPrompt(ctx: SiteContext, sectionList: string, parseError?: string): string {
+  const retry = parseError
+    ? `\nPRIOR RESPONSE WAS INVALID JSON (${parseError}). Return ONLY flat { "sections": { ... } } — no page slugs as keys.`
+    : "";
+  return `Mood: ${ctx.designSystem.mood}
+Composition: ${ctx.sitePlan.compositionStrategy}
+Page tone: ${ctx.designSystem.pageTone ?? "light"}
+Vertical profile: ${ctx.verticalProfile?.profileId ?? "generic"}
+Variation seed: ${ctx.variationSeed ?? "none"}
+
+Sections (id: templateId):
+${sectionList}${retry}`;
+}
+
+/** Accept flat sections or page-nested { home: { sections: {...} } } from LLM. */
+export function flattenLayoutSectionsPayload(raw: unknown): Record<string, unknown> {
+  const payload = unwrapLayoutPayload(raw);
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return {};
+
+  const obj = payload as Record<string, unknown>;
+
+  if (obj.sections && typeof obj.sections === "object" && !Array.isArray(obj.sections)) {
+    return obj.sections as Record<string, unknown>;
+  }
+
+  const merged: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (!val || typeof val !== "object" || Array.isArray(val)) continue;
+    const page = val as Record<string, unknown>;
+    if (page.sections && typeof page.sections === "object" && !Array.isArray(page.sections)) {
+      Object.assign(merged, page.sections as Record<string, unknown>);
+    } else if ("variant" in page || "density" in page) {
+      merged[key] = page;
+    }
+  }
+  return merged;
+}
 
 function mockLayoutPlan(ctx: SiteContext, blueprints: PageBlueprint[]): SiteLayoutPlan {
   const isEditorial = Boolean(
@@ -192,22 +243,8 @@ export function sanitizeLlmLayoutPlan(
     return sanitizeLayoutPlan(fallback, ctx, blueprints);
   }
 
-  const obj = payload as Record<string, unknown>;
-  const rawSections =
-    obj.sections && typeof obj.sections === "object" && !Array.isArray(obj.sections)
-      ? (obj.sections as Record<string, unknown>)
-      : Array.isArray(obj.sections)
-        ? Object.fromEntries(
-            obj.sections
-              .filter((item) => item && typeof item === "object" && !Array.isArray(item))
-              .map((item) => {
-                const row = item as Record<string, unknown>;
-                const id = String(row.id ?? row.sectionId ?? row.section_id ?? "");
-                return [id, row] as const;
-              })
-              .filter(([id]) => id.length > 0)
-          )
-        : {};
+  const obj = { sections: flattenLayoutSectionsPayload(payload) };
+  const rawSections = obj.sections;
 
   const sections: SiteLayoutPlan["sections"] = { ...fallback.sections };
 
@@ -235,40 +272,74 @@ export function sanitizeLlmLayoutPlan(
   return sanitizeLayoutPlan(SiteLayoutPlanSchema.parse({ sections }), ctx, blueprints);
 }
 
+async function directLayoutPlanForPage(
+  ctx: SiteContext,
+  blueprint: PageBlueprint
+): Promise<SiteLayoutPlan["sections"]> {
+  const sectionList = `Page ${blueprint.slug}:\n` +
+    blueprint.sections.map((s) => `  ${s.id}: ${s.templateId}`).join("\n");
+
+  const raw = await chatJsonWithRetry(
+    `layout director (${blueprint.slug})`,
+    LAYOUT_PROMPT,
+    (parseError) => layoutUserPrompt(ctx, sectionList, parseError),
+    { tokenRole: "composition", initialTemperature: 0.45 },
+    (r) => parseLlmJson(r)
+  );
+
+  const plan = sanitizeLlmLayoutPlan(raw, ctx, [blueprint]);
+  return plan.sections;
+}
+
 export async function directLayoutPlan(
   ctx: SiteContext,
   blueprints: PageBlueprint[]
 ): Promise<SiteLayoutPlan> {
+  const totalSections = blueprints.reduce((n, bp) => n + bp.sections.length, 0);
+  const usePerPage = totalSections > PER_PAGE_SECTION_THRESHOLD;
+
   if (llm.isAvailable) {
     try {
-      const sectionList = blueprints
-        .map(
-          (bp) =>
-            `Page ${bp.slug} (${bp.rhythm}):\n` +
-            bp.sections.map((s) => `  - ${s.id}: ${s.templateId} — ${s.intent}`).join("\n")
-        )
-        .join("\n\n");
+      if (usePerPage) {
+        pipelineLog(
+          `[pipeline] Layout director: per-page mode (${totalSections} sections across ${blueprints.length} pages)`
+        );
+        const sections: SiteLayoutPlan["sections"] = {
+          ...mockLayoutPlan(ctx, blueprints).sections,
+        };
+        for (const bp of blueprints) {
+          try {
+            const pageSections = await directLayoutPlanForPage(ctx, bp);
+            Object.assign(sections, pageSections);
+          } catch (err) {
+            pipelineLog(
+              `[pipeline] Layout director ${bp.slug} failed: ${err instanceof Error ? err.message : String(err)} — page defaults`
+            );
+            recordFallback("layout_director");
+          }
+        }
+        const plan = sanitizeLayoutPlan(SiteLayoutPlanSchema.parse({ sections }), ctx, blueprints);
+        pipelineLog(`[pipeline] Layout director: ${Object.keys(plan.sections).length} sections`);
+        return plan;
+      }
 
-      const raw = await llm.chat(
+      const sectionList = compactBlueprintList(blueprints);
+      const raw = await chatJsonWithRetry(
+        "layout director",
         LAYOUT_PROMPT,
-        `Mood: ${ctx.designSystem.mood}
-Composition: ${ctx.sitePlan.compositionStrategy}
-Page tone: ${ctx.designSystem.pageTone ?? "light"}
-Vertical profile: ${ctx.verticalProfile?.profileId ?? "generic"}
-Variation seed: ${ctx.variationSeed ?? "none"}
-
-Blueprints:
-${sectionList}`,
-        { jsonMode: true, temperature: 0.45, tokenRole: "composition" }
+        (parseError) => layoutUserPrompt(ctx, sectionList, parseError),
+        { tokenRole: "composition", initialTemperature: 0.45 },
+        (r) => parseLlmJson(r)
       );
 
-      const plan = sanitizeLlmLayoutPlan(parseLlmJson(raw), ctx, blueprints);
+      const plan = sanitizeLlmLayoutPlan(raw, ctx, blueprints);
       pipelineLog(`[pipeline] Layout director: ${Object.keys(plan.sections).length} sections`);
       return plan;
     } catch (err) {
       pipelineLog(
-        `[pipeline] Layout director LLM failed: ${err instanceof Error ? err.message : String(err)} — using default layout`
+        `[pipeline] Layout director LLM failed: ${err instanceof Error ? err.message : String(err)} — using profile layout defaults`
       );
+      recordFallback("layout_director");
     }
   } else {
     if (!allowMocks()) requireLlm("layout director");

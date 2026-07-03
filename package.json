@@ -23,6 +23,7 @@
     "hosting:check": "tsx scripts/check-hosting.ts",
     "hosting:browser": "tsx scripts/check-browser-render.ts",
     "hosting:local": "tsx scripts/hosting-local.ts",
+    "estimate:cost": "tsx scripts/estimate-site-cost.ts",
     "hosting:pages": "tsx scripts/publish-cloudflare-pages.ts"
   },
   "keywords": [

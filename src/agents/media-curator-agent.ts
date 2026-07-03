@@ -2,7 +2,7 @@
 import type { SiteContext } from "../types.js";
 import type { BlueprintSection } from "./page-composer-agent.js";
 import { llm } from "../llm/client.js";
-import { allowMocks, requireLlm } from "../util/llm-required.js";
+import { allowMocks, requireLlm, strictLlmRequired, handleLlmFailure } from "../util/llm-required.js";
 import { getTemplate } from "../section-templates/registry.js";
 import { MediaRegistry } from "../media/media-registry.js";
 import { resolveUniqueImage } from "../media/enrich-content.js";
@@ -11,6 +11,7 @@ import { mockPropsForTemplate } from "./section-props-shared.js";
 import type { VerticalDesignProfile } from "../design/vertical-profiles.js";
 import { pipelineLog } from "../util/pipeline-log.js";
 import { parseLlmJson } from "../llm/parse-json.js";
+import { chatJsonWithRetry } from "../llm/json-agent.js";
 import { coerceImageQuery } from "../section-templates/schemas.js";
 import { recordFallback } from "../util/fallback-tracker.js";
 
@@ -69,6 +70,11 @@ function unwrapMediaProps(parsed: Record<string, unknown>): Record<string, unkno
 function normalizeMediaProps(props: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [key, val] of Object.entries(props)) {
+    if (typeof val === "string" && (key === "image" || key === "before" || key === "after")) {
+      const q = coerceImageQuery(val);
+      out[key] = q ? { imageQuery: q } : {};
+      continue;
+    }
     if (val && typeof val === "object" && !Array.isArray(val)) {
       const obj = { ...(val as Record<string, unknown>) };
       if ("imageQuery" in obj) obj.imageQuery = coerceImageQuery(obj.imageQuery);
@@ -84,7 +90,10 @@ function normalizeMediaProps(props: Record<string, unknown>): Record<string, unk
         const row = { ...(item as Record<string, unknown>) };
         for (const imgKey of ["image", "avatar"]) {
           const nested = row[imgKey];
-          if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+          if (typeof nested === "string") {
+            const q = coerceImageQuery(nested);
+            row[imgKey] = q ? { imageQuery: q } : {};
+          } else if (nested && typeof nested === "object" && !Array.isArray(nested)) {
             const img = { ...(nested as Record<string, unknown>) };
             if ("imageQuery" in img) img.imageQuery = coerceImageQuery(img.imageQuery);
             row[imgKey] = img;
@@ -102,16 +111,20 @@ function normalizeMediaProps(props: Record<string, unknown>): Record<string, unk
 
 async function fetchMediaPropsFromLlm(
   snapshot: SectionMediaSnapshot,
-  profile?: VerticalDesignProfile,
-  strict = false
+  profile?: VerticalDesignProfile
 ): Promise<Record<string, unknown>> {
-  const suffix = strict ? "\n\nOutput valid JSON only. No markdown." : "";
-  const raw = await llm.chat(
+  return chatJsonWithRetry(
+    `media curator ${snapshot.section.id}`,
     MEDIA_PROMPT,
-    buildMediaUserPrompt(snapshot, profile) + suffix,
-    { jsonMode: true, temperature: 0.5, tokenRole: "section" }
+    (parseError) => {
+      const suffix = parseError
+        ? `\n\nPRIOR RESPONSE WAS INVALID JSON (${parseError}). Output valid JSON only.`
+        : "";
+      return buildMediaUserPrompt(snapshot, profile) + suffix;
+    },
+    { tokenRole: "section", model: llm.getSectionModel(), initialTemperature: 0.5 },
+    (raw) => normalizeMediaProps(unwrapMediaProps(parseLlmJson<Record<string, unknown>>(raw)))
   );
-  return normalizeMediaProps(unwrapMediaProps(parseLlmJson<Record<string, unknown>>(raw)));
 }
 
 export async function curateSectionMedia(
@@ -141,16 +154,13 @@ export async function curateSectionMedia(
 
   if (!prefillMedia && llm.isAvailable) {
     try {
-      try {
-        mediaProps = await fetchMediaPropsFromLlm(snapshot, profile);
-      } catch {
-        mediaProps = await fetchMediaPropsFromLlm(snapshot, profile, true);
-      }
+      mediaProps = await fetchMediaPropsFromLlm(snapshot, profile);
     } catch (err) {
       recordFallback("media_curator", section.id);
       pipelineLog(
         `[pipeline] Media curator ${section.id} failed: ${err instanceof Error ? err.message : String(err)} — using mock media`
       );
+      if (strictLlmRequired()) handleLlmFailure(`media curator ${section.id}`, err);
       mediaProps = extractMediaFromMock(section, ctx, pageSlug);
     }
   } else if (!prefillMedia) {

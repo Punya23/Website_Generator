@@ -91,7 +91,7 @@ export function SiteFooter({
     <footer className="site-footer border-t border-border bg-surface/50">
       {newsletter ? (
         <div className="border-b border-border bg-surface/80 py-12">
-          <div className="mx-auto max-w-content px-6 text-center md:px-10">
+          <div className="content-rail text-center">
             <p className="font-display text-xl font-semibold text-text">{newsletter.headline}</p>
             {newsletter.subcopy ? <p className="mt-2 text-sm text-muted">{newsletter.subcopy}</p> : null}
             <form className="mx-auto mt-6 flex max-w-md flex-col gap-2 sm:flex-row" onSubmit={(e) => e.preventDefault()}>
@@ -111,7 +111,7 @@ export function SiteFooter({
           </div>
         </div>
       ) : null}
-      <div className="mx-auto max-w-content px-6 py-16 md:px-10">
+      <div className="content-rail py-16">
         <Reveal>
           {useStagger ? <Stagger>{linkGrid}</Stagger> : linkGrid}
           {ctaLabel ? (

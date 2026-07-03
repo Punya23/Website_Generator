@@ -12,9 +12,17 @@ export function stripJsonFences(raw: string): string {
   return trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
 }
 
+/** Common LLM JSON mistakes — trailing commas, smart quotes. */
+export function repairLlmJson(raw: string): string {
+  let s = stripJsonFences(raw.trim());
+  s = s.replace(/[\u201c\u201d]/g, '"').replace(/[\u2018\u2019]/g, "'");
+  s = s.replace(/,(\s*[}\]])/g, "$1");
+  return s;
+}
+
 /** Extract the outermost JSON object or array when models prepend/append prose. */
 export function extractJsonPayload(raw: string): string {
-  const cleaned = stripJsonFences(raw);
+  const cleaned = repairLlmJson(raw);
   try {
     JSON.parse(cleaned);
     return cleaned;
@@ -28,7 +36,7 @@ export function extractJsonPayload(raw: string): string {
     const slice = cleaned.slice(start);
     const end = Math.max(slice.lastIndexOf("}"), slice.lastIndexOf("]"));
     if (end < 0) return cleaned;
-    return slice.slice(0, end + 1);
+    return repairLlmJson(slice.slice(0, end + 1));
   }
 }
 
@@ -36,6 +44,24 @@ export function normalizeLlmJsonContent(raw: string): string {
   return extractJsonPayload(raw);
 }
 
+export function isJsonParseError(err: unknown): boolean {
+  return err instanceof SyntaxError || (err instanceof Error && /JSON/i.test(err.message));
+}
+
 export function parseLlmJson<T = unknown>(raw: string): T {
-  return JSON.parse(normalizeLlmJsonContent(raw)) as T;
+  const normalized = normalizeLlmJsonContent(raw);
+  try {
+    return JSON.parse(normalized) as T;
+  } catch (first) {
+    const repaired = repairLlmJson(normalized);
+    try {
+      return JSON.parse(repaired) as T;
+    } catch {
+      const snippet = raw.slice(0, 400).replace(/\s+/g, " ");
+      throw new Error(
+        `Invalid JSON from LLM (${first instanceof Error ? first.message : String(first)}). Snippet: ${snippet}`,
+        { cause: first }
+      );
+    }
+  }
 }

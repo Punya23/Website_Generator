@@ -6,7 +6,7 @@ import { profileCoherenceFromContext } from "../theme/profile-coherence.js";
 import { directMotionPlan } from "../agents/motion-director-agent.js";
 import { directChromeSpec } from "../agents/chrome-director-agent.js";
 import { fillSectionProps } from "../agents/section-props-agent.js";
-import { generateCustomHeroSection } from "../agents/section-codegen-agent.js";
+import { generateBespokeSection } from "../agents/section-codegen-agent.js";
 import { applyLayoutFixes, layoutSpecToProps } from "../agents/layout-fix-agent.js";
 import { attachMotionPlan } from "../agents/contracts/index.js";
 import { generateReactProject, buildReactProject } from "../react-codegen/assemble-project.js";
@@ -17,8 +17,6 @@ import { MediaRegistry } from "../media/media-registry.js";
 import { pipelineLog } from "../util/pipeline-log.js";
 import { llm } from "../llm/client.js";
 import type { BlueprintSection } from "../agents/page-composer-agent.js";
-
-export const MAX_VISION_RETRIES = 1;
 
 export interface VisionQaBundle {
   passed: boolean;
@@ -143,14 +141,14 @@ export async function applyVisionFixPlan(
     const page = reactPages[blueprint.slug];
     if (!page) continue;
 
-    if (fix.domain === "copy" || fix.domain === "layout") {
+    if (fix.domain === "copy" || fix.domain === "layout" || fix.domain === "regen") {
       const instance = await fillSectionProps(ctx, blueprint.slug, section, registry);
       const idx = page.sections.findIndex((s) => s.id === fix.sectionId);
       if (idx >= 0) {
         const existing = page.sections[idx];
         let customCodegen = existing?.customCodegen;
-        if (customCodegen && fix.domain === "copy") {
-          const regen = await generateCustomHeroSection(ctx, instance);
+        if ((customCodegen && fix.domain === "copy") || fix.domain === "regen") {
+          const regen = await generateBespokeSection(ctx, instance);
           if (regen) customCodegen = regen;
         }
         page.sections[idx] = {
@@ -179,14 +177,16 @@ export async function runVisionRetryLoop(
   previewPath: string,
   outputDir: string,
   initialIssues: QAResult["issues"],
-  options: { previewBasePath?: string } = {}
+  options: { previewBasePath?: string; pageSlug: string }
 ): Promise<{ qa: VisionQaBundle; applied: string[]; previewPath: string; buildSucceeded: boolean } | null> {
   if (!llm.supportsVision) return null;
 
   const hard = initialIssues.filter((i) => i.severity === "hard");
   if (hard.length === 0) return null;
 
-  const plan = routeVisionIssues(hard, "home");
+  const { pageSlug } = options;
+
+  const plan = routeVisionIssues(hard, pageSlug);
   if (!visionFixPlanHasWork(plan)) return null;
 
   pipelineLog(
@@ -205,6 +205,6 @@ export async function runVisionRetryLoop(
     return { qa: { passed: false, issues: initialIssues }, applied, previewPath, buildSucceeded: false };
   }
 
-  const retryQa = await buildAndVisionQa(ctx, newPreview, "home");
+  const retryQa = await buildAndVisionQa(ctx, newPreview, pageSlug);
   return { qa: retryQa, applied, previewPath: newPreview, buildSucceeded: true };
 }

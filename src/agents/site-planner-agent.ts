@@ -12,6 +12,7 @@ import {
 import { extractBriefIntentFromText } from "../design/brief-intent.js";
 import { isOptionalPageRelevant } from "../design/template-relevance.js";
 import { recordFallback } from "../util/fallback-tracker.js";
+import { pipelineLog } from "../util/pipeline-log.js";
 import { parseLlmJson } from "../llm/parse-json.js";
 import { chatJsonWithRetry } from "../llm/json-agent.js";
 import { isQualityPipeline } from "../llm/pipeline-speed.js";
@@ -246,13 +247,22 @@ function parseSitePlan(raw: unknown, brief: ExpandedBrief): SitePlan {
 
 function validateCorePages(plan: SitePlan, brief: ExpandedBrief): SitePlan {
   const slugs = new Set(plan.pages.map((p) => p.slug));
-  for (const core of CORE_PAGE_KINDS) {
-    if (!slugs.has(core)) {
-      if (!allowMocks()) throw new Error(`Site plan missing required page: ${core}`);
-      return mockPlan(brief);
-    }
-  }
-  return plan;
+  const missing = CORE_PAGE_KINDS.filter((core) => !slugs.has(core));
+  if (missing.length === 0) return plan;
+
+  // The LLM sometimes names a page after the business's own vocabulary (a yoga studio's
+  // "classes", a restaurant's "menu", a photographer's "portfolio") instead of the canonical
+  // "services" slug that downstream code (nav, chrome director, content agent) assumes exists.
+  // Backfill the missing canonical page(s) from the deterministic mock plan rather than crashing
+  // the whole generation — every page the LLM did produce is preserved. Recorded as a fallback so
+  // it surfaces in the "generation degraded" summary.
+  const fallback = mockPlan(brief);
+  const backfill = fallback.pages.filter((p) => missing.includes(p.slug as (typeof missing)[number]));
+  recordFallback("site_planner");
+  pipelineLog(
+    `[pipeline] Site plan missing canonical page(s): ${missing.join(", ")} — backfilled from defaults (LLM pages kept)`
+  );
+  return { ...plan, pages: [...plan.pages, ...backfill] };
 }
 
 function plannerUserPrompt(brief: ExpandedBrief, parseError?: string): string {

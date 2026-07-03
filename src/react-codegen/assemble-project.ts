@@ -11,6 +11,27 @@ import { generateFontLayout } from "./font-codegen.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const COMPONENT_LIBRARY = path.join(__dirname, "component-library");
 
+const NEXT_VERSION = "14.2.18";
+
+/** Next's platform-specific SWC binary. Kept as a REGULAR dependency (not optional) so
+ *  `npm install` reliably fetches it — when it's optional, npm frequently skips it, and Next
+ *  then re-patches it at build time on every single build ("Found lockfile missing swc
+ *  dependencies, patching…"), which is both slow and an intermittent source of runtime failures
+ *  during static-export prerendering. The generated project is only ever built on the same
+ *  machine that generated it, so pinning to the current platform is safe. */
+function platformSwcDependency(): Record<string, string> {
+  if (process.platform === "darwin") {
+    return { [process.arch === "arm64" ? "@next/swc-darwin-arm64" : "@next/swc-darwin-x64"]: NEXT_VERSION };
+  }
+  if (process.platform === "linux") {
+    return { [process.arch === "arm64" ? "@next/swc-linux-arm64-gnu" : "@next/swc-linux-x64-gnu"]: NEXT_VERSION };
+  }
+  if (process.platform === "win32") {
+    return { "@next/swc-win32-x64-msvc": NEXT_VERSION };
+  }
+  return {};
+}
+
 function serializeProps(props: Record<string, unknown>): string {
   return JSON.stringify(props, null, 2);
 }
@@ -354,20 +375,13 @@ export async function generateReactProject(
           preview: "node scripts/serve-static.mjs",
         },
         dependencies: {
-          next: "14.2.18",
+          next: NEXT_VERSION,
           react: "^18.3.0",
           "react-dom": "^18.3.0",
           "framer-motion": "^11.0.0",
           lenis: "^1.1.0",
           "embla-carousel-react": "^8.5.0",
-        },
-        optionalDependencies: {
-          ...(process.platform === "darwin"
-            ? {
-                [process.arch === "arm64" ? "@next/swc-darwin-arm64" : "@next/swc-darwin-x64"]:
-                  "14.2.18",
-              }
-            : {}),
+          ...platformSwcDependency(),
         },
         devDependencies: {
           "@types/node": "^22.0.0",

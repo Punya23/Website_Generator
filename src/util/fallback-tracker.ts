@@ -14,7 +14,8 @@ export type FallbackAgent =
   | "chrome_director"
   | "motion_director"
   | "layout_director"
-  | "section_codegen";
+  | "section_codegen"
+  | "section_props";
 
 const counts: Record<string, number> = {};
 

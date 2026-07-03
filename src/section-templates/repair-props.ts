@@ -126,6 +126,57 @@ export function repairTemplateProps(
       break;
     }
 
+    case "gallery_masonry": {
+      const rawImages = Array.isArray(out.images) ? out.images : [];
+      const images = rawImages
+        .filter((im) => im && typeof im === "object" && !Array.isArray(im))
+        .map((im, i): Record<string, unknown> => {
+          const row = im as Record<string, unknown>;
+          return {
+            ...row,
+            imageQuery:
+              coerceToString(row.imageQuery) ??
+              coerceToString(row.caption) ??
+              `gallery image ${i + 1}`,
+          };
+        })
+        .slice(0, 12);
+      // Media curation already resolved a real `src` for any images the LLM did return —
+      // reuse one of those (rather than a bare imageQuery placeholder with no `src`) when
+      // padding up to the schema minimum, so an under-filled gallery doesn't ship blank tiles.
+      const resolved = images.find((im) => typeof im.src === "string" && im.src);
+      out.images = padArrayToMin(images, 3, (i) =>
+        resolved ? { ...resolved } : { imageQuery: `gallery image ${i + 1}` }
+      );
+      break;
+    }
+
+    case "before_after": {
+      if (out.before === undefined || out.before === null) {
+        out.before = { imageQuery: "before transformation" };
+      }
+      if (out.after === undefined || out.after === null) {
+        out.after = { imageQuery: "after transformation" };
+      }
+      break;
+    }
+
+    case "cta_band":
+    case "footer_cta": {
+      const rawCta =
+        out.cta && typeof out.cta === "object" && !Array.isArray(out.cta)
+          ? (out.cta as Record<string, unknown>)
+          : {};
+      out.cta = {
+        ...rawCta,
+        label:
+          coerceToString(rawCta.label) ??
+          coerceToString(out.headline) ??
+          "Get started",
+      };
+      break;
+    }
+
     case "feature_bento": {
       const rawItems = Array.isArray(out.items) ? out.items : [];
       const items = rawItems

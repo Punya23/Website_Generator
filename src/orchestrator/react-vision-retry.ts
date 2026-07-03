@@ -1,5 +1,3 @@
-import fs from "fs/promises";
-import path from "path";
 import type { PageBlueprint, QAResult, ReactPage, SiteContext } from "../types.js";
 import { refineDesignSystem } from "../agents/design-refine-agent.js";
 import { profileCoherenceFromContext } from "../theme/profile-coherence.js";
@@ -10,7 +8,8 @@ import { generateBespokeSection } from "../agents/section-codegen-agent.js";
 import { applyLayoutFixes, layoutSpecToProps } from "../agents/layout-fix-agent.js";
 import { attachMotionPlan } from "../agents/contracts/index.js";
 import { generateReactProject, buildReactProject } from "../react-codegen/assemble-project.js";
-import { screenshotPageDual, extractBlockManifest } from "../qa/code-qa.js";
+import { startReactPreviewServer } from "../react-codegen/react-preview-server.js";
+import { screenshotUrlDual, extractBlockManifestFromUrl } from "../qa/code-qa.js";
 import { runVisionQa } from "../agents/vision-agent.js";
 import { routeVisionIssues, visionFixPlanHasWork, type VisionFixPlan } from "../qa/vision-router.js";
 import { MediaRegistry } from "../media/media-registry.js";
@@ -23,18 +22,17 @@ export interface VisionQaBundle {
   issues: QAResult["issues"];
 }
 
+/** previewUrl is a served base URL (e.g. from startReactPreviewServer) — screenshotting must
+ *  navigate to a real URL rather than page.setContent() raw HTML, since the static export
+ *  references CSS/JS via root-relative paths that only resolve against a real origin. */
 export async function buildAndVisionQa(
   ctx: SiteContext,
-  previewPath: string,
+  previewUrl: string,
   pageSlug = "home"
 ): Promise<VisionQaBundle> {
-  const file =
-    pageSlug === "home"
-      ? path.join(previewPath, "index.html")
-      : path.join(previewPath, pageSlug, "index.html");
-  const html = await fs.readFile(file, "utf8");
-  const shots = await screenshotPageDual(html);
-  const manifest = await extractBlockManifest(html);
+  const base = previewUrl.endsWith("/") ? previewUrl : `${previewUrl}/`;
+  const url = pageSlug === "home" ? base : `${base}${pageSlug}/`;
+  const [shots, manifest] = await Promise.all([screenshotUrlDual(url), extractBlockManifestFromUrl(url)]);
   const vision = await runVisionQa(
     shots.desktop,
     pageSlug,
@@ -51,15 +49,15 @@ export async function regenerateReactPreview(
   reactPages: Record<string, ReactPage>,
   outputDir: string,
   options: { previewBasePath?: string } = {}
-): Promise<{ previewPath: string; buildSucceeded: boolean }> {
+): Promise<{ previewPath: string; projectPath: string; buildSucceeded: boolean }> {
   const { projectPath } = await generateReactProject(ctx, reactPages, outputDir, {
     basePath: options.previewBasePath,
   });
   try {
     const previewPath = await buildReactProject(projectPath);
-    return { previewPath, buildSucceeded: true };
+    return { previewPath, projectPath, buildSucceeded: true };
   } catch {
-    return { previewPath: projectPath, buildSucceeded: false };
+    return { previewPath: projectPath, projectPath, buildSucceeded: false };
   }
 }
 
@@ -169,42 +167,56 @@ export async function applyVisionFixPlan(
   return applied;
 }
 
-export async function runVisionRetryLoop(
+export function mergeFixPlans(plans: VisionFixPlan[]): VisionFixPlan {
+  return {
+    design: plans.some((p) => p.design),
+    motion: plans.some((p) => p.motion),
+    chrome: plans.some((p) => p.chrome),
+    sections: plans.flatMap((p) => p.sections),
+  };
+}
+
+/** One retry round covering every flagged page in a single fix-apply + rebuild, instead of a
+ *  separate rebuild per page. A full `next build` static-exports every page regardless of which
+ *  one triggered it, so retrying page-by-page just repeats the same rebuild cost N times for
+ *  no benefit — this batches all pages' issues into one round. */
+export async function runSiteVisionRetryLoop(
   ctx: SiteContext,
   reactPages: Record<string, ReactPage>,
   blueprints: PageBlueprint[],
   registry: MediaRegistry,
-  previewPath: string,
   outputDir: string,
-  initialIssues: QAResult["issues"],
-  options: { previewBasePath?: string; pageSlug: string }
-): Promise<{ qa: VisionQaBundle; applied: string[]; previewPath: string; buildSucceeded: boolean } | null> {
+  pageIssues: Map<string, QAResult["issues"]>,
+  options: { previewBasePath?: string } = {}
+): Promise<{ applied: string[]; previewPath: string; previewUrl: string | null; buildSucceeded: boolean } | null> {
   if (!llm.supportsVision) return null;
 
-  const hard = initialIssues.filter((i) => i.severity === "hard");
-  if (hard.length === 0) return null;
+  const plans: VisionFixPlan[] = [];
+  let hardCount = 0;
+  for (const [pageSlug, issues] of pageIssues) {
+    const hard = issues.filter((i) => i.severity === "hard");
+    if (hard.length === 0) continue;
+    hardCount += hard.length;
+    plans.push(routeVisionIssues(hard, pageSlug));
+  }
+  if (plans.length === 0) return null;
 
-  const { pageSlug } = options;
-
-  const plan = routeVisionIssues(hard, pageSlug);
-  if (!visionFixPlanHasWork(plan)) return null;
+  const merged = mergeFixPlans(plans);
+  if (!visionFixPlanHasWork(merged)) return null;
 
   pipelineLog(
-    `[pipeline] Vision retry: routing ${hard.length} issue(s) → design=${plan.design} motion=${plan.motion} chrome=${plan.chrome} sections=${plan.sections.length}`
+    `[pipeline] Vision retry: routing ${hardCount} issue(s) across ${plans.length} page(s) → design=${merged.design} motion=${merged.motion} chrome=${merged.chrome} sections=${merged.sections.length}`
   );
 
-  const applied = await applyVisionFixPlan(ctx, plan, blueprints, reactPages, registry);
-  const { previewPath: newPreview, buildSucceeded } = await regenerateReactPreview(
+  const applied = await applyVisionFixPlan(ctx, merged, blueprints, reactPages, registry);
+  const { previewPath, projectPath, buildSucceeded } = await regenerateReactPreview(
     ctx,
     reactPages,
     outputDir,
     options
   );
+  if (!buildSucceeded) return { applied, previewPath, previewUrl: null, buildSucceeded: false };
 
-  if (!buildSucceeded) {
-    return { qa: { passed: false, issues: initialIssues }, applied, previewPath, buildSucceeded: false };
-  }
-
-  const retryQa = await buildAndVisionQa(ctx, newPreview, pageSlug);
-  return { qa: retryQa, applied, previewPath: newPreview, buildSucceeded: true };
+  const previewUrl = await startReactPreviewServer(projectPath);
+  return { applied, previewPath, previewUrl, buildSucceeded: true };
 }

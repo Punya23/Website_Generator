@@ -109,4 +109,27 @@ describe("site planner normalization", () => {
     expect(plan.pages).toHaveLength(4);
     expect(llm.chat).toHaveBeenCalledTimes(2);
   });
+
+  it("backfills a missing canonical page instead of crashing (LLM used its own vocabulary)", async () => {
+    // A yoga studio's LLM names its offerings page "classes" instead of "services".
+    const yogaPlan = {
+      ...lowMinBlocksPlan,
+      pages: [
+        lowMinBlocksPlan.pages[0], // home
+        lowMinBlocksPlan.pages[1], // about
+        { ...lowMinBlocksPlan.pages[2], slug: "gallery", title: "Classes", navLabel: "Classes" },
+        lowMinBlocksPlan.pages[3], // contact
+      ],
+    };
+    vi.mocked(llm.chat).mockResolvedValue(JSON.stringify(yogaPlan));
+
+    const plan = await planSite(brief);
+    const slugs = plan.pages.map((p) => p.slug);
+    // The LLM's "gallery" (Classes) page is preserved, and the missing canonical "services"
+    // page is backfilled — no crash.
+    expect(slugs).toContain("services");
+    expect(slugs).toContain("gallery");
+    expect(slugs).toContain("home");
+    expect(slugs).toContain("contact");
+  });
 });

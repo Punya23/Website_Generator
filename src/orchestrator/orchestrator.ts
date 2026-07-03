@@ -28,9 +28,11 @@ import {
   runCodeQA,
   screenshotPage,
   screenshotPageDual,
+  screenshotUrlDual,
   extractBlockManifest,
   closeQABrowser,
 } from "../qa/code-qa.js";
+import { startReactPreviewServer, stopReactPreviewServer } from "../react-codegen/react-preview-server.js";
 import { generateCmsCollections } from "../cms/generate.js";
 import { renderCmsPages } from "../cms/render.js";
 import { stockImageUrl } from "../media/stock-images.js";
@@ -522,9 +524,31 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   ctx.mediaRegistry = registry.toJSON();
 
   const screenshots: Record<string, string> = {};
-  for (const slug of Object.keys(htmlPages)) {
-    if (slug === "index") continue;
-    screenshots[slug] = await screenshotPage(htmlPages[slug]!);
+  const slugsToShoot = Object.keys(htmlPages).filter((slug) => slug !== "index");
+  if (outputMode === "react" && buildSucceeded && reactProjectPath) {
+    // The React static export references CSS/JS via root-relative paths that only resolve
+    // against a real served origin — page.setContent() on the raw HTML (screenshotPage) has no
+    // base URL and silently renders unstyled, same root cause as the vision-QA screenshot bug.
+    try {
+      const previewUrl = await startReactPreviewServer(reactProjectPath);
+      try {
+        for (const slug of slugsToShoot) {
+          const base = previewUrl.endsWith("/") ? previewUrl : `${previewUrl}/`;
+          const url = slug === "home" ? base : `${base}${slug}/`;
+          screenshots[slug] = (await screenshotUrlDual(url)).desktop;
+        }
+      } finally {
+        stopReactPreviewServer();
+      }
+    } catch (err) {
+      pipelineLog(
+        `[pipeline] Debug screenshot server failed (${err instanceof Error ? err.message : String(err)}) — skipping debug screenshots`
+      );
+    }
+  } else {
+    for (const slug of slugsToShoot) {
+      screenshots[slug] = await screenshotPage(htmlPages[slug]!);
+    }
   }
   const debugDir = await persistDebugArtifacts(ctx, screenshots);
   if (debugDir) pipelineLog(`[pipeline] Debug artifacts → ${debugDir}`);

@@ -7,6 +7,7 @@ import { fillSectionProps } from "../agents/section-props-agent.js";
 import { composePageSections } from "../agents/page-composer-agent.js";
 import { generateReactProject } from "../react-codegen/assemble-project.js";
 import { buildReactProject } from "../react-codegen/build-project.js";
+import { startReactPreviewServer, stopReactPreviewServer } from "../react-codegen/react-preview-server.js";
 import { runReactQA, runDesignQA } from "../qa/react-qa.js";
 import { runMotionQA } from "../qa/motion-qa.js";
 import { runChromeQA } from "../qa/chrome-qa.js";
@@ -18,6 +19,7 @@ import {
   isFastPipeline,
   isQualityPipeline,
   sectionFillConcurrency,
+  bespokeCodegenConcurrency,
   skipDirectorRetries,
   visionQaEnabled,
   visionQaHomeOnly,
@@ -32,7 +34,7 @@ import { getPagePlan } from "../agents/site-planner-agent.js";
 import { llm } from "../llm/client.js";
 import {
   buildAndVisionQa,
-  runVisionRetryLoop,
+  runSiteVisionRetryLoop,
 } from "./react-vision-retry.js";
 import {
   generateBespokeSection,
@@ -123,46 +125,53 @@ export async function runReactPipeline(
     }
   }
 
-  let chromeSpec = await timedStep("site", "chrome director", () =>
-    directChromeSpec(ctx, blueprints)
+  // Chrome, motion, and layout directors all take just (ctx, blueprints) and don't consume each
+  // other's output — no reason to serialize them.
+  const [chromeSpec0, motionPlan, layoutPlan] = await timedStep(
+    "site",
+    "chrome + motion + layout directors",
+    () =>
+      Promise.all([
+        directChromeSpec(ctx, blueprints),
+        directMotionPlan(ctx, blueprints),
+        directLayoutPlan(ctx, blueprints),
+      ])
   );
-  ctx.chromeSpec = chromeSpec;
-
-  let chromeQa = runChromeQA(chromeSpec);
-  if (!chromeQa.passed && !skipDirectorRetries()) {
-    pipelineLog(
-      `[pipeline] Chrome QA failed (${chromeQa.issues.map((i) => i.message).join("; ")}); retrying chrome director…`
-    );
-    chromeSpec = await directChromeSpec(ctx, blueprints);
-    ctx.chromeSpec = chromeSpec;
-    chromeQa = runChromeQA(chromeSpec);
-  }
-
-  const [motionPlan, layoutPlan] = await timedStep("site", "motion + layout directors", () =>
-    Promise.all([
-      directMotionPlan(ctx, blueprints),
-      directLayoutPlan(ctx, blueprints),
-    ])
-  );
+  ctx.chromeSpec = chromeSpec0;
   ctx.motionPlan = motionPlan;
   ctx.layoutPlan = layoutPlan;
 
+  let chromeQa = runChromeQA(chromeSpec0);
   let motionQa = runMotionQA(motionPlan, blueprints);
-  if (!motionQa.passed && !skipDirectorRetries()) {
-    pipelineLog(
-      `[pipeline] Motion QA failed (${motionQa.issues.map((i) => i.message).join("; ")}); retrying motion director…`
-    );
-    ctx.motionPlan = await directMotionPlan(ctx, blueprints);
-    motionQa = runMotionQA(ctx.motionPlan, blueprints);
-  }
-
   let layoutQa = runLayoutQA(layoutPlan, blueprints);
-  if (!layoutQa.passed && !skipDirectorRetries()) {
-    pipelineLog(
-      `[pipeline] Layout QA failed (${layoutQa.issues.map((i) => i.message).join("; ")}); retrying layout director…`
-    );
-    ctx.layoutPlan = await directLayoutPlan(ctx, blueprints);
-    layoutQa = runLayoutQA(ctx.layoutPlan, blueprints);
+
+  if (!skipDirectorRetries()) {
+    await Promise.all([
+      (async () => {
+        if (chromeQa.passed) return;
+        pipelineLog(
+          `[pipeline] Chrome QA failed (${chromeQa.issues.map((i) => i.message).join("; ")}); retrying chrome director…`
+        );
+        ctx.chromeSpec = await directChromeSpec(ctx, blueprints);
+        chromeQa = runChromeQA(ctx.chromeSpec);
+      })(),
+      (async () => {
+        if (motionQa.passed) return;
+        pipelineLog(
+          `[pipeline] Motion QA failed (${motionQa.issues.map((i) => i.message).join("; ")}); retrying motion director…`
+        );
+        ctx.motionPlan = await directMotionPlan(ctx, blueprints);
+        motionQa = runMotionQA(ctx.motionPlan, blueprints);
+      })(),
+      (async () => {
+        if (layoutQa.passed) return;
+        pipelineLog(
+          `[pipeline] Layout QA failed (${layoutQa.issues.map((i) => i.message).join("; ")}); retrying layout director…`
+        );
+        ctx.layoutPlan = await directLayoutPlan(ctx, blueprints);
+        layoutQa = runLayoutQA(ctx.layoutPlan, blueprints);
+      })(),
+    ]);
   }
 
   const reactPages: Record<string, ReactPage> = {};
@@ -184,21 +193,33 @@ export async function runReactPipeline(
 
   const concurrency = sectionFillConcurrency();
   const filled = await mapPool(jobs, concurrency, async (job) => {
-    let instance = await timedStep(job.blueprint.slug, `${job.section.id}: props`, () =>
+    const instance = await timedStep(job.blueprint.slug, `${job.section.id}: props`, () =>
       fillSectionProps(ctx, job.blueprint.slug, job.section, registry)
     );
-
-    if (shouldAttemptBespokeSection(ctx, job.section)) {
-      const custom = await timedStep(job.blueprint.slug, `${job.section.id}: bespoke codegen`, () =>
-        generateBespokeSection(ctx, instance)
-      );
-      if (custom) {
-        instance = { ...instance, customCodegen: custom };
-      }
-    }
-
     return { ...job, instance };
   });
+
+  // Bespoke codegen is a separate, slower pass with its own (wider) concurrency and request
+  // queue — mixing it into the props-fill pool above serializes fast prop-fills behind slow
+  // (10-150s) codegen calls sharing the same worker slots.
+  const codegenEligible = filled
+    .map((row, i) => ({ row, i }))
+    .filter(({ row }) => shouldAttemptBespokeSection(ctx, row.section));
+
+  if (codegenEligible.length > 0) {
+    const codegenConcurrency = bespokeCodegenConcurrency();
+    pipelineLog(
+      `[pipeline] Bespoke codegen: ${codegenEligible.length} eligible section(s), concurrency ×${codegenConcurrency}`
+    );
+    await mapPool(codegenEligible, codegenConcurrency, async ({ row, i }) => {
+      const custom = await timedStep(row.blueprint.slug, `${row.section.id}: bespoke codegen`, () =>
+        generateBespokeSection(ctx, row.instance)
+      );
+      if (custom) {
+        filled[i] = { ...row, instance: { ...row.instance, customCodegen: custom } };
+      }
+    });
+  }
 
   const byPage = new Map<string, typeof filled>();
   for (const row of filled) {
@@ -291,60 +312,69 @@ export async function runReactPipeline(
   qaResults.__blueprint__ = blueprintQa;
 
   if (buildSucceeded && llm.supportsVision && visionQaEnabled()) {
-    const pagesToCheck = visionQaHomeOnly() ? ["home"] : Object.keys(reactPages);
+    const pagesToCheck = (visionQaHomeOnly() ? ["home"] : Object.keys(reactPages)).filter(
+      (slug) => reactPages[slug]
+    );
+    const pageIssues = new Map<string, QAResult["issues"]>();
 
-    for (const pageSlug of pagesToCheck) {
-      if (!reactPages[pageSlug]) continue;
-      try {
-        let vision = await buildAndVisionQa(ctx, previewPath, pageSlug);
-        qaResults[`__vision_${pageSlug}__`] = { passed: vision.passed, issues: vision.issues };
-        if (vision.issues.length > 0) {
-          pipelineLog(
-            `[pipeline] Vision QA (${pageSlug}): ${vision.issues.map((i) => i.message).join("; ")}`
-          );
-        }
+    try {
+      // Screenshotting must hit a real served URL, not raw HTML — the static export references
+      // CSS/JS via root-relative paths that only resolve against a real origin.
+      let previewUrl = await startReactPreviewServer(projectPath);
 
-        let retriesLeft = maxVisionRetries();
-        while (!vision.passed && retriesLeft > 0) {
-          retriesLeft--;
-          const retry = await runVisionRetryLoop(
-            ctx,
-            reactPages,
-            blueprints,
-            registry,
-            previewPath,
-            outputDir,
-            vision.issues,
-            { previewBasePath: options.previewBasePath, pageSlug }
-          );
-          if (!retry) break;
-
-          qaResults[`__vision_retry_${pageSlug}__`] = {
-            passed: retry.qa.passed,
-            issues: retry.qa.issues,
-          };
-          pipelineLog(
-            `[pipeline] Vision retry (${pageSlug}): ${retry.applied.join(", ")} — ${retry.qa.passed ? "passed" : "still failing"}`
-          );
-          if (retry.buildSucceeded) {
-            previewPath = retry.previewPath;
+      // Each page's screenshot + vision call is independent (own URL, own Playwright pages, own
+      // qaResults/pageIssues key) — safe to run concurrently. Bounded rather than unbounded since
+      // very large sites shouldn't launch dozens of browser pages at once.
+      await mapPool(pagesToCheck, Math.min(4, pagesToCheck.length), async (pageSlug) => {
+        try {
+          const vision = await buildAndVisionQa(ctx, previewUrl, pageSlug);
+          qaResults[`__vision_${pageSlug}__`] = { passed: vision.passed, issues: vision.issues };
+          if (vision.issues.length > 0) {
+            pipelineLog(
+              `[pipeline] Vision QA (${pageSlug}): ${vision.issues.map((i) => i.message).join("; ")}`
+            );
           }
-          vision = retry.qa;
+          pageIssues.set(pageSlug, vision.issues);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          pipelineLog(`[pipeline] Vision QA failed (${pageSlug}): ${message}`);
+          qaResults[`__vision_${pageSlug}__`] = {
+            passed: false,
+            issues: [{ severity: "hard", code: "VISION_QA_ERROR", message: `Vision QA failed: ${message}` }],
+          };
         }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        pipelineLog(`[pipeline] Vision QA failed (${pageSlug}): ${message}`);
-        qaResults[`__vision_${pageSlug}__`] = {
-          passed: false,
-          issues: [
-            {
-              severity: "hard",
-              code: "VISION_QA_ERROR",
-              message: `Vision QA failed: ${message}`,
-            },
-          ],
-        };
+      });
+
+      let retriesLeft = maxVisionRetries();
+      const hasHardIssues = () =>
+        [...pageIssues.values()].some((issues) => issues.some((i) => i.severity === "hard"));
+
+      while (retriesLeft > 0 && hasHardIssues()) {
+        retriesLeft--;
+        const retry = await runSiteVisionRetryLoop(ctx, reactPages, blueprints, registry, outputDir, pageIssues, {
+          previewBasePath: options.previewBasePath,
+        });
+        if (!retry) break;
+
+        pipelineLog(
+          `[pipeline] Vision retry: ${retry.applied.join(", ")} — ${retry.buildSucceeded ? "rebuilt" : "rebuild failed"}`
+        );
+        if (!retry.buildSucceeded || !retry.previewUrl) break;
+        previewPath = retry.previewPath;
+        previewUrl = retry.previewUrl;
+
+        const stillFailing = pagesToCheck.filter((slug) =>
+          pageIssues.get(slug)?.some((i) => i.severity === "hard")
+        );
+        await mapPool(stillFailing, Math.min(4, stillFailing.length), async (pageSlug) => {
+          const revision = await buildAndVisionQa(ctx, previewUrl, pageSlug);
+          qaResults[`__vision_retry_${pageSlug}__`] = { passed: revision.passed, issues: revision.issues };
+          pipelineLog(`[pipeline] Vision retry (${pageSlug}): ${revision.passed ? "passed" : "still failing"}`);
+          pageIssues.set(pageSlug, revision.issues);
+        });
       }
+    } finally {
+      stopReactPreviewServer();
     }
   }
 

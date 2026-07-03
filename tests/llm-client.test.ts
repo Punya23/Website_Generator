@@ -100,4 +100,23 @@ describe("LLM client provider resolution", () => {
     expect(resolveProvider()).toBe("openrouter");
     expect(llm.provider).toBe("openrouter");
   });
+
+  it("bespoke codegen defaults to the fast section model, not the slow GLM hero-codegen model", async () => {
+    process.env.OPENROUTER_API_KEY = "sk-or-test";
+    process.env.LLM_PROVIDER = "openrouter";
+    process.env.OPENROUTER_MODEL_TIER = "premium";
+    const { llm } = await import("../src/llm/client.js");
+    // premium tier: heroCodegen is the slow GLM model, section is fast Gemini Flash.
+    expect(llm.getHeroCodegenModel()).toBe("z-ai/glm-4.6");
+    expect(llm.getBespokeCodegenModel()).toBe(llm.getSectionModel());
+    expect(llm.getBespokeCodegenModel()).not.toBe("z-ai/glm-4.6");
+  });
+
+  it("bespoke codegen model can be explicitly overridden", async () => {
+    process.env.OPENROUTER_API_KEY = "sk-or-test";
+    process.env.LLM_PROVIDER = "openrouter";
+    process.env.OPENROUTER_BESPOKE_CODEGEN_MODEL = "z-ai/glm-4.6";
+    const { llm } = await import("../src/llm/client.js");
+    expect(llm.getBespokeCodegenModel()).toBe("z-ai/glm-4.6");
+  });
 });

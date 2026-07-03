@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   generateBespokeSection,
   sanitizeBespokeSource,
+  autofixBespokeSource,
   shouldAttemptBespokeSection,
   validateBespokeSource,
   checkBespokeSyntax,
@@ -111,6 +112,16 @@ export default function CustomHomeHero() { return <Reveal>Hi</Reveal>; }`,
     expect(validateBespokeSource(bad, "TestProps")).toContain("SectionLabel");
   });
 
+  it("rejects a default import of a primitive (must be named)", () => {
+    const bad = `"use client";\nimport NoiseGradientBg from "@/components/primitives";\ntype TestProps = { headline?: string };\nexport default function CustomHomeHero(props: TestProps) { return <NoiseGradientBg>Hi</NoiseGradientBg>; }`;
+    expect(validateBespokeSource(bad, "TestProps")).toContain("Default import");
+  });
+
+  it("accepts a named import of a primitive", () => {
+    const good = `"use client";\nimport { NoiseGradientBg } from "@/components/primitives";\ntype TestProps = { headline?: string };\nexport default function CustomHomeHero(props: TestProps) { return <NoiseGradientBg>Hi</NoiseGradientBg>; }`;
+    expect(validateBespokeSource(good, "TestProps")).toBeNull();
+  });
+
   it("adds the props type when LLM omits props annotation (non-hero section)", () => {
     const typeBlock = "type TestBentoProps = {\n  id?: string;\n  headline?: string;\n};";
     const raw = `"use client";\nimport { Reveal } from "@/components/primitives";\nexport default function CustomBento(props) { return <Reveal>Hi</Reveal>; }`;
@@ -148,6 +159,49 @@ export default function CustomHomeHero(props: TestProps) {
   return <Reveal><PrimaryButton href={props.cta.href}>{props.cta.label}</PrimaryButton></Reveal>;
 }`;
     expect(validateBespokeSource(bad, "TestProps")).toContain("props.cta");
+  });
+
+  describe("autofixBespokeSource (recover common LLM mistakes before validation)", () => {
+    it("adds optional chaining to unsafe props.cta member access", () => {
+      const fixed = autofixBespokeSource(
+        "const l = props.cta.label; const h = props.cta.href;"
+      );
+      expect(fixed).toBe("const l = props.cta?.label; const h = props.cta?.href;");
+    });
+
+    it("does not double-chain already-safe props.cta?. access", () => {
+      const src = "const l = props.cta?.label;";
+      expect(autofixBespokeSource(src)).toBe(src);
+    });
+
+    it("leaves non-member props.cta usage (truthiness checks) untouched", () => {
+      const src = "{props.cta ? <span/> : null}{props.cta && <span/>}";
+      expect(autofixBespokeSource(src)).toBe(src);
+    });
+
+    it("strips className from PrimaryButton but not MagneticButton", () => {
+      const src =
+        '<PrimaryButton href="/x" className="foo">Go</PrimaryButton><MagneticButton className="bar">Go</MagneticButton>';
+      const fixed = autofixBespokeSource(src);
+      expect(fixed).not.toMatch(/<PrimaryButton[^>]*className/);
+      expect(fixed).toMatch(/<MagneticButton className="bar"/);
+    });
+
+    it("sanitizeBespokeSource applies the autofix so a cta-access section now validates", () => {
+      const raw = `"use client";
+import { PrimaryButton, Reveal } from "@/components/primitives";
+type TestProps = { id?: string; cta?: { label: string; href?: string } };
+export default function CustomHomeHero(props: TestProps) {
+  return <Reveal><PrimaryButton href={props.cta.href}>{props.cta.label}</PrimaryButton></Reveal>;
+}`;
+      const fixed = sanitizeBespokeSource(
+        raw,
+        "TestProps",
+        "type TestProps = {\n  id?: string;\n  cta?: { label?: string; href?: string };\n};"
+      );
+      expect(validateBespokeSource(fixed, "TestProps")).toBeNull();
+      expect(checkBespokeSyntax(fixed)).toBeNull();
+    });
   });
 
   it("repairs truncated props type left by nested object fields", () => {

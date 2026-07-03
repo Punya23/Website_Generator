@@ -69,6 +69,25 @@ export function defaultLlmRequestDelayMs(): number {
   return 250;
 }
 
+/** Bespoke codegen gets its own request queue, separate from the shared copywriter/director
+ *  queue — it's now the dominant LLM call volume per site (one extra call, often two with a
+ *  validation retry, per eligible section) and doesn't share the copy-quality rationale that
+ *  keeps LLM_MAX_CONCURRENCY low. Defaults to double the shared concurrency. */
+export function bespokeCodegenConcurrency(): number {
+  const n = Number.parseInt(process.env.BESPOKE_CODEGEN_CONCURRENCY ?? "", 10);
+  if (Number.isFinite(n) && n > 0) return Math.min(n, 10);
+  return Math.min(defaultLlmConcurrency() * 2, 6);
+}
+
+export function bespokeCodegenRequestDelayMs(): number {
+  const n = Number.parseInt(process.env.BESPOKE_CODEGEN_REQUEST_DELAY_MS ?? "", 10);
+  if (Number.isFinite(n) && n >= 0) return n;
+  const concurrency = bespokeCodegenConcurrency();
+  if (concurrency >= 4) return 50;
+  if (concurrency >= 2) return 100;
+  return 250;
+}
+
 export function useBespokeSectionCodegen(): boolean {
   if (process.env.BESPOKE_SECTION_CODEGEN === "1") return true;
   if (process.env.BESPOKE_SECTION_CODEGEN === "0") return false;

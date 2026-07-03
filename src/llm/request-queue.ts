@@ -1,4 +1,9 @@
-import { defaultLlmConcurrency, defaultLlmRequestDelayMs } from "./pipeline-speed.js";
+import {
+  defaultLlmConcurrency,
+  defaultLlmRequestDelayMs,
+  bespokeCodegenConcurrency,
+  bespokeCodegenRequestDelayMs,
+} from "./pipeline-speed.js";
 
 type Task<T> = () => Promise<T>;
 
@@ -57,3 +62,10 @@ export function sleep(ms: number): Promise<void> {
 }
 
 export const llmQueue = new LlmRequestQueue(parseConcurrency(), parseRequestDelayMs());
+
+/** Separate, higher-concurrency queue for bespoke section codegen — see
+ *  bespokeCodegenConcurrency() for why this isn't just a bigger shared queue. */
+export const bespokeCodegenQueue = new LlmRequestQueue(
+  bespokeCodegenConcurrency(),
+  bespokeCodegenRequestDelayMs()
+);

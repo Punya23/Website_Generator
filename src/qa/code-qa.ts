@@ -4,6 +4,7 @@ import { SUPPORTED_BLOCK_TYPES } from "../agents/content-normalize.js";
 import { withTimeout } from "../util/timed.js";
 
 let sharedBrowser: Browser | null = null;
+let browserLaunch: Promise<Browser> | null = null;
 let qaMutex: Promise<void> = Promise.resolve();
 
 const IMAGE_LOAD_TIMEOUT_MS = Number.parseInt(process.env.QA_IMAGE_TIMEOUT_MS ?? "8000", 10);
@@ -18,10 +19,16 @@ export interface BlockManifestEntry {
   sectionId?: string;
 }
 
+/** Safe under concurrent callers — without the shared in-flight promise, two callers that both
+ *  see `sharedBrowser` as null before either awaits would each launch their own browser process,
+ *  leaking one. A single browser instance safely serves many concurrent pages/contexts (a
+ *  supported Playwright pattern), so callers no longer need to be serialized through this. */
 async function getBrowser(): Promise<Browser> {
-  if (!sharedBrowser) {
-    sharedBrowser = await chromium.launch({ headless: true });
+  if (sharedBrowser) return sharedBrowser;
+  if (!browserLaunch) {
+    browserLaunch = chromium.launch({ headless: true });
   }
+  sharedBrowser = await browserLaunch;
   return sharedBrowser;
 }
 
@@ -39,6 +46,7 @@ export async function closeQABrowser(): Promise<void> {
     await sharedBrowser.close();
     sharedBrowser = null;
   }
+  browserLaunch = null;
 }
 
 const OVERFLOW_TOLERANCE_PX = 4;
@@ -340,4 +348,67 @@ async function screenshotPageInner(html: string): Promise<string> {
   const buffer = await page.screenshot({ fullPage: true, type: "png" });
   await page.close();
   return buffer.toString("base64");
+}
+
+/**
+ * URL-based variants for the React static-export pipeline, whose HTML references CSS/JS via
+ * root-relative paths (e.g. "/preview/_next/static/..."). page.setContent() has no base URL to
+ * resolve those against, so it silently renders with zero styling — these navigate to a real
+ * served URL instead, matching how a browser actually loads the page.
+ */
+// Not routed through withQAMutex — these navigate independent pages/contexts against a real
+// served URL rather than mutating a single page's content, so concurrent callers are safe
+// (Playwright supports many concurrent pages per browser instance). Callers should still bound
+// their own concurrency (e.g. via mapPool) to avoid launching an unbounded number of pages at
+// once for very large sites.
+export async function extractBlockManifestFromUrl(url: string): Promise<BlockManifestEntry[]> {
+  const browser = await getBrowser();
+  const page = await browser.newPage();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(url, { waitUntil: "networkidle", timeout: 15_000 });
+  const manifest = await page.evaluate(() => {
+    return Array.from(document.querySelectorAll("[data-block-id]")).map((el) => {
+      const r = (el as HTMLElement).getBoundingClientRect();
+      const section = (el as HTMLElement).closest("[data-section-id]") as HTMLElement | null;
+      return {
+        id: (el as HTMLElement).dataset.blockId!,
+        type: (el as HTMLElement).dataset.blockType ?? "block",
+        top: Math.round(r.top),
+        height: Math.round(r.height),
+        width: Math.round(r.width),
+        sectionId: section?.dataset.sectionId,
+      };
+    });
+  });
+  await page.close();
+  return manifest;
+}
+
+export async function screenshotUrlDual(url: string): Promise<ViewportScreenshots> {
+  return withTimeout(screenshotUrlDualInner(url), QA_PAGE_TIMEOUT_MS, "dual screenshot");
+}
+
+async function screenshotUrlDualInner(url: string): Promise<ViewportScreenshots> {
+  const browser = await getBrowser();
+
+  const [desktop, mobile] = await Promise.all([
+    (async () => {
+      const desktopPage = await browser.newPage();
+      await desktopPage.setViewportSize({ width: 1280, height: 800 });
+      await desktopPage.goto(url, { waitUntil: "networkidle", timeout: 15_000 });
+      const shot = (await desktopPage.screenshot({ fullPage: true, type: "png" })).toString("base64");
+      await desktopPage.close();
+      return shot;
+    })(),
+    (async () => {
+      const mobilePage = await browser.newPage();
+      await mobilePage.setViewportSize({ width: 390, height: 844 });
+      await mobilePage.goto(url, { waitUntil: "networkidle", timeout: 15_000 });
+      const shot = (await mobilePage.screenshot({ fullPage: true, type: "png" })).toString("base64");
+      await mobilePage.close();
+      return shot;
+    })(),
+  ]);
+
+  return { desktop, mobile };
 }

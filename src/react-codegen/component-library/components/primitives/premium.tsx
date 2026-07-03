@@ -8,10 +8,12 @@ export function CursorSpotlight({
   children,
   className = "",
   intensity = 0.35,
+  id,
 }: {
   children: ReactNode;
   className?: string;
   intensity?: number;
+  id?: string;
 }) {
   const reduce = useReducedMotion();
   const [isTouch, setIsTouch] = useState(false);
@@ -32,12 +34,13 @@ export function CursorSpotlight({
   });
 
   if (reduce || isTouch) {
-    return <div className={className}>{children}</div>;
+    return <div id={id} className={className}>{children}</div>;
   }
 
   return (
     <div
       ref={ref}
+      id={id}
       className={`relative overflow-hidden ${className}`}
       onPointerMove={(e) => {
         const el = ref.current;
@@ -56,12 +59,15 @@ export function CursorSpotlight({
 export function GlassPanel({
   children,
   className = "",
+  id,
 }: {
   children: ReactNode;
   className?: string;
+  id?: string;
 }) {
   return (
     <div
+      id={id}
       className={`rounded-[var(--radius)] border border-white/10 bg-white/5 p-6 shadow-[var(--shadow)] backdrop-blur-md ${className}`}
     >
       {children}
@@ -73,13 +79,15 @@ export function NoiseGradientBg({
   children,
   className = "",
   strong = false,
+  id,
 }: {
   children?: ReactNode;
   className?: string;
   strong?: boolean;
+  id?: string;
 }) {
   return (
-    <div className={`relative overflow-hidden ${className}`}>
+    <div id={id} className={`relative overflow-hidden ${className}`}>
       <div className={`absolute inset-0 mesh-gradient ${strong ? "opacity-100" : "opacity-70"}`} aria-hidden />
       <div className="grain-overlay absolute inset-0" aria-hidden />
       {children ? <div className="relative z-10">{children}</div> : null}
@@ -116,14 +124,16 @@ export function ScrollPinSection({
   media,
   className = "",
   minHeight = "min-h-[120vh]",
+  id,
 }: {
   children: ReactNode;
   media?: ReactNode;
   className?: string;
   minHeight?: string;
+  id?: string;
 }) {
   return (
-    <div className={`relative ${minHeight} ${className}`}>
+    <div id={id} className={`relative ${minHeight} ${className}`}>
       <div className="sticky top-0 flex min-h-screen items-center">
         <div className="grid w-full min-w-0 items-center gap-8 md:grid-cols-2 md:gap-10">
           <div className="py-section">{children}</div>
@@ -137,12 +147,15 @@ export function ScrollPinSection({
 export function HorizontalScrollTrack({
   children,
   className = "",
+  id,
 }: {
   children: ReactNode;
   className?: string;
+  id?: string;
 }) {
   return (
     <div
+      id={id}
       className={`flex snap-x snap-mandatory gap-6 overflow-x-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
       style={{ scrollPaddingInline: "var(--content-padding)" } as CSSProperties}
     >

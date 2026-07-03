@@ -29,10 +29,12 @@ export function CardGrid({
   children,
   columns = 3,
   className = "",
+  id,
 }: {
   children: ReactNode;
   columns?: 2 | 3 | 4;
   className?: string;
+  id?: string;
 }) {
   const colClass =
     columns === 4
@@ -40,19 +42,22 @@ export function CardGrid({
       : columns === 2
         ? "card-grid sm:grid-cols-2"
         : "card-grid sm:grid-cols-2 lg:grid-cols-3";
-  return <div className={`${colClass} ${className}`}>{children}</div>;
+  return <div id={id} className={`${colClass} ${className}`}>{children}</div>;
 }
 
 /** Responsive bento grid — 1 → 2 → 3 → 4 cols with safe row heights. */
 export function BentoGrid({
   children,
   className = "",
+  id,
 }: {
   children: ReactNode;
   className?: string;
+  id?: string;
 }) {
   return (
     <div
+      id={id}
       className={`card-grid auto-rows-[minmax(180px,auto)] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${className}`}
     >
       {children}
@@ -64,11 +69,13 @@ export function BentoGrid({
 export function SectionBody({
   children,
   className = "",
+  id,
 }: {
   children: ReactNode;
   className?: string;
+  id?: string;
 }) {
-  return <div className={`w-full ${className}`}>{children}</div>;
+  return <div id={id} className={`w-full ${className}`}>{children}</div>;
 }
 
 /** Inner content width cap — use inside Container, never on Container itself. */
@@ -76,10 +83,12 @@ export function ContentMeasure({
   children,
   size = "md",
   className = "",
+  id,
 }: {
   children: ReactNode;
   size?: "sm" | "md" | "lg" | "full";
   className?: string;
+  id?: string;
 }) {
   const sizeClass =
     size === "sm"
@@ -89,6 +98,6 @@ export function ContentMeasure({
         : size === "full"
           ? "w-full"
           : "content-narrow";
-  return <div className={`${sizeClass} ${className}`}>{children}</div>;
+  return <div id={id} className={`${sizeClass} ${className}`}>{children}</div>;
 }
 

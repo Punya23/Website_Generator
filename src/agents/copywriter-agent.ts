@@ -46,7 +46,8 @@ Output valid JSON only.`;
 export async function writeSectionCopy(
   ctx: SiteContext,
   pageSlug: string,
-  section: BlueprintSection
+  section: BlueprintSection,
+  priorValidationError?: string
 ): Promise<Record<string, unknown>> {
   const template = getTemplate(section.templateId);
   if (!template) throw new Error(`Unknown template: ${section.templateId}`);
@@ -79,6 +80,9 @@ Page tone: ${profile.pageTone}`
         const retry = parseError
           ? `\nPRIOR RESPONSE WAS INVALID JSON (${parseError}). Return ONLY strict JSON.`
           : "";
+        const validationRetry = priorValidationError
+          ? `\nPRIOR ATTEMPT FAILED SCHEMA VALIDATION: ${priorValidationError}\nFix exactly those field(s) — include ALL required fields with the correct type/shape (arrays must meet their minimum item count).`
+          : "";
         return `${briefToContext(snapshot.brief)}
 PAGE: ${snapshot.pageSlug}
 PAGE GOAL: ${pagePlan?.goal ?? "convert visitors"}
@@ -90,7 +94,7 @@ Vertical profile: ${ctx.verticalProfile?.profileId ?? "generic"}
 ${profileHints}
 Variation seed: ${ctx.variationSeed ?? "none"}
 Copy fields only: ${schemaHint.join(", ")}
-Avoid: ${snapshot.avoidPatterns.join("; ")}${retry}`;
+Avoid: ${snapshot.avoidPatterns.join("; ")}${retry}${validationRetry}`;
       };
 
       const parsed = await chatJsonWithRetry(

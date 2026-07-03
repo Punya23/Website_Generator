@@ -212,6 +212,29 @@ function ensureTypedProps(body: string, typeName: string, typeBlock: string): st
   return cleanupTrailingTypeGarbage(out, typeBlock);
 }
 
+/** Mechanically repair the most common, deterministic mistakes the LLM makes before validation,
+ *  instead of rejecting the whole section over them. Each is a safe, purely syntactic transform
+ *  that produces exactly what the validator wants — recovering bespoke sections that would
+ *  otherwise fall back to the fixed template. Anything not fixable here still hits validation and
+ *  falls back safely. */
+export function autofixBespokeSource(source: string): string {
+  let out = source;
+
+  // Unsafe optional member access on props.cta — the single most common failure. `props.cta.label`
+  // crashes at runtime when cta is undefined (it's optional); convert to `props.cta?.label`. Only
+  // matches `props.cta.` (cta immediately followed by a dot), so already-correct `props.cta?.` is
+  // left untouched.
+  out = out.replace(/\bprops\.cta\.(?=[A-Za-z_])/g, "props.cta?.");
+
+  // PrimaryButton accepts only href + children — strip any className attribute the LLM added
+  // (MagneticButton, which does accept className, is intentionally not touched).
+  out = out.replace(/<PrimaryButton\b[^>]*>/g, (tag) =>
+    tag.replace(/\s+className=(?:"[^"]*"|'[^']*'|\{[^{}]*\})/g, "")
+  );
+
+  return out;
+}
+
 export function sanitizeBespokeSource(source: string, typeName: string, typeBlock: string): string {
   const withoutFences = source
     .trim()
@@ -219,11 +242,13 @@ export function sanitizeBespokeSource(source: string, typeName: string, typeBloc
     .replace(/\n?```$/i, "")
     .trim();
 
-  const body = withoutFences
-    .split("\n")
-    .filter((line) => !USE_CLIENT_LINE.test(line))
-    .join("\n")
-    .replace(/^\n+/, "");
+  const body = autofixBespokeSource(
+    withoutFences
+      .split("\n")
+      .filter((line) => !USE_CLIENT_LINE.test(line))
+      .join("\n")
+      .replace(/^\n+/, "")
+  );
 
   return `"use client";\n\n${ensureTypedProps(body, typeName, typeBlock)}`;
 }
@@ -286,12 +311,16 @@ export function validateBespokeSource(source: string, typeName: string): string 
   }
   const importLines = trimmed.split("\n").filter((l) => l.trim().startsWith("import "));
   for (const line of importLines) {
+    const fromPrimitivesOrSections =
+      line.includes("@/components/primitives") || line.includes("@/components/sections");
+    if (fromPrimitivesOrSections && !line.includes("{")) {
+      return `Default import not allowed for primitives — use named imports: ${line.trim()}`;
+    }
     const ok =
       line.includes("from \"react\"") ||
       line.includes("from 'react'") ||
       line.includes("framer-motion") ||
-      line.includes("@/components/primitives") ||
-      line.includes("@/components/sections");
+      fromPrimitivesOrSections;
     if (!ok) return `Disallowed import: ${line.trim()}`;
   }
   if (trimmed.length > 12_000) return "Source too large";
@@ -411,7 +440,7 @@ export async function generateBespokeSection(
     const raw = await llm.chat(
       BESPOKE_SECTION_PROMPT,
       buildUserPrompt(ctx, instance, componentName, typeName, typeBlock),
-      { temperature: 0.5, tokenRole: "composition", model: llm.getHeroCodegenModel() }
+      { temperature: 0.5, tokenRole: "composition", model: llm.getBespokeCodegenModel(), queue: "codegen" }
     );
     source = sanitizeBespokeSource(raw, typeName, typeBlock);
   } catch (err) {
@@ -429,7 +458,7 @@ export async function generateBespokeSection(
       const retryRaw = await llm.chat(
         BESPOKE_SECTION_PROMPT,
         buildUserPrompt(ctx, instance, componentName, typeName, typeBlock, validationError),
-        { temperature: 0.3, tokenRole: "composition", model: llm.getHeroCodegenModel() }
+        { temperature: 0.3, tokenRole: "composition", model: llm.getBespokeCodegenModel(), queue: "codegen" }
       );
       source = sanitizeBespokeSource(retryRaw, typeName, typeBlock);
       validationError = validateBespokeSource(source, typeName);

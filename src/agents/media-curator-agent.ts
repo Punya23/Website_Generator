@@ -51,13 +51,20 @@ const TEMPLATE_IMAGE_FIELDS: Record<string, ImageFieldSpec[]> = {
   gallery_masonry: [{ array: "images", imageKey: "image", defaultQuery: "gallery" }],
 };
 
-function buildMediaUserPrompt(snapshot: SectionMediaSnapshot, profile?: VerticalDesignProfile): string {
+function buildMediaUserPrompt(
+  snapshot: SectionMediaSnapshot,
+  profile?: VerticalDesignProfile,
+  priorValidationError?: string
+): string {
+  const validationRetry = priorValidationError
+    ? `\n\nPRIOR ATTEMPT FAILED SCHEMA VALIDATION: ${priorValidationError}\nInclude ALL required image/array fields named above with the correct shape.`
+    : "";
   return `Business: ${snapshot.businessName}
 Section: ${snapshot.section.id} — ${snapshot.section.intent}
 Template: ${snapshot.section.templateId}
 Vertical profile: ${profile?.profileId ?? "generic"}
 Image hints: ${profile?.imageHints ?? "professional stock photography"}
-Existing copy: ${JSON.stringify(snapshot.copyProps).slice(0, 800)}`;
+Existing copy: ${JSON.stringify(snapshot.copyProps).slice(0, 800)}${validationRetry}`;
 }
 
 function unwrapMediaProps(parsed: Record<string, unknown>): Record<string, unknown> {
@@ -111,7 +118,8 @@ function normalizeMediaProps(props: Record<string, unknown>): Record<string, unk
 
 async function fetchMediaPropsFromLlm(
   snapshot: SectionMediaSnapshot,
-  profile?: VerticalDesignProfile
+  profile?: VerticalDesignProfile,
+  priorValidationError?: string
 ): Promise<Record<string, unknown>> {
   return chatJsonWithRetry(
     `media curator ${snapshot.section.id}`,
@@ -120,7 +128,7 @@ async function fetchMediaPropsFromLlm(
       const suffix = parseError
         ? `\n\nPRIOR RESPONSE WAS INVALID JSON (${parseError}). Output valid JSON only.`
         : "";
-      return buildMediaUserPrompt(snapshot, profile) + suffix;
+      return buildMediaUserPrompt(snapshot, profile, priorValidationError) + suffix;
     },
     { tokenRole: "section", model: llm.getSectionModel(), initialTemperature: 0.5 },
     (raw) => normalizeMediaProps(unwrapMediaProps(parseLlmJson<Record<string, unknown>>(raw)))
@@ -133,7 +141,8 @@ export async function curateSectionMedia(
   section: BlueprintSection,
   copyProps: Record<string, unknown>,
   registry: MediaRegistry,
-  prefillMedia?: Record<string, unknown>
+  prefillMedia?: Record<string, unknown>,
+  priorValidationError?: string
 ): Promise<Record<string, unknown>> {
   const template = getTemplate(section.templateId);
   if (!template) return {};
@@ -154,7 +163,7 @@ export async function curateSectionMedia(
 
   if (!prefillMedia && llm.isAvailable) {
     try {
-      mediaProps = await fetchMediaPropsFromLlm(snapshot, profile);
+      mediaProps = await fetchMediaPropsFromLlm(snapshot, profile, priorValidationError);
     } catch (err) {
       recordFallback("media_curator", section.id);
       pipelineLog(
@@ -179,7 +188,7 @@ export async function curateSectionMedia(
   );
 }
 
-function extractMediaFromMock(
+export function extractMediaFromMock(
   section: BlueprintSection,
   ctx: SiteContext,
   pageSlug: string

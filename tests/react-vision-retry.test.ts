@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { applyLayoutFixes } from "../src/agents/layout-fix-agent.js";
 import { routeVisionIssues } from "../src/qa/vision-router.js";
+import { mergeFixPlans } from "../src/orchestrator/react-vision-retry.js";
 import { GENERIC_THEME } from "../src/agents/theme-agent.js";
 import type { SiteContext, SiteLayoutPlan } from "../src/types.js";
 
@@ -52,5 +53,26 @@ describe("react vision retry layout fixes", () => {
 
     applyLayoutFixes(ctx, plan.sections);
     expect(ctx.layoutPlan?.sections.home_hero?.variant).toBe("split-offset");
+  });
+
+  it("mergeFixPlans unions booleans and concatenates sections across pages", () => {
+    const homePlan = routeVisionIssues(
+      [{ severity: "hard", code: "VISUAL_MOTION_MONOTONY", message: "static", sectionId: "home_hero" }],
+      "home"
+    );
+    const aboutPlan = routeVisionIssues(
+      [
+        { severity: "hard", code: "VISUAL_CHROME", message: "footer broken" },
+        { severity: "hard", code: "VISUAL_COPY_WEAK", message: "weak", sectionId: "about_intro" },
+      ],
+      "about"
+    );
+
+    const merged = mergeFixPlans([homePlan, aboutPlan]);
+    expect(merged.motion).toBe(true);
+    expect(merged.chrome).toBe(true);
+    expect(merged.design).toBe(false);
+    expect(merged.sections).toHaveLength(1);
+    expect(merged.sections[0]?.pageSlug).toBe("about");
   });
 });

@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import { llmQueue, sleep } from "./request-queue.js";
+import { llmQueue, bespokeCodegenQueue, sleep } from "./request-queue.js";
 import {
   groqFallbackModel,
   isOverCapacityError,
@@ -30,6 +30,8 @@ export interface LLMOptions {
   maxTokens?: number;
   /** Token budget role when maxTokens omitted */
   tokenRole?: TokenRole;
+  /** Route through the higher-concurrency bespoke-codegen queue instead of the shared one. */
+  queue?: "default" | "codegen";
 }
 
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
@@ -298,6 +300,20 @@ export class LLMClient {
     return resolveModel(this.provider, this.getCompositionModel());
   }
 
+  /** Per-section bespoke TSX codegen runs 10-20x per site — a constrained "compose documented
+   *  primitives" task that does NOT need the architect/hero-codegen reasoning model. On the
+   *  premium/balanced tiers heroCodegen is GLM-4.6 (~60-150s/call), which dominates runtime when
+   *  called per section. Default to the fast section model (Gemini Flash on OpenRouter, ~3-8s);
+   *  set LLM_BESPOKE_CODEGEN_MODEL / OPENROUTER_BESPOKE_CODEGEN_MODEL to override (e.g. back to
+   *  GLM-4.6 for maximum fidelity at the cost of speed). */
+  getBespokeCodegenModel(): string {
+    const explicit =
+      process.env.LLM_BESPOKE_CODEGEN_MODEL ??
+      (this.provider === "openrouter" ? process.env.OPENROUTER_BESPOKE_CODEGEN_MODEL : undefined);
+    if (explicit) return resolveModel(this.provider, explicit);
+    return this.getSectionModel();
+  }
+
   getTokenUsage(): { prompt: number; completion: number; total: number } {
     return { ...this.tokenUsage };
   }
@@ -357,7 +373,8 @@ export class LLMClient {
       );
     }
 
-    return llmQueue.run(() => this.chatWithRetry(system, user, options));
+    const queue = options.queue === "codegen" ? bespokeCodegenQueue : llmQueue;
+    return queue.run(() => this.chatWithRetry(system, user, options));
   }
 
   private async chatWithRetry(

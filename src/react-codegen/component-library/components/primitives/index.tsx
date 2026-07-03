@@ -9,11 +9,13 @@ export function Reveal({
   children,
   className = "",
   delay = 0,
+  id,
   sectionId: sectionIdProp,
 }: {
   children: ReactNode;
   className?: string;
   delay?: number;
+  id?: string;
   sectionId?: string;
 }) {
   const reduce = useReducedMotion();
@@ -21,10 +23,11 @@ export function Reveal({
   const variants = useRevealVariants(sectionId);
   const sectionMotion = useSectionMotion(sectionId);
   if (sectionMotion?.entrance === "none") {
-    return <div className={className}>{children}</div>;
+    return <div id={id} className={className}>{children}</div>;
   }
   return (
     <motion.div
+      id={id}
       className={className}
       initial={reduce ? false : "hidden"}
       whileInView="visible"
@@ -40,10 +43,12 @@ export function Reveal({
 export function Stagger({
   children,
   className = "",
+  id,
   sectionId: sectionIdProp,
 }: {
   children: ReactNode;
   className?: string;
+  id?: string;
   sectionId?: string;
 }) {
   const reduce = useReducedMotion();
@@ -51,10 +56,11 @@ export function Stagger({
   const stagger = useStaggerDelay(sectionId);
   const sectionMotion = useSectionMotion(sectionId);
   if (sectionMotion?.entrance === "none") {
-    return <div className={className}>{children}</div>;
+    return <div id={id} className={className}>{children}</div>;
   }
   return (
     <motion.div
+      id={id}
       className={className}
       initial={reduce ? false : "hidden"}
       whileInView="visible"
@@ -72,10 +78,12 @@ export function Stagger({
 export function StaggerItem({
   children,
   className = "",
+  id,
   sectionId: sectionIdProp,
 }: {
   children: ReactNode;
   className?: string;
+  id?: string;
   sectionId?: string;
 }) {
   const reduce = useReducedMotion();
@@ -83,6 +91,7 @@ export function StaggerItem({
   const variants = useRevealVariants(sectionId);
   return (
     <motion.div
+      id={id}
       className={className}
       variants={reduce ? undefined : variants}
       transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
@@ -96,11 +105,13 @@ export function Container({
   children,
   className = "",
   narrow = false,
+  id,
 }: {
   children: ReactNode;
   className?: string;
   /** Inner max-width while keeping outer rail padding aligned with nav/footer */
   narrow?: false | "sm" | "md" | "lg";
+  id?: string;
 }) {
   const innerClass =
     narrow === "sm"
@@ -111,7 +122,7 @@ export function Container({
           ? "content-narrow-lg"
           : "";
   return (
-    <div className={`content-rail ${className}`}>
+    <div id={id} className={`content-rail ${className}`}>
       {innerClass ? <div className={innerClass}>{children}</div> : children}
     </div>
   );

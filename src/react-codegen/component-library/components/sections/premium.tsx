@@ -7,6 +7,7 @@ import {
   MagneticButton,
   MonoTag,
   Reveal,
+  HeroReveal,
   SectionLabel,
   SplitHeroLayout,
   SplitRevealHeading,
@@ -98,7 +99,7 @@ export function HeroSpotlight(props: {
   const imageRight = props.mediaPosition !== "left";
 
   const copyBlock = (
-    <Reveal>
+    <HeroReveal>
       {props.label ? <MonoTag>{props.label}</MonoTag> : null}
       {reduce ? (
         <DisplayHeading as="h1" className="mt-4 max-w-2xl">
@@ -118,7 +119,7 @@ export function HeroSpotlight(props: {
           </MagneticButton>
         </div>
       ) : null}
-    </Reveal>
+    </HeroReveal>
   );
 
   if (variant === "centered-stack") {

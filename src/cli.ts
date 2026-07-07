@@ -126,7 +126,7 @@ Environment (set in .env — see .env.example):
   PEXELS_API_KEY / PIXABAY_API_KEY  Optional extra image sources
   BUSINESS_NAME                   Optional override
   PIPELINE_FAST=1              Cheaper/faster tier (quality pipeline is the default)
-  BESPOKE_SECTION_CODEGEN=0    Disable bespoke per-section TSX codegen (on by default)
+  BESPOKE_SECTION_CODEGEN=1    Enable bespoke per-section TSX codegen (off by default — curated templates are more reliable)
   VISION_QA_HOME_ONLY=1        Restrict vision QA to the home page only, for cost
   SKIP_VISION=1                Skip vision QA + retry
   SKIP_PLAYWRIGHT_SETUP=1      Skip auto Chromium install on startup

@@ -284,8 +284,8 @@ export async function planSite(brief: ExpandedBrief): Promise<SitePlan> {
         {
           tokenRole: "plan",
           model: llm.getCompositionModel(),
-          initialTemperature: 0.6,
-          maxAttempts: 2,
+          initialTemperature: 0.5,
+          maxAttempts: 3,
         },
         (raw) => parseLlmJson(raw)
       );

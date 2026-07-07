@@ -299,20 +299,6 @@ function defaultChromeSpec(
       linkGroups: [{ label: "Explore", slugs: links.map((l) => l.slug) }],
     },
     nav: { compactOnScroll: true, shadowOnScroll: true },
-    announcement: {
-      message: ctx.expandedBrief.secondaryCta ?? `Welcome to ${ctx.businessName}`,
-      href: "/contact",
-    },
-    stickyMobileCta: {
-      label: ctx.expandedBrief.primaryCta,
-      href: "/contact",
-    },
-    newsletter: {
-      headline: "Stay in the loop",
-      subcopy: ctx.expandedBrief.tagline,
-      placeholder: "you@example.com",
-      buttonLabel: "Subscribe",
-    },
     immersive: { smoothScroll: true, grainOverlay: true },
   };
 }

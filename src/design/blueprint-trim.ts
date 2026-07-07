@@ -109,28 +109,13 @@ function dedupeConversionSections(
   }
   if (conversionIndices.length <= 1) return sections;
 
-  const keepLastCloser = closer;
-  const toRemove = new Set<number>();
-  for (const idx of conversionIndices) {
-    const tid = sections[idx]!.templateId;
-    if (tid === keepLastCloser) continue;
-    if (tid === "cta_band" || tid === "footer_cta") {
-      toRemove.add(idx);
-    } else if (tid === "newsletter_band") {
-      toRemove.add(idx);
-    }
+  // Keep exactly one conversion closer — prefer the profile's chosen closer type.
+  let keepIdx = conversionIndices.find((i) => sections[i]!.templateId === closer);
+  if (keepIdx === undefined) {
+    keepIdx = conversionIndices[conversionIndices.length - 1]!;
   }
 
-  if (!sections.some((s) => s.templateId === keepLastCloser)) {
-    const lastConv = conversionIndices[conversionIndices.length - 1]!;
-    toRemove.delete(lastConv);
-    for (const idx of conversionIndices) {
-      if (idx !== lastConv && (sections[idx]!.templateId === "cta_band" || sections[idx]!.templateId === "footer_cta")) {
-        toRemove.add(idx);
-      }
-    }
-  }
-
+  const toRemove = new Set(conversionIndices.filter((i) => i !== keepIdx));
   return sections.filter((_, i) => !toRemove.has(i));
 }
 

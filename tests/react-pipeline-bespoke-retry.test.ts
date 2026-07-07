@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   parseFailedCustomComponent,
   dropCustomCodegenByFileName,
+  dropAllCustomCodegen,
 } from "../src/orchestrator/react-pipeline.js";
 import type { ReactPage } from "../src/types.js";
 
@@ -64,5 +65,48 @@ Type error: Property 'headline' does not exist on type 'CustomHomeHeroProps'.
       home: { slug: "home", title: "Home", sections: [] },
     };
     expect(dropCustomCodegenByFileName(reactPages, "CustomMissing.tsx")).toBe(false);
+  });
+
+  it("dropAllCustomCodegen clears bespoke sections on every page", () => {
+    const reactPages: Record<string, ReactPage> = {
+      home: {
+        slug: "home",
+        title: "Home",
+        sections: [
+          {
+            id: "home_hero",
+            templateId: "hero_editorial",
+            intent: "hero",
+            props: {},
+            customCodegen: {
+              componentName: "CustomHomeHero",
+              fileName: "CustomHomeHero.tsx",
+              source: "export default function CustomHomeHero() { return null; }",
+            },
+          },
+        ],
+      },
+      about: {
+        slug: "about",
+        title: "About",
+        sections: [
+          {
+            id: "about_intro",
+            templateId: "intro_statement",
+            intent: "intro",
+            props: {},
+            customCodegen: {
+              componentName: "CustomAboutIntro",
+              fileName: "CustomAboutIntro.tsx",
+              source: "export default function CustomAboutIntro() { return null; }",
+            },
+          },
+        ],
+      },
+    };
+
+    expect(dropAllCustomCodegen(reactPages)).toBe(2);
+    expect(reactPages.home!.sections[0]!.customCodegen).toBeUndefined();
+    expect(reactPages.about!.sections[0]!.customCodegen).toBeUndefined();
   });
 });

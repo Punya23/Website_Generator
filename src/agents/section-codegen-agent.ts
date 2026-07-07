@@ -80,7 +80,36 @@ export function shouldAttemptBespokeSection(
   return useBespokeSectionCodegen();
 }
 
-const USE_CLIENT_LINE = /^\s*("use client"|'use client'|use client)\s*;?\s*$/i;
+const USE_CLIENT_LINE = /^\s*("use client"|'use client'|use\s+client)\s*;?\s*$/i;
+
+/** PascalCase components exported from @/components/primitives — bespoke codegen may only use these. */
+const PRIMITIVE_COMPONENTS = new Set([
+  "Container",
+  "SectionBody",
+  "ContentMeasure",
+  "DisplayHeading",
+  "SplitRevealHeading",
+  "SectionLabel",
+  "MonoTag",
+  "PrimaryButton",
+  "MagneticButton",
+  "SectionDivider",
+  "Reveal",
+  "Stagger",
+  "StaggerItem",
+  "SplitHeroLayout",
+  "CardGrid",
+  "BentoGrid",
+  "CursorSpotlight",
+  "GlassPanel",
+  "NoiseGradientBg",
+  "TextScrub",
+  "ScrollPinSection",
+  "HorizontalScrollTrack",
+]);
+
+const PRIMITIVES_IMPORT_RE = /import\s+\{([^}]+)\}\s+from\s+["']@\/components\/primitives["'];?/;
+const FRAMER_MOTION_IMPORT_RE = /import\s+\{([^}]+)\}\s+from\s+["']framer-motion["'];?/;
 
 function findMatchingBraceClose(source: string, openIndex: number): number {
   let depth = 0;
@@ -217,8 +246,123 @@ function ensureTypedProps(body: string, typeName: string, typeBlock: string): st
  *  that produces exactly what the validator wants — recovering bespoke sections that would
  *  otherwise fall back to the fixed template. Anything not fixable here still hits validation and
  *  falls back safely. */
-export function autofixBespokeSource(source: string): string {
+function stripBareUseClientLines(source: string): string {
+  return source
+    .split("\n")
+    .filter((line) => {
+      const trimmed = line.trim();
+      if (/^["']use client["']\s*;?\s*$/i.test(trimmed)) return false;
+      return !/^use\s+client\s*;?\s*$/i.test(trimmed);
+    })
+    .join("\n");
+}
+
+function extractJsxPascalTags(source: string): string[] {
+  const tags = new Set<string>();
+  const re = /<([A-Z][A-Za-z0-9]*)\b/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(source)) !== null) {
+    tags.add(match[1]!);
+  }
+  return [...tags];
+}
+
+function parseNamedImportSpecifiers(source: string, importRe: RegExp): Set<string> {
+  const names = new Set<string>();
+  const match = importRe.exec(source);
+  if (!match) return names;
+  for (const part of match[1]!.split(",")) {
+    const name = part.trim().split(/\s+as\s+/)[0]!.trim();
+    if (name) names.add(name);
+  }
+  return names;
+}
+
+/** Auto-inject missing @/components/primitives and framer-motion imports the LLM used in JSX. */
+export function ensureBespokeImports(source: string): string {
   let out = source;
+
+  const usedPrimitives = extractJsxPascalTags(out).filter((tag) => PRIMITIVE_COMPONENTS.has(tag));
+  if (usedPrimitives.length > 0) {
+    const imported = parseNamedImportSpecifiers(out, PRIMITIVES_IMPORT_RE);
+    const missing = usedPrimitives.filter((tag) => !imported.has(tag));
+    if (missing.length > 0) {
+      if (PRIMITIVES_IMPORT_RE.test(out)) {
+        const merged = [...new Set([...imported, ...missing])].sort();
+        out = out.replace(
+          PRIMITIVES_IMPORT_RE,
+          `import { ${merged.join(", ")} } from "@/components/primitives";`
+        );
+      } else {
+        const lines = out.split("\n");
+        let insertAt = 0;
+        for (let i = 0; i < lines.length; i++) {
+          const trimmed = lines[i]!.trim();
+          if (trimmed.startsWith("import ")) {
+            insertAt = i;
+            break;
+          }
+          if (trimmed && !trimmed.startsWith('"use client') && !trimmed.startsWith("'use client")) {
+            insertAt = i;
+            break;
+          }
+        }
+        lines.splice(
+          insertAt,
+          0,
+          `import { ${missing.join(", ")} } from "@/components/primitives";`
+        );
+        out = lines.join("\n");
+      }
+    }
+  }
+
+  if (/\bmotion\./.test(out)) {
+    const imported = parseNamedImportSpecifiers(out, FRAMER_MOTION_IMPORT_RE);
+    if (!imported.has("motion")) {
+      if (FRAMER_MOTION_IMPORT_RE.test(out)) {
+        const merged = [...new Set([...imported, "motion"])].sort();
+        out = out.replace(
+          FRAMER_MOTION_IMPORT_RE,
+          `import { ${merged.join(", ")} } from "framer-motion";`
+        );
+      } else {
+        const lines = out.split("\n");
+        let insertAt = 0;
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i]!.trim().startsWith("import ")) {
+            insertAt = i;
+            break;
+          }
+        }
+        lines.splice(insertAt, 0, `import { motion } from "framer-motion";`);
+        out = lines.join("\n");
+      }
+    }
+  }
+
+  return out;
+}
+
+function validateBespokeImports(source: string): string | null {
+  const importedPrimitives = parseNamedImportSpecifiers(source, PRIMITIVES_IMPORT_RE);
+  for (const tag of extractJsxPascalTags(source)) {
+    if (!PRIMITIVE_COMPONENTS.has(tag)) continue;
+    if (!importedPrimitives.has(tag)) {
+      return `Missing import for primitive ${tag}`;
+    }
+  }
+  if (/\bmotion\./.test(source)) {
+    const importedMotion = parseNamedImportSpecifiers(source, FRAMER_MOTION_IMPORT_RE);
+    if (!importedMotion.has("motion")) {
+      return "Missing framer-motion import for motion.*";
+    }
+  }
+  return null;
+}
+
+export function autofixBespokeSource(source: string): string {
+  let out = stripBareUseClientLines(source);
 
   // Unsafe optional member access on props.cta — the single most common failure. `props.cta.label`
   // crashes at runtime when cta is undefined (it's optional); convert to `props.cta?.label`. Only
@@ -243,14 +387,18 @@ export function sanitizeBespokeSource(source: string, typeName: string, typeBloc
     .trim();
 
   const body = autofixBespokeSource(
-    withoutFences
-      .split("\n")
-      .filter((line) => !USE_CLIENT_LINE.test(line))
-      .join("\n")
-      .replace(/^\n+/, "")
+    stripBareUseClientLines(
+      withoutFences
+        .split("\n")
+        .filter((line) => !USE_CLIENT_LINE.test(line))
+        .join("\n")
+        .replace(/^\n+/, "")
+    )
   );
 
-  return `"use client";\n\n${ensureTypedProps(body, typeName, typeBlock)}`;
+  const typed = ensureTypedProps(body, typeName, typeBlock);
+  const withImports = ensureBespokeImports(typed);
+  return `"use client";\n\n${stripBareUseClientLines(withImports)}`;
 }
 
 function hasOrphanTypeFields(source: string, typeName: string): boolean {
@@ -278,7 +426,8 @@ export function validateBespokeSource(source: string, typeName: string): string 
   if (!trimmed.startsWith('"use client"') && !trimmed.startsWith("'use client'")) {
     return 'Missing "use client" directive';
   }
-  if (/^use client\s*;?\s*$/im.test(trimmed)) {
+  const bodyWithoutDirective = trimmed.replace(/^["']use client["'];?\s*\n?/, "");
+  if (/^\s*use\s+client\s*;?\s*$/im.test(bodyWithoutDirective)) {
     return "Invalid bare use client directive (must be quoted)";
   }
   if (/export default function \w+\(\s*props\s*\)/.test(trimmed)) {
@@ -324,6 +473,8 @@ export function validateBespokeSource(source: string, typeName: string): string 
     if (!ok) return `Disallowed import: ${line.trim()}`;
   }
   if (trimmed.length > 12_000) return "Source too large";
+  const importError = validateBespokeImports(trimmed);
+  if (importError) return importError;
   return null;
 }
 

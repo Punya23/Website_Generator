@@ -88,9 +88,16 @@ export function bespokeCodegenRequestDelayMs(): number {
   return 250;
 }
 
+/** Off by default — per-section LLM codegen is unreliable; opt in with BESPOKE_SECTION_CODEGEN=1. */
 export function useBespokeSectionCodegen(): boolean {
   if (process.env.BESPOKE_SECTION_CODEGEN === "1") return true;
-  if (process.env.BESPOKE_SECTION_CODEGEN === "0") return false;
+  return false;
+}
+
+/** LLM-first page composition — one call per page picks components + writes props. */
+export function usePageCodegenPipeline(): boolean {
+  if (process.env.PIPELINE_PAGE_CODEGEN === "0") return false;
+  if (process.env.PIPELINE_PAGE_CODEGEN === "1") return true;
   return isQualityPipeline();
 }
 

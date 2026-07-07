@@ -69,11 +69,12 @@ describe("token budget", () => {
     expect(resolveRequestMaxTokens({ tokenRole: "section" }, "openrouter")).toBe(1536);
   });
 
-  it("gives plan, architect, and composition roles 3072 floor on OpenRouter", () => {
+  it("gives plan, architect, composition, and page roles 3072 floor on OpenRouter", () => {
     process.env.OPENROUTER_MAX_TOKENS = "2048";
     expect(resolveRequestMaxTokens({ tokenRole: "plan" }, "openrouter")).toBe(3072);
     expect(resolveRequestMaxTokens({ tokenRole: "architect" }, "openrouter")).toBe(3072);
     expect(resolveRequestMaxTokens({ tokenRole: "composition" }, "openrouter")).toBe(3072);
+    expect(resolveRequestMaxTokens({ tokenRole: "page" }, "openrouter")).toBe(3072);
     expect(resolveRequestMaxTokens({ tokenRole: "section" }, "openrouter")).toBe(2048);
   });
 });

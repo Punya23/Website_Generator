@@ -119,4 +119,12 @@ describe("LLM client provider resolution", () => {
     const { llm } = await import("../src/llm/client.js");
     expect(llm.getBespokeCodegenModel()).toBe("z-ai/glm-4.6");
   });
+
+  it("page codegen uses Claude Sonnet on premium tier", async () => {
+    process.env.OPENROUTER_API_KEY = "sk-or-test";
+    process.env.LLM_PROVIDER = "openrouter";
+    process.env.OPENROUTER_MODEL_TIER = "premium";
+    const { llm } = await import("../src/llm/client.js");
+    expect(llm.getPageCodegenModel()).toBe("anthropic/claude-sonnet-4");
+  });
 });

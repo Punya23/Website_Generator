@@ -2,13 +2,22 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { enrichContentWithImages, enrichSectionImages } from "../src/media/enrich-content.js";
 import { MediaRegistry } from "../src/media/media-registry.js";
 import { stockImageUrlSync } from "../src/media/stock-images.js";
-import { activeImageProviders } from "../src/media/image-providers.js";
+import { activeImageProviders, optimizeImageUrl } from "../src/media/image-providers.js";
 import { GENERIC_THEME } from "../src/agents/theme-agent.js";
 
 describe("Stock images", () => {
   it("returns https URLs for any query", () => {
     const url = stockImageUrlSync("law firm office", "test-seed");
     expect(url).toMatch(/^https:\/\//);
+  });
+
+  it("downscales pexels URLs for card/hero display sizes", () => {
+    const raw =
+      "https://images.pexels.com/photos/4853324/pexels-photo-4853324.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
+    const optimized = optimizeImageUrl(raw, 800, 520);
+    expect(optimized).toContain("w=800");
+    expect(optimized).toContain("h=520");
+    expect(optimized).toContain("dpr=1");
   });
 
   it("enriches image blocks with src", async () => {

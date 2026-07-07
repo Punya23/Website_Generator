@@ -76,7 +76,7 @@ async function pexelsUrl(query: string, seed: string): Promise<string | null> {
     const photos = data.photos ?? [];
     if (photos.length === 0) return null;
     const photo = photos[hashSeed(seed + query) % photos.length];
-    return photo?.src?.large2x ?? photo?.src?.large ?? photo?.src?.landscape ?? null;
+    return photo?.src?.large ?? photo?.src?.medium ?? photo?.src?.landscape ?? null;
   } catch {
     return null;
   }
@@ -129,8 +129,9 @@ export async function resolveImageUrl(req: ImageRequest): Promise<string> {
   for (const provider of providers) {
     const url = await provider();
     if (url && isAllowedImageUrl(url)) {
-      cache.set(key, url);
-      return url;
+      const optimized = optimizeImageUrl(url, req.width ?? 960, req.height ?? 640);
+      cache.set(key, optimized);
+      return optimized;
     }
   }
 
@@ -151,6 +152,28 @@ export function activeImageProviders(): string[] {
 export function resolveImageUrlSync(req: ImageRequest): string {
   const key = cacheKey(req);
   return cache.get(key) ?? picsumUrl(req);
+}
+
+/** Downscale hotlinked CDN images so heroes/cards don't load multi-megapixel assets. */
+export function optimizeImageUrl(url: string, width = 960, height = 640): string {
+  if (!url.startsWith("https://")) return url;
+  if (url.includes("images.pexels.com/")) {
+    const u = new URL(url);
+    u.searchParams.set("auto", "compress");
+    u.searchParams.set("cs", "tinysrgb");
+    u.searchParams.set("w", String(width));
+    u.searchParams.set("h", String(height));
+    u.searchParams.set("dpr", "1");
+    return u.toString();
+  }
+  if (url.includes("picsum.photos/")) {
+    const parts = url.replace(/\/$/, "").split("/");
+    const seedIdx = parts.indexOf("seed");
+    if (seedIdx >= 0 && parts[seedIdx + 1]) {
+      return `https://picsum.photos/seed/${parts[seedIdx + 1]}/${width}/${height}`;
+    }
+  }
+  return url;
 }
 
 export function isAllowedImageUrl(url: string): boolean {

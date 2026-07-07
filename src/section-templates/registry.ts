@@ -294,6 +294,10 @@ export function getTemplate(id: string): SectionTemplateDef | undefined {
   return SECTION_TEMPLATES.find((t) => t.id === id);
 }
 
+export function getTemplateByComponentName(componentName: string): SectionTemplateDef | undefined {
+  return SECTION_TEMPLATES.find((t) => t.componentName === componentName);
+}
+
 export function validateTemplateProps(
   templateId: string,
   props: unknown

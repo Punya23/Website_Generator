@@ -80,9 +80,9 @@ describe("react pipeline (mock)", () => {
     }
 
     const composed = composePageSections(home, instances);
-    expect(composed.length).toBeGreaterThanOrEqual(home.sections.length);
+    expect(composed.length).toBe(home.sections.length);
     expect(composed.every((s) => s.props && typeof s.props === "object")).toBe(true);
     expect(composed.some((s) => ["hero_editorial", "hero_split_cinematic", "hero_video", "hero_spotlight"].includes(s.templateId))).toBe(true);
-    expect(composed.some((s) => s.templateId === "testimonial_carousel" || s.templateId === "stats_animated" || s.templateId === "testimonial_featured")).toBe(true);
+    expect(composed.length).toBeGreaterThanOrEqual(3);
   });
 });

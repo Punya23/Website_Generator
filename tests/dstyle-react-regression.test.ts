@@ -96,6 +96,8 @@ describe("Dstyle fashion react regression", () => {
 
     const home = blueprints.find((b) => b.slug === "home");
     expect(home?.sections.some((s) => s.templateId.startsWith("hero_"))).toBe(true);
-    expect(home?.sections.some((s) => s.templateId === "cta_band")).toBe(true);
+    expect(
+      home?.sections.some((s) => ["cta_band", "footer_cta"].includes(s.templateId))
+    ).toBe(true);
   });
 });

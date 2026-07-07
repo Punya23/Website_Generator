@@ -49,6 +49,9 @@ export function isJsonParseError(err: unknown): boolean {
 }
 
 export function parseLlmJson<T = unknown>(raw: string): T {
+  if (!raw.trim()) {
+    throw new SyntaxError("Empty JSON payload from LLM");
+  }
   const normalized = normalizeLlmJsonContent(raw);
   try {
     return JSON.parse(normalized) as T;

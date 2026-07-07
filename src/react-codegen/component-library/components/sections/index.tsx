@@ -1,25 +1,21 @@
 "use client";
 
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
 import {
   Container,
   DisplayHeading,
   MonoTag,
   PrimaryButton,
-  MagneticButton,
-  SplitRevealHeading,
   SplitHeroLayout,
   CardGrid,
   SectionBody,
   Reveal,
+  HeroReveal,
   SectionLabel,
   Stagger,
   StaggerItem,
 } from "../primitives";
 import { Media } from "../primitives/Media";
 import { SectionIdProvider } from "../SectionContext";
-import { useSectionParallax } from "../MotionProvider";
 
 type ImageField = { src?: string; alt?: string };
 type CtaField = { label: string; href?: string };
@@ -71,11 +67,6 @@ export function HeroEditorial(props: {
   density?: "airy" | "normal" | "compact";
   mediaPosition?: "background" | "left" | "right";
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion();
-  const parallax = useSectionParallax(props.id);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "18%"]);
   const rawVariant = props.layoutVariant ?? "full-bleed-left";
   const variant = rawVariant === "split-offset" ? "split-offset" : rawVariant;
   const minH = props.density === "compact" ? "min-h-[55vh]" : props.density === "airy" ? "min-h-[80vh]" : "min-h-[70vh]";
@@ -85,7 +76,7 @@ export function HeroEditorial(props: {
       <SectionShell id={props.id} templateId="hero_editorial" mode="bleed" layoutVariant={variant} className={`${minH} bg-bg`}>
         <Container className="py-section text-center">
           <SectionBody className={`flex ${minH} flex-col items-center justify-center`}>
-            <Reveal>
+            <HeroReveal>
               {props.label ? <MonoTag>{props.label}</MonoTag> : null}
               <DisplayHeading as="h1" className="mt-4 max-w-3xl mx-auto">{props.headline}</DisplayHeading>
               {props.subcopy ? <p className="mt-4 max-w-xl mx-auto text-lg text-muted">{props.subcopy}</p> : null}
@@ -94,7 +85,7 @@ export function HeroEditorial(props: {
                   <PrimaryButton href={props.cta.href ?? "#contact"}>{props.cta.label}</PrimaryButton>
                 </div>
               ) : null}
-            </Reveal>
+            </HeroReveal>
           </SectionBody>
         </Container>
       </SectionShell>
@@ -108,7 +99,7 @@ export function HeroEditorial(props: {
           <SplitHeroLayout
             mediaRight={props.mediaPosition !== "left"}
             copy={
-              <Reveal>
+              <HeroReveal>
                 {props.label ? <MonoTag>{props.label}</MonoTag> : null}
                 <DisplayHeading as="h1" className="mt-4">{props.headline}</DisplayHeading>
                 {props.subcopy ? <p className="mt-4 text-lg text-muted">{props.subcopy}</p> : null}
@@ -117,7 +108,7 @@ export function HeroEditorial(props: {
                     <PrimaryButton href={props.cta.href ?? "#contact"}>{props.cta.label}</PrimaryButton>
                   </div>
                 ) : null}
-              </Reveal>
+              </HeroReveal>
             }
             media={
               <div className="section-media aspect-[4/5] max-h-[min(72vh,640px)]">
@@ -130,69 +121,33 @@ export function HeroEditorial(props: {
     );
   }
 
-  if (variant === "split-offset") {
-    return (
-      <SectionShell id={props.id} templateId="hero_editorial" mode="bleed" layoutVariant={variant} className="hero-split-offset overflow-hidden bg-bg py-section">
-        <Container>
-          <SplitHeroLayout
-            mediaRight
-            copy={
-              <Reveal>
-                {props.label ? <MonoTag>{props.label}</MonoTag> : null}
-                <DisplayHeading as="h1" className="mt-4">{props.headline}</DisplayHeading>
-                {props.subcopy ? <p className="mt-4 text-lg text-muted">{props.subcopy}</p> : null}
-                {props.cta ? (
-                  <div className="mt-8">
-                    <PrimaryButton href={props.cta.href ?? "#contact"}>{props.cta.label}</PrimaryButton>
-                  </div>
-                ) : null}
-              </Reveal>
-            }
-            media={
-              <div className="section-media aspect-[4/5] max-h-[min(72vh,640px)]">
-                {props.image?.src ? (
-                  <img src={props.image.src} alt={props.image.alt ?? props.headline} className="h-full w-full rounded-2xl object-cover shadow-2xl" />
-                ) : (
-                  <div className="h-full min-h-[280px] w-full rounded-2xl bg-accent/10" />
-                )}
-              </div>
-            }
-          />
-        </Container>
-      </SectionShell>
-    );
-  }
-
   return (
-    <SectionShell id={props.id} templateId="hero_editorial" mode="bleed" layoutVariant={variant} className={`relative ${minH} overflow-hidden`}>
-      <div ref={ref} className="absolute inset-0">
-        {props.image?.src ? (
-          <motion.img
-            src={props.image.src}
-            alt={props.image.alt ?? props.headline}
-            className="h-full w-full object-cover"
-            style={reduce || !parallax ? undefined : { y }}
-          />
-        ) : (
-          <div className="h-full w-full bg-gradient-to-br from-accent/30 to-bg" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-      </div>
-      <Container className="relative z-10 pb-16 pt-32">
-        <SectionBody className={`flex ${minH} flex-col justify-end`}>
-        <Reveal>
-          {props.label ? <MonoTag>{props.label}</MonoTag> : null}
-          <SplitRevealHeading text={props.headline} as="h1" className="mt-4 max-w-4xl text-white" />
-          {props.subcopy ? <p className="mt-4 max-w-2xl text-lg text-white/85">{props.subcopy}</p> : null}
-          {props.cta ? (
-            <div className="mt-8">
-              <MagneticButton href={props.cta.href ?? "#contact"} className="bg-accent px-6 py-3 text-sm font-semibold text-white">
-                {props.cta.label}
-              </MagneticButton>
+    <SectionShell id={props.id} templateId="hero_editorial" mode="bleed" layoutVariant={variant === "default" ? "split-offset" : variant} className="hero-split-offset overflow-hidden bg-bg py-section">
+      <Container>
+        <SplitHeroLayout
+          mediaRight={props.mediaPosition !== "left"}
+          copy={
+            <HeroReveal>
+              {props.label ? <MonoTag>{props.label}</MonoTag> : null}
+              <DisplayHeading as="h1" className="mt-4">{props.headline}</DisplayHeading>
+              {props.subcopy ? <p className="mt-4 text-lg text-muted">{props.subcopy}</p> : null}
+              {props.cta ? (
+                <div className="mt-8">
+                  <PrimaryButton href={props.cta.href ?? "#contact"}>{props.cta.label}</PrimaryButton>
+                </div>
+              ) : null}
+            </HeroReveal>
+          }
+          media={
+            <div className="section-media aspect-[4/5] max-h-[min(72vh,640px)]">
+              {props.image?.src ? (
+                <img src={props.image.src} alt={props.image.alt ?? props.headline} className="h-full w-full rounded-2xl object-cover shadow-2xl" />
+              ) : (
+                <div className="h-full min-h-[280px] w-full rounded-2xl bg-accent/10" />
+              )}
             </div>
-          ) : null}
-        </Reveal>
-        </SectionBody>
+          }
+        />
       </Container>
     </SectionShell>
   );
@@ -216,7 +171,7 @@ export function HeroSplitCinematic(props: {
   const minH = props.density === "compact" ? "min-h-[50vh]" : "min-h-[60vh]";
 
   const copyBlock = (
-    <Reveal>
+    <HeroReveal>
       {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
       <DisplayHeading as="h1">{props.headline}</DisplayHeading>
       {props.subcopy ? <p className="mt-4 text-lg text-muted">{props.subcopy}</p> : null}
@@ -226,7 +181,7 @@ export function HeroSplitCinematic(props: {
           <PrimaryButton href={props.cta.href ?? "#"}>{props.cta.label}</PrimaryButton>
         </div>
       ) : null}
-    </Reveal>
+    </HeroReveal>
   );
 
   const mediaBlock = (
@@ -713,12 +668,12 @@ export function FooterCta(props: {
         templateId="footer_cta"
         mode="band"
         layoutVariant={variant}
-        className={`bg-text text-bg ${pad}`}
+        className={`border-t border-border bg-surface ${pad}`}
       >
         <Container narrow="md" className="text-center">
           <Reveal>
-            <DisplayHeading className="text-bg">{props.headline}</DisplayHeading>
-            {props.subcopy ? <p className="mt-3 max-w-xl mx-auto text-bg/80">{props.subcopy}</p> : null}
+            <DisplayHeading>{props.headline}</DisplayHeading>
+            {props.subcopy ? <p className="mt-3 max-w-xl mx-auto text-muted">{props.subcopy}</p> : null}
             <div className="mt-8 flex flex-wrap justify-center gap-4">
               <a
                 href={props.cta.href ?? "#contact"}
@@ -729,7 +684,7 @@ export function FooterCta(props: {
               {props.secondaryCta ? (
                 <a
                   href={props.secondaryCta.href ?? "/contact"}
-                  className="inline-flex rounded-full border border-bg/30 px-8 py-3 font-semibold text-bg"
+                  className="inline-flex rounded-full border border-border px-8 py-3 font-semibold text-text"
                 >
                   {props.secondaryCta.label}
                 </a>
@@ -747,14 +702,14 @@ export function FooterCta(props: {
       templateId="footer_cta"
       mode="band"
       layoutVariant={variant}
-      className={`bg-text text-bg ${pad}`}
+      className={`border-t border-border bg-surface ${pad}`}
     >
       <Container>
         <Reveal>
           <div className="flex flex-col items-start justify-between gap-8 md:flex-row md:items-center">
             <div className="max-w-2xl">
-              <DisplayHeading className="text-bg">{props.headline}</DisplayHeading>
-              {props.subcopy ? <p className="mt-3 text-bg/80">{props.subcopy}</p> : null}
+              <DisplayHeading>{props.headline}</DisplayHeading>
+              {props.subcopy ? <p className="mt-3 text-muted">{props.subcopy}</p> : null}
             </div>
             <div className="flex shrink-0 flex-wrap gap-4">
               <a
@@ -766,7 +721,7 @@ export function FooterCta(props: {
               {props.secondaryCta ? (
                 <a
                   href={props.secondaryCta.href ?? "/contact"}
-                  className="inline-flex rounded-full border border-bg/30 px-8 py-3 font-semibold text-bg"
+                  className="inline-flex rounded-full border border-border px-8 py-3 font-semibold text-text"
                 >
                   {props.secondaryCta.label}
                 </a>

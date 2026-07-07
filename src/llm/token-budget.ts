@@ -5,7 +5,7 @@
 
 import { isQualityPipeline } from "./pipeline-speed.js";
 
-export type TokenRole = "expand" | "plan" | "composition" | "section" | "design" | "refine" | "vision" | "architect";
+export type TokenRole = "expand" | "plan" | "composition" | "section" | "page" | "design" | "refine" | "vision" | "architect";
 
 /** Aggressive call-skipping — opt-in only via LLM_BUDGET_MODE=1. */
 export function isBudgetMode(): boolean {
@@ -31,6 +31,7 @@ export function maxTokensFor(role: TokenRole): number {
       plan: 1536,
       composition: 1536,
       section: 1024,
+      page: 4096,
       design: 1024,
       refine: 1024,
       vision: 768,
@@ -44,6 +45,7 @@ export function maxTokensFor(role: TokenRole): number {
     plan: 3072,
     composition: 3072,
     section: isQualityPipeline() ? 2560 : 2048,
+    page: 6144,
     design: 2048,
     refine: 2048,
     vision: 1024,
@@ -70,7 +72,7 @@ export function resolveRequestMaxTokens(
   const base =
     options.maxTokens ??
     (options.tokenRole ? maxTokensFor(options.tokenRole) : maxTokensFor("composition"));
-  if (provider === "openrouter" && (options.tokenRole === "architect" || options.tokenRole === "plan" || options.tokenRole === "composition")) {
+  if (provider === "openrouter" && (options.tokenRole === "architect" || options.tokenRole === "plan" || options.tokenRole === "composition" || options.tokenRole === "page")) {
     // Full-site blueprint / director JSON needs more headroom than section copy
     const cap = Math.max(openRouterMaxTokensCap(), 3072);
     return Math.min(base, cap);

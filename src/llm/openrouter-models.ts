@@ -11,6 +11,7 @@ export const OPENROUTER_BUDGET_MODELS = {
   composition: "google/gemini-2.5-flash",
   chat: "google/gemini-2.5-flash",
   section: "google/gemini-2.5-flash-lite",
+  page: "google/gemini-2.5-flash",
   vision: "google/gemini-2.5-flash",
   heroCodegen: "google/gemini-2.5-flash",
 } as const;
@@ -21,6 +22,7 @@ export const OPENROUTER_BALANCED_MODELS = {
   composition: "z-ai/glm-4.6",
   chat: "google/gemini-2.5-flash",
   section: "google/gemini-2.5-flash",
+  page: "anthropic/claude-sonnet-4",
   vision: "google/gemini-2.5-flash",
   heroCodegen: "z-ai/glm-4.6",
   design: "google/gemini-2.5-flash",
@@ -35,6 +37,7 @@ export const OPENROUTER_PREMIUM_MODELS = {
   composition: "z-ai/glm-4.6",
   chat: "google/gemini-2.5-flash",
   section: "google/gemini-2.5-flash",
+  page: "anthropic/claude-sonnet-4",
   vision: "google/gemini-2.5-flash",
   heroCodegen: "z-ai/glm-4.6",
   design: "google/gemini-2.5-flash",
@@ -49,6 +52,7 @@ export const OPENROUTER_QUALITY_MODELS = {
   composition: "meta-llama/llama-3.3-70b-instruct:floor",
   chat: "google/gemini-2.5-flash",
   section: "google/gemini-2.5-flash",
+  page: "google/gemini-2.5-flash",
   vision: "google/gemini-2.5-flash",
   heroCodegen: "google/gemini-2.5-flash",
 } as const;

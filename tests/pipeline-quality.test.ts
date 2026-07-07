@@ -4,6 +4,7 @@ import {
   isFastPipeline,
   creativeDirectorPoolOnly,
   useBespokeSectionCodegen,
+  usePageCodegenPipeline,
   homeSectionBudget,
   visionQaHomeOnly,
 } from "../src/llm/pipeline-speed.js";
@@ -33,13 +34,16 @@ describe("pipeline quality mode", () => {
     expect(isQualityPipeline()).toBe(true);
     expect(isFastPipeline()).toBe(false);
     expect(creativeDirectorPoolOnly()).toBe(false);
+    expect(useBespokeSectionCodegen()).toBe(false);
+    process.env.BESPOKE_SECTION_CODEGEN = "1";
     expect(useBespokeSectionCodegen()).toBe(true);
     expect(homeSectionBudget().max).toBe(7);
   });
 
   it("is the zero-flag default (opt out via PIPELINE_FAST=1 or PIPELINE_QUALITY=0)", () => {
     expect(isQualityPipeline()).toBe(true);
-    expect(useBespokeSectionCodegen()).toBe(true);
+    expect(useBespokeSectionCodegen()).toBe(false);
+    expect(usePageCodegenPipeline()).toBe(true);
 
     process.env.PIPELINE_FAST = "1";
     expect(isQualityPipeline()).toBe(false);
@@ -47,6 +51,7 @@ describe("pipeline quality mode", () => {
 
     process.env.PIPELINE_QUALITY = "0";
     expect(isQualityPipeline()).toBe(false);
+    expect(usePageCodegenPipeline()).toBe(false);
   });
 
   it("vision QA checks every page by default; VISION_QA_HOME_ONLY=1 restricts to home", () => {

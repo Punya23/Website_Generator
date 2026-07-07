@@ -314,6 +314,17 @@ export class LLMClient {
     return this.getSectionModel();
   }
 
+  getPageCodegenModel(): string {
+    const explicit =
+      process.env.LLM_PAGE_CODEGEN_MODEL ??
+      (this.provider === "openrouter" ? process.env.OPENROUTER_PAGE_CODEGEN_MODEL : undefined);
+    if (explicit) return resolveModel(this.provider, explicit);
+    if (this.provider === "openrouter") {
+      return openRouterDefaults().page;
+    }
+    return resolveModel(this.provider, this.getCompositionModel());
+  }
+
   getTokenUsage(): { prompt: number; completion: number; total: number } {
     return { ...this.tokenUsage };
   }
@@ -408,6 +419,17 @@ export class LLMClient {
 
       this.recordUsage(model, response.usage);
       const content = response.choices[0]?.message?.content ?? "";
+      if (!content.trim()) {
+        if (attempt < MAX_RETRIES) {
+          const waitMs = 800 * (attempt + 1);
+          console.warn(
+            `[llm] Empty response (${this.provider}, ${model}) — retrying in ${(waitMs / 1000).toFixed(1)}s (${attempt + 1}/${MAX_RETRIES})`
+          );
+          await sleep(waitMs);
+          return this.chatWithRetry(system, user, options, attempt + 1, modelOverride);
+        }
+        throw new Error("Empty response from LLM");
+      }
       return options.jsonMode ? normalizeLlmJsonContent(content) : content;
     } catch (err: unknown) {
       const affordable = parseAffordableMaxTokens(err);

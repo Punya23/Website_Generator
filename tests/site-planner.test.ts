@@ -100,6 +100,16 @@ describe("site planner normalization", () => {
     expect(plan.pages[0]!.slug).toBe("home");
   });
 
+  it("retries on empty JSON then succeeds", async () => {
+    vi.mocked(llm.chat)
+      .mockResolvedValueOnce("")
+      .mockResolvedValueOnce(JSON.stringify(lowMinBlocksPlan));
+
+    const plan = await planSite(brief);
+    expect(plan.pages).toHaveLength(4);
+    expect(llm.chat).toHaveBeenCalledTimes(2);
+  });
+
   it("retries on invalid JSON then succeeds", async () => {
     vi.mocked(llm.chat)
       .mockResolvedValueOnce('{"pages":[{"slug":"home",}]')

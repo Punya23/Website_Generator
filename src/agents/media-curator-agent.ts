@@ -214,6 +214,27 @@ function verticalQuerySuffix(ctx: SiteContext): string {
   return profile?.imageHints ?? profile?.industryFamily ?? "";
 }
 
+/** Deterministic image enrichment for page-codegen props (no LLM). */
+export async function enrichPropsImages(
+  templateId: string,
+  props: Record<string, unknown>,
+  ctx: SiteContext,
+  sectionId: string,
+  pageSlug: string,
+  registry: MediaRegistry
+): Promise<Record<string, unknown>> {
+  const enriched = await enrichTemplateImages(
+    templateId,
+    {},
+    ctx,
+    sectionId,
+    pageSlug,
+    registry,
+    props
+  );
+  return { ...props, ...enriched };
+}
+
 async function enrichTemplateImages(
   templateId: string,
   mediaProps: Record<string, unknown>,
@@ -246,8 +267,8 @@ async function enrichTemplateImages(
       sectionId,
       sectionId,
       pageSlug,
-      1400,
-      900,
+      1100,
+      720,
       vertical
     );
     obj[key] = { ...img, src, alt: img.alt ?? query };

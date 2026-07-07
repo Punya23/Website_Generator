@@ -3,6 +3,7 @@ import {
   generateBespokeSection,
   sanitizeBespokeSource,
   autofixBespokeSource,
+  ensureBespokeImports,
   shouldAttemptBespokeSection,
   validateBespokeSource,
   checkBespokeSyntax,
@@ -105,6 +106,37 @@ export default function CustomHomeHero() { return <Reveal>Hi</Reveal>; }`,
     expect(fixed).not.toMatch(/^use client\s*;/m);
     expect(fixed.startsWith('"use client";')).toBe(true);
     expect(validateBespokeSource(fixed, "TestProps")).toBeNull();
+  });
+
+  it("strips bare use client without quotes or semicolon", () => {
+    const raw = `use client\nimport { Reveal } from "@/components/primitives";\ntype TestProps = { headline?: string };\nexport default function CustomHomeHero(props: TestProps) { return <Reveal>Hi</Reveal>; }`;
+    const fixed = sanitizeBespokeSource(raw, "TestProps", "type TestProps = {\n  id?: string;\n};");
+    expect(fixed).not.toMatch(/\nuse client\b/);
+    expect(checkBespokeSyntax(fixed)).toBeNull();
+  });
+
+  it("auto-injects missing primitive imports used in JSX", () => {
+    const raw = `"use client";
+type TestProps = { headline?: string };
+export default function CustomHomeHero(props: TestProps) {
+  return <NoiseGradientBg><Reveal>{props.headline}</Reveal></NoiseGradientBg>;
+}`;
+    const fixed = sanitizeBespokeSource(
+      raw,
+      "TestProps",
+      "type TestProps = {\n  id?: string;\n  headline?: string;\n};"
+    );
+    expect(fixed).toContain('import { NoiseGradientBg, Reveal } from "@/components/primitives";');
+    expect(validateBespokeSource(fixed, "TestProps")).toBeNull();
+    expect(checkBespokeSyntax(fixed)).toBeNull();
+  });
+
+  it("ensureBespokeImports merges into an existing primitives import", () => {
+    const src = `"use client";
+import { Reveal } from "@/components/primitives";
+export default function X() { return <NoiseGradientBg><Reveal /></NoiseGradientBg>; }`;
+    const fixed = ensureBespokeImports(src);
+    expect(fixed).toContain("{ NoiseGradientBg, Reveal }");
   });
 
   it("rejects invalid primitive props from LLM output", () => {

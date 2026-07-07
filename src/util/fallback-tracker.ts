@@ -15,7 +15,8 @@ export type FallbackAgent =
   | "motion_director"
   | "layout_director"
   | "section_codegen"
-  | "section_props";
+  | "section_props"
+  | "page_codegen";
 
 const counts: Record<string, number> = {};
 

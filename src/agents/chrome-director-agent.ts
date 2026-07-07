@@ -83,21 +83,9 @@ function mockChromeSpec(ctx: SiteContext, blueprints: PageBlueprint[]): ChromeSp
           message: ctx.expandedBrief.secondaryCta ?? ctx.expandedBrief.tagline,
           href: "/contact",
         }
-      : profile === "clinical-light"
-        ? undefined
-        : {
-            message: ctx.expandedBrief.secondaryCta ?? ctx.expandedBrief.tagline,
-            href: "/contact",
-          },
-    stickyMobileCta: {
-      label: ctx.expandedBrief.primaryCta,
-      href: "/contact",
-    },
-    newsletter: {
-      headline: "Join our newsletter",
-      subcopy: ctx.expandedBrief.tagline,
-      buttonLabel: "Subscribe",
-    },
+      : undefined,
+    stickyMobileCta: undefined,
+    newsletter: undefined,
     immersive: {
       smoothScroll: true,
       grainOverlay: ctx.verticalProfile?.grainOverlay ?? (isEditorial || isLuxuryDark),
@@ -116,9 +104,9 @@ function mergeChromeProfileDefaults(
     ...spec,
     footer: { ...defaults.footer, ...spec.footer },
     nav: { ...defaults.nav, ...spec.nav },
-    announcement: spec.announcement ?? defaults.announcement,
-    stickyMobileCta: spec.stickyMobileCta ?? defaults.stickyMobileCta,
-    newsletter: spec.newsletter ?? defaults.newsletter,
+    announcement: spec.announcement,
+    stickyMobileCta: spec.stickyMobileCta,
+    newsletter: spec.newsletter,
     immersive: { ...defaults.immersive, ...spec.immersive },
   });
 }

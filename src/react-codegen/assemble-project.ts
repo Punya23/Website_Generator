@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import type { ReactPage, SiteContext, SiteTheme, ChromeSpec, SiteMotionPlan } from "../types.js";
 import { getTemplate } from "../section-templates/registry.js";
 import { sanitizePropsForCodegen } from "./sanitize-props.js";
+import { normalizePageCodegenProps } from "../agents/page-codegen-normalize.js";
 import { normalizeMotionPlan, resolveMotionPreset } from "../motion/presets.js";
 import type { MotionPreset } from "../types.js";
 import { generateFontLayout } from "./font-codegen.js";
@@ -45,6 +46,25 @@ function pageComponentName(slug: string): string {
     .join("") + "Page";
 }
 
+function hasResolvedMedia(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  if (Array.isArray(value)) return value.some((item) => hasResolvedMedia(item));
+  const obj = value as Record<string, unknown>;
+  if (typeof obj.src === "string" && obj.src.startsWith("https://")) return true;
+  return Object.values(obj).some((v) => hasResolvedMedia(v));
+}
+
+function propsForCodegen(templateId: string, raw: Record<string, unknown>): Record<string, unknown> {
+  const normalized = hasResolvedMedia(raw)
+    ? raw
+    : normalizePageCodegenProps(templateId, raw);
+  const template = getTemplate(templateId);
+  if (!template) return sanitizePropsForCodegen(normalized);
+  const parsed = template.propsSchema.safeParse(normalized);
+  const out = parsed.success ? (parsed.data as Record<string, unknown>) : normalized;
+  return sanitizePropsForCodegen(out);
+}
+
 function writePageTsx(page: ReactPage): string {
   const stdImports = new Set<string>();
   const customImportLines: string[] = [];
@@ -74,7 +94,7 @@ function writePageTsx(page: ReactPage): string {
         s.customCodegen?.componentName ??
         getTemplate(s.templateId)?.componentName ??
         "IntroStatement";
-      const props = sanitizePropsForCodegen(s.props);
+      const props = propsForCodegen(s.templateId, s.props);
       if (s.customCodegen) {
         const merged = { ...props, id: s.id };
         return `      <${name} {...${JSON.stringify(merged)}} />`;
@@ -199,7 +219,7 @@ function layoutTsx(ctx: SiteContext, pages: ReactPage[]): string {
   const motionPreset: MotionPreset = resolveMotionPreset(
     motionPlanRaw?.globalPreset ?? ctx.designSystem.motionPreset
   );
-  const immersive = chrome.immersive ?? { smoothScroll: true, grainOverlay: true };
+  const immersive = chrome.immersive ?? { smoothScroll: false, grainOverlay: false };
   const announcement = chrome.announcement;
   const stickyCta = chrome.stickyMobileCta ?? {
     label: chrome.footer.ctaLabel,
@@ -219,8 +239,8 @@ function layoutTsx(ctx: SiteContext, pages: ReactPage[]): string {
     ? JSON.stringify(normalizeMotionPlan(motionPlanRaw as SiteMotionPlan)).replace(/</g, "\\u003c")
     : "null";
 
-  const smoothScroll = immersive.smoothScroll !== false;
-  const grainOverlay = immersive.grainOverlay !== false;
+  const smoothScroll = immersive.smoothScroll === true;
+  const grainOverlay = immersive.grainOverlay === true;
 
   return `import type { Metadata } from "next";
 import "./globals.css";
@@ -295,11 +315,11 @@ function defaultChromeSpec(
       tagline: ctx.expandedBrief.tagline,
       ctaLabel: ctx.expandedBrief.primaryCta,
       ctaHref: "/contact",
-      showMood: true,
+      showMood: false,
       linkGroups: [{ label: "Explore", slugs: links.map((l) => l.slug) }],
     },
-    nav: { compactOnScroll: true, shadowOnScroll: true },
-    immersive: { smoothScroll: true, grainOverlay: true },
+    nav: { compactOnScroll: false, shadowOnScroll: false },
+    immersive: { smoothScroll: false, grainOverlay: false },
   };
 }
 

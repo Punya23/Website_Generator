@@ -51,7 +51,13 @@ const EXAMPLE_PROPS: Partial<Record<string, string>> = {
     '{ "headline": "...", "items": [{ "title": "...", "description": "..." }] }',
   CtaBand:
     '{ "headline": "...", "subcopy": "...", "cta": { "label": "...", "href": "/contact" } }',
+  ServicesShowcase:
+    '{ "headline": "...", "paragraphs": ["First service area — short description.", "Second area — another sentence."], "image": { "alt": "..." } }',
   IntroStatement: '{ "headline": "...", "body": "..." }',
+  ContactSplit:
+    '{ "headline": "...", "email": "hello@studio.com", "phone": "555-0100", "formFields": [{ "label": "Message", "type": "textarea" }] }',
+  PortfolioCarousel:
+    '{ "headline": "...", "slides": [{ "title": "Project name", "category": "Residential", "image": { "alt": "..." } }] }',
   FaqAccordion:
     '{ "headline": "...", "items": [{ "question": "...", "answer": "..." }] }',
 };
@@ -83,9 +89,29 @@ export function getManifestEntry(componentName: string): ComponentManifestEntry 
   return COMPONENT_MANIFEST.find((e) => e.componentName === componentName);
 }
 
-export function componentManifestForPrompt(): string {
-  return COMPONENT_MANIFEST.map(
-    (e) =>
-      `- ${e.componentName} (${e.templateId}): ${e.purpose}\n  When: ${e.whenToUse}\n  Example props: ${e.exampleProps}`
-  ).join("\n\n");
+export function componentManifestForPrompt(
+  pageSlug: string,
+  options?: { avoid?: Iterable<string> },
+): string {
+  const avoid = new Set(options?.avoid ?? []);
+  const knownSlugs = new Set(["home", "about", "services", "contact"]);
+  return SECTION_TEMPLATES.filter((t) => {
+    if (avoid.has(t.componentName)) return false;
+    if (pageSlug === "portfolio") {
+      return (
+        t.pages.includes("any") ||
+        t.pages.includes("home") ||
+        t.pages.includes("about")
+      );
+    }
+    if (knownSlugs.has(pageSlug)) {
+      return (
+        t.pages.includes("any") ||
+        t.pages.includes(pageSlug as "home" | "about" | "services" | "contact")
+      );
+    }
+    return t.pages.includes("any");
+  })
+    .map((t) => `- ${t.componentName}: ${t.description}`)
+    .join("\n");
 }

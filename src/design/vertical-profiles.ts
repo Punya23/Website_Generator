@@ -29,7 +29,7 @@ export interface VerticalDesignProfile {
 const LUXURY_DARK = /\b(salon|spa|barber|nightclub|luxury|boutique|jewel|hair|beauty|wellness retreat)\b/i;
 const CLINICAL = /\b(dental|clinic|medical|doctor|healthcare|hospital|therapy|orthodont|physio)\b/i;
 const CORPORATE = /\b(finance|financial|insurance|law|legal|accounting|consulting|b2b|capital|wealth|advisor)\b/i;
-const EDITORIAL = /\b(fashion|editorial|studio|agency|creative|photography|design firm|atelier)\b/i;
+const EDITORIAL = /\b(fashion|editorial|studio|agency|creative|photography|design firm|atelier|architecture|architect)\b/i;
 const WARM = /\b(restaurant|cafe|food|fitness|gym|yoga|pet|coffee|catering)\b/i;
 const FOOD_RETAIL = /\b(bakery|bread|pastry|grocery|retail|shop|store|boutique|florist|butcher|deli)\b/i;
 const HEALTH = /\b(health|wellness|chiropractic|dermatolog|skincare|aesthetic|medspa)\b/i;
@@ -73,9 +73,9 @@ export function inferVerticalProfile(
     .toLowerCase();
 
   let profileId: VerticalProfileId = "warm-consumer";
-  if (CLINICAL.test(text) || HEALTH.test(text)) profileId = "clinical-light";
+  if (EDITORIAL.test(text)) profileId = "editorial-light";
+  else if (CLINICAL.test(text) || HEALTH.test(text)) profileId = "clinical-light";
   else if (CORPORATE.test(text)) profileId = "corporate-light";
-  else if (EDITORIAL.test(text)) profileId = "editorial-light";
   else if (LUXURY_DARK.test(text)) profileId = "luxury-dark";
   else if (WARM.test(text) || FOOD_RETAIL.test(text)) profileId = "warm-consumer";
 
@@ -95,11 +95,11 @@ function profileDefaults(
     "luxury-dark": {
       profileId: "luxury-dark",
       pageTone: "dark",
-      navTreatment: "glass-light",
+      navTreatment: "solid",
       motionPreset: "parallax-hero",
       heroBias: "hero_spotlight",
       blueprintFamily: "luxury-dark",
-      grainOverlay: true,
+      grainOverlay: false,
       paletteHints: "Deep charcoal bg (#0a0a0a–#121212), rose gold or copper accent, vivid gradients for CTAs",
       typographyHints: "Playfair Display or Cormorant heading, light body sans, airy section gaps",
       industryFamily,
@@ -111,7 +111,7 @@ function profileDefaults(
     "clinical-light": {
       profileId: "clinical-light",
       pageTone: "light",
-      navTreatment: "glass-dark",
+      navTreatment: "solid",
       motionPreset: "fade-up",
       heroBias: "hero_split_cinematic",
       blueprintFamily: "clinical-light",
@@ -143,11 +143,11 @@ function profileDefaults(
     "editorial-light": {
       profileId: "editorial-light",
       pageTone: "warm",
-      navTreatment: "glass-dark",
+      navTreatment: "minimal",
       motionPreset: "stagger",
       heroBias: "hero_spotlight",
       blueprintFamily: "editorial-light",
-      grainOverlay: true,
+      grainOverlay: false,
       paletteHints: "Warm white editorial bg, strong accent (terracotta or ink), vivid gradient CTAs",
       typographyHints: "Display serif heading (Playfair), airy gaps, editorial label typography",
       industryFamily,

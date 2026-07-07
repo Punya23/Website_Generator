@@ -45,6 +45,8 @@ import {
   generatePageSections,
   instancesToBlueprint,
 } from "../agents/page-codegen-agent.js";
+import { buildSiteCompositionPlan } from "../agents/page-composition-hints.js";
+import { minimalChromeSpec, minimalMotionPlan } from "../agents/minimal-site-chrome.js";
 
 export function getOutputMode(): "react" | "html" {
   const mode = (process.env.OUTPUT_MODE ?? "react").toLowerCase();
@@ -282,12 +284,19 @@ export async function runReactPipeline(
       instances: SectionInstance[];
     };
 
+    const siteComposition = buildSiteCompositionPlan(ctx);
+    pipelineLog(
+      `[pipeline] Site composition: ${Object.entries(siteComposition.pages)
+        .map(([slug, h]) => `${slug}→${h.heroComponent}`)
+        .join(", ")}`
+    );
+
     const pageRows = await mapPool(
       pages,
       Math.min(4, Math.max(1, pages.length)),
       async (pagePlan): Promise<PageRow> => {
         const instances = await timedStep(pagePlan.slug, "page codegen", () =>
-          generatePageSections(ctx, pagePlan, registry)
+          generatePageSections(ctx, pagePlan, registry, siteComposition)
         );
         const blueprint = instancesToBlueprint(pagePlan.slug, instances);
         pipelineLog(
@@ -306,52 +315,17 @@ export async function runReactPipeline(
       );
     }
 
-    const [chromeSpec0, motionPlan, layoutPlan] = await timedStep(
-      "site",
-      "chrome + motion + layout directors",
-      () =>
-        Promise.all([
-          directChromeSpec(ctx, blueprints),
-          directMotionPlan(ctx, blueprints),
-          directLayoutPlan(ctx, blueprints),
-        ])
-    );
+    const chromeSpec0 = minimalChromeSpec(ctx, blueprints);
+    const motionPlan = minimalMotionPlan(ctx, blueprints);
+    const layoutPlan = { sections: {} };
     ctx.chromeSpec = chromeSpec0;
     ctx.motionPlan = motionPlan;
     ctx.layoutPlan = layoutPlan;
 
-    let chromeQa = runChromeQA(chromeSpec0);
-    let motionQa = runMotionQA(motionPlan, blueprints);
-    let layoutQa = runLayoutQA(layoutPlan, blueprints);
-
-    if (!skipDirectorRetries()) {
-      await Promise.all([
-        (async () => {
-          if (chromeQa.passed) return;
-          pipelineLog(
-            `[pipeline] Chrome QA failed (${chromeQa.issues.map((i) => i.message).join("; ")}); retrying chrome director…`
-          );
-          ctx.chromeSpec = await directChromeSpec(ctx, blueprints);
-          chromeQa = runChromeQA(ctx.chromeSpec);
-        })(),
-        (async () => {
-          if (motionQa.passed) return;
-          pipelineLog(
-            `[pipeline] Motion QA failed (${motionQa.issues.map((i) => i.message).join("; ")}); retrying motion director…`
-          );
-          ctx.motionPlan = await directMotionPlan(ctx, blueprints);
-          motionQa = runMotionQA(ctx.motionPlan, blueprints);
-        })(),
-        (async () => {
-          if (layoutQa.passed) return;
-          pipelineLog(
-            `[pipeline] Layout QA failed (${layoutQa.issues.map((i) => i.message).join("; ")}); retrying layout director…`
-          );
-          ctx.layoutPlan = await directLayoutPlan(ctx, blueprints);
-          layoutQa = runLayoutQA(ctx.layoutPlan, blueprints);
-        })(),
-      ]);
-    }
+    const chromeQa = runChromeQA(chromeSpec0);
+    const motionQa = runMotionQA(motionPlan, blueprints);
+    const layoutQa = runLayoutQA(layoutPlan, blueprints);
+    pipelineLog("[pipeline] Page codegen: minimal chrome (no grain/blur directors)");
 
     for (const pagePlan of pages) {
       const row = pageRows.find((r) => r.blueprint.slug === pagePlan.slug)!;

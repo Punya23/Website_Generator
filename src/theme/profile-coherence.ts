@@ -57,8 +57,8 @@ export function enforceProfileCoherence(
   const out: SiteTheme = {
     ...theme,
     colors: { ...theme.colors },
-    motionPreset: profile.motionPreset,
-    navTreatment: profile.navTreatment,
+    motionPreset: theme.motionPreset ?? profile.motionPreset,
+    navTreatment: theme.navTreatment ?? profile.navTreatment,
   };
 
   const bgLum = luminance(out.colors.bg);
@@ -86,11 +86,14 @@ export function enforceProfileCoherence(
   }
 
   out.pageTone = syncPageToneWithBg(out.pageTone ?? profile.pageTone, out.colors.bg);
-  out.colors.navBg = nav.colors.navBg;
-  out.colors.navText = nav.colors.navText;
-  out.colors.navMuted = nav.colors.navMuted;
-  out.colors.navActiveBg = out.colors.accent || nav.colors.navActiveBg;
-  out.colors.navActiveText = nav.colors.navActiveText;
+
+  if (!out.colors.navBg || !out.colors.navText) {
+    out.colors.navBg = nav.colors.navBg;
+    out.colors.navText = nav.colors.navText;
+    out.colors.navMuted = nav.colors.navMuted;
+    out.colors.navActiveBg = out.colors.accent || nav.colors.navActiveBg;
+    out.colors.navActiveText = nav.colors.navActiveText;
+  }
 
   if (profile.profileId === "luxury-dark" || profile.profileId === "editorial-light") {
     out.gradientMood = out.gradientMood ?? "vivid";

@@ -15,6 +15,7 @@ import {
   SplitRevealHeading,
   Stagger,
   StaggerItem,
+  cardGridClassForCount,
 } from "../primitives";
 import { SectionIdProvider } from "../SectionContext";
 
@@ -356,7 +357,7 @@ export function PricingToggle(props: {
             </button>
           </div>
         </div>
-        <Stagger className="card-grid sm:grid-cols-2 lg:grid-cols-3">
+        <Stagger className={cardGridClassForCount(props.tiers.length)}>
           {props.tiers.map((tier) => (
             <StaggerItem key={tier.name}>
               <div
@@ -404,7 +405,7 @@ export function StatsAnimated(props: {
       <Container>
         {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
         {props.headline ? <DisplayHeading className="mt-2 text-center">{props.headline}</DisplayHeading> : null}
-        <div className="card-grid mt-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className={`${cardGridClassForCount(props.stats.length, { maxColumns: 4 })} mt-10`}>
           {props.stats.map((stat) => (
             <AnimatedStat key={stat.label} value={stat.value} label={stat.label} />
           ))}

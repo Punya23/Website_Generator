@@ -24,7 +24,7 @@ describe("inferVerticalProfile", () => {
     expect(profile.profileId).toBe("luxury-dark");
     expect(profile.pageTone).toBe("dark");
     expect(profile.heroBias).toBe("hero_spotlight");
-    expect(profile.grainOverlay).toBe(true);
+    expect(profile.grainOverlay).toBe(false);
   });
 
   it("classifies dental brief as clinical-light", () => {

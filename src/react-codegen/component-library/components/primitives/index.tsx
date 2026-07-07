@@ -273,4 +273,12 @@ export {
   ScrollPinSection,
   TextScrub,
 } from "./premium";
-export { SplitHeroLayout, CardGrid, BentoGrid, SectionBody, ContentMeasure } from "./layout";
+export {
+  SplitHeroLayout,
+  CardGrid,
+  BentoGrid,
+  SectionBody,
+  ContentMeasure,
+  cardGridClassForCount,
+  defaultBentoSpan,
+} from "./layout";

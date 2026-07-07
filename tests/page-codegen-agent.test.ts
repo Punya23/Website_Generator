@@ -8,6 +8,7 @@ import {
   parsePageCodegenPlan,
   validatePageCodegenPlan,
 } from "../src/agents/page-codegen-validate.js";
+import { componentManifestForPrompt } from "../src/agents/component-manifest.js";
 import {
   instancesToBlueprint,
   minimalBriefContext,
@@ -42,8 +43,9 @@ function validHomePlan() {
         props: {
           headline: "What we do",
           items: [
-            { title: "Residential", description: "Custom homes" },
-            { title: "Renovation", description: "Thoughtful updates" },
+            { title: "Residential design", description: "Custom homes shaped around light and site." },
+            { title: "Renovation", description: "Thoughtful updates that respect original character.", span: "wide" },
+            { title: "Passive House", description: "High-performance envelopes with lower energy use." },
           ],
         },
       },
@@ -178,6 +180,52 @@ describe("page codegen agent", () => {
     expect(text).toContain("Book consultation");
     expect(text.length).toBeLessThan(600);
     expect(text).not.toContain("A very long expanded brief ".repeat(10));
+  });
+
+  it("rejects banned components when composition hint avoids them", () => {
+    const plan = parsePageCodegenPlan(validHomePlan());
+    expect(
+      validatePageCodegenPlan(plan, "home", {
+        requiredHero: "HeroSpotlight",
+        avoidComponents: ["IntroStatement"],
+      })
+    ).toMatch(/banned on this page/);
+  });
+
+  it("requires assigned hero from composition hint", () => {
+    const plan = parsePageCodegenPlan(validHomePlan());
+    expect(
+      validatePageCodegenPlan(plan, "home", { requiredHero: "HeroEditorial" })
+    ).toMatch(/first section must be HeroEditorial/);
+  });
+
+  it("page palette excludes avoided components", () => {
+    const palette = componentManifestForPrompt("services", { avoid: ["FaqAccordion"] });
+    expect(palette).not.toContain("FaqAccordion");
+    expect(palette).toContain("ServicesShowcase");
+  });
+
+  it("rejects placeholder feature bento copy", () => {
+    const base = validHomePlan().sections;
+    const plan = parsePageCodegenPlan({
+      sections: [
+        base[0],
+        {
+          component: "FeatureBento",
+          intent: "Benefits",
+          props: {
+            headline: "Why us",
+            items: [
+              { title: "Feature 1", description: "Tailored to your needs.", image: { alt: "A" } },
+              { title: "Feature 2", description: "Also generic.", image: { alt: "B" } },
+            ],
+          },
+        },
+        base[2],
+        base[3],
+      ],
+    });
+    expect(validatePageCodegenPlan(plan, "home")).toMatch(/placeholder copy|at least 3 items/);
   });
 
   it("hero and conversion name sets match manifest", () => {

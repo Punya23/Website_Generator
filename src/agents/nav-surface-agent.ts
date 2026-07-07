@@ -19,34 +19,34 @@ const NAV_SURFACE_CONTRACT: AgentContract<NavSurfacePartial> = {
   forbiddenFields: ["fontHeading", "fontBody", "gradientFrom", "gradientTo", "accent", "motionPreset"],
 };
 
-const NAV_SURFACE_PROMPT = `You are a navigation and surface treatment specialist.
+const NAV_SURFACE_PROMPT = `You are a navigation and surface treatment specialist for distinctive brand websites.
 
 OUTPUT (your only job): nav/surface JSON.
 FORBIDDEN: fonts, accent/gradient colors (except nav-specific tokens), motion, templates.
 
 Rules:
-- pageTone: light | dark | warm | cool
+- pageTone: light | dark | warm | cool — match the brand, not a template
 - navTreatment: glass-dark | glass-light | solid | minimal
-  - Light page + editorial → glass-dark with rgba(10,12,18,0.72) navBg + light navText
-  - Dark page → glass-light or solid
-- Glass nav: navBg alpha 0.6–0.85
-- surfaces: default, elevated, none descriptions
+  - Prefer solid or minimal unless the brief explicitly calls for glass/translucent chrome
+  - Do NOT default to glass — choose what fits THIS business
+- navBg should be opaque for solid/minimal (hex colors), translucent only for glass
+- surfaces: describe how cards/panels feel for this brand
 
-Output valid JSON only. All string values must be quoted. No pipe-separated enums in values.
+Output valid JSON only.
 
 Output JSON:
 {
   "pageTone": "light",
-  "navTreatment": "glass-dark",
+  "navTreatment": "solid",
   "surfaces": {
     "default": "none",
-    "elevated": "pricing panels only",
+    "elevated": "subtle borders only",
     "none": "typography-first sections"
   },
   "colors": {
-    "navBg": "rgba(10,12,18,0.72)",
-    "navText": "#f5f5f5",
-    "navMuted": "#a3a3a3",
+    "navBg": "#ffffff",
+    "navText": "#111111",
+    "navMuted": "#666666",
     "navActiveBg": "#c45c26",
     "navActiveText": "#ffffff"
   }
@@ -111,18 +111,18 @@ export async function generateNavSurface(
 
 function mockNavSurface(businessBrief: string, verticalProfile?: VerticalDesignProfile): NavSurfacePartial {
   if (verticalProfile) return mockNavForProfile(verticalProfile);
-  const editorial = /fashion|editorial|luxury|bridal/i.test(businessBrief);
+  const editorial = /fashion|editorial|luxury|bridal|architecture|studio/i.test(businessBrief);
   return {
     pageTone: editorial ? "light" : GENERIC_THEME.pageTone,
-    navTreatment: editorial ? "glass-dark" : GENERIC_THEME.navTreatment,
+    navTreatment: editorial ? "minimal" : "solid",
     surfaces: editorial
       ? { default: "none", elevated: "pricing panels only", none: "typography-first sections" }
       : GENERIC_THEME.surfaces,
     colors: editorial
       ? {
-          navBg: "rgba(10,12,18,0.72)",
-          navText: "#f5f5f5",
-          navMuted: "#a3a3a3",
+          navBg: "#ffffff",
+          navText: "#111111",
+          navMuted: "#666666",
           navActiveBg: "#c45c26",
           navActiveText: "#ffffff",
         }

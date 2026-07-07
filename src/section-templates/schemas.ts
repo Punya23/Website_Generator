@@ -112,7 +112,7 @@ export const FeatureBentoPropsSchema = z.object({
         span: z.enum(["normal", "wide", "tall", "large"]).optional(),
       })
     )
-    .min(2)
+    .min(3)
     .max(6),
 });
 

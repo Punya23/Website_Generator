@@ -17,7 +17,7 @@
   --color-gradient-from: #6366f1;
   --color-gradient-to: #818cf8;
   --nav-blur: 12px;
-  --max-content: 1200px;
+  --max-content: 1280px;
   --content-padding: clamp(1.25rem, 4vw, 2.5rem);
   --section-gap: 5rem;
   --radius: 0.75rem;

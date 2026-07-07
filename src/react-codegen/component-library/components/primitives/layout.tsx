@@ -24,42 +24,77 @@ export function SplitHeroLayout({
   );
 }
 
-/** Responsive card grid — 1 → 2 → 3 columns. Prevents cramped multi-col on tablet. */
+/** Column classes that match item count — avoids 2 tiny cards in a 4-column grid. */
+export function cardGridClassForCount(
+  count: number,
+  options?: { bento?: boolean; maxColumns?: 3 | 4 }
+): string {
+  const n = Math.max(1, count);
+  const maxColumns = options?.maxColumns ?? 4;
+  const rowMin = options?.bento ? " auto-rows-[minmax(220px,auto)]" : "";
+
+  if (n === 1) return `card-grid grid-cols-1${rowMin}`;
+  if (n === 2) return `card-grid sm:grid-cols-2${rowMin}`;
+  if (n === 3) return `card-grid sm:grid-cols-2 lg:grid-cols-3${rowMin}`;
+  if (n === 4) {
+    return maxColumns >= 4
+      ? `card-grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4${rowMin}`
+      : `card-grid sm:grid-cols-2 lg:grid-cols-2${rowMin}`;
+  }
+  if (n <= 6) return `card-grid sm:grid-cols-2 lg:grid-cols-3${rowMin}`;
+  return `card-grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4${rowMin}`;
+}
+
+/** Default bento span when the LLM omits span — adds rhythm without shrinking cards. */
+export function defaultBentoSpan(index: number, total: number, explicit?: string): string | undefined {
+  if (explicit && explicit !== "normal") return explicit;
+  if (total === 2) return undefined;
+  if (total === 3 && index === 0) return "large";
+  if (total >= 4 && index === 0) return "wide";
+  if (total >= 5 && index === 3) return "wide";
+  return undefined;
+}
+
+/** Responsive card grid — columns follow child count when itemCount is passed. */
 export function CardGrid({
   children,
   columns = 3,
+  itemCount,
   className = "",
   id,
 }: {
   children: ReactNode;
   columns?: 2 | 3 | 4;
+  itemCount?: number;
   className?: string;
   id?: string;
 }) {
   const colClass =
-    columns === 4
-      ? "card-grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-      : columns === 2
-        ? "card-grid sm:grid-cols-2"
-        : "card-grid sm:grid-cols-2 lg:grid-cols-3";
+    itemCount !== undefined
+      ? cardGridClassForCount(itemCount, { maxColumns: columns === 4 ? 4 : 3 })
+      : columns === 4
+        ? cardGridClassForCount(4, { maxColumns: 4 })
+        : columns === 2
+          ? cardGridClassForCount(2)
+          : cardGridClassForCount(3);
   return <div id={id} className={`${colClass} ${className}`}>{children}</div>;
 }
 
-/** Responsive bento grid — 1 → 2 → 3 → 4 cols with safe row heights. */
+/** Responsive bento grid — column count follows itemCount. */
 export function BentoGrid({
   children,
+  itemCount,
   className = "",
   id,
 }: {
   children: ReactNode;
+  itemCount?: number;
   className?: string;
   id?: string;
 }) {
+  const count = itemCount ?? (Array.isArray(children) ? children.length : 1);
   return (
-    <div
-      id={id}
-      className={`card-grid auto-rows-[minmax(180px,auto)] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${className}`}
-    >
+    <div id={id} className={`${cardGridClassForCount(count, { bento: true })} ${className}`}>
       {children}
     </div>
   );

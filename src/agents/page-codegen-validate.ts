@@ -16,6 +16,11 @@ export interface PageCodegenPlan {
   sections: PageCodegenSection[];
 }
 
+export interface PageCodegenValidateOptions {
+  requiredHero?: string;
+  avoidComponents?: string[];
+}
+
 /** Minimal required fields per component — structure only, no regex repair. */
 const REQUIRED_PROPS: Record<string, string[]> = {
   HeroEditorial: ["headline"],
@@ -25,7 +30,7 @@ const REQUIRED_PROPS: Record<string, string[]> = {
   IntroStatement: ["headline", "body"],
   StatsMarquee: ["stats"],
   StatsAnimated: ["stats"],
-  ServicesShowcase: ["headline"],
+  ServicesShowcase: ["headline", "paragraphs"],
   FeatureBento: ["headline", "items"],
   PortfolioStrip: ["projects"],
   TestimonialFeatured: ["quote", "author"],
@@ -58,9 +63,51 @@ function hasField(obj: Record<string, unknown>, key: string): boolean {
   return true;
 }
 
+function isPlaceholderCopy(text: string): boolean {
+  const t = text.trim().toLowerCase();
+  if (!t) return true;
+  return (
+    /^feature \d+$/.test(t) ||
+    t === "tailored to your needs." ||
+    t === "tailored to your needs" ||
+    t === "details coming soon." ||
+    t === "details coming soon" ||
+    t.includes("lorem ipsum") ||
+    t === "learn more"
+  );
+}
+
+function validateComponentCopy(section: PageCodegenSection): string | null {
+  const name = section.component;
+  const props = section.props;
+
+  if (name === "FeatureBento" && Array.isArray(props.items)) {
+    if (props.items.length < 3) {
+      return `FeatureBento needs at least 3 items with specific titles and descriptions, got ${props.items.length}`;
+    }
+    for (let j = 0; j < props.items.length; j++) {
+      const item = props.items[j] as Record<string, unknown>;
+      const title = String(item.title ?? "");
+      const description = String(item.description ?? "");
+      if (isPlaceholderCopy(title) || isPlaceholderCopy(description)) {
+        return `FeatureBento item ${j + 1} uses placeholder copy — write specific benefits for this business`;
+      }
+    }
+  }
+
+  if (name === "HorizontalGallery" && Array.isArray(props.items)) {
+    if (props.items.length < 3) {
+      return `HorizontalGallery needs at least 3 items, got ${props.items.length}`;
+    }
+  }
+
+  return null;
+}
+
 export function validatePageCodegenPlan(
   plan: PageCodegenPlan,
-  pageSlug: string
+  pageSlug: string,
+  options?: PageCodegenValidateOptions
 ): string | null {
   if (!Array.isArray(plan.sections) || plan.sections.length === 0) {
     return "sections must be a non-empty array";
@@ -84,6 +131,12 @@ export function validatePageCodegenPlan(
     return `home first section must be a hero, got ${first.component}`;
   }
 
+  if (options?.requiredHero && first.component !== options.requiredHero) {
+    return `first section must be ${options.requiredHero}, got ${first.component}`;
+  }
+
+  const avoid = new Set(options?.avoidComponents ?? []);
+
   let conversionCount = 0;
   const seen = new Set<string>();
 
@@ -92,6 +145,9 @@ export function validatePageCodegenPlan(
     const name = section.component?.trim();
     if (!name || !KNOWN_COMPONENTS.has(name)) {
       return `unknown component "${section.component}" — use exact names from the manifest`;
+    }
+    if (avoid.has(name)) {
+      return `component "${name}" is banned on this page — choose a different section type`;
     }
     if (!getTemplateByComponentName(name)) {
       return `component "${name}" is not registered`;
@@ -108,6 +164,11 @@ export function validatePageCodegenPlan(
       if (!hasField(section.props, field)) {
         return `section ${i} (${name}) missing required prop "${field}"`;
       }
+    }
+
+    const copyError = validateComponentCopy(section);
+    if (copyError) {
+      return `section ${i} (${name}): ${copyError}`;
     }
 
     if (CONVERSION_COMPONENT_NAMES.has(name)) {

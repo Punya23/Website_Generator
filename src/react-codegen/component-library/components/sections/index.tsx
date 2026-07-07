@@ -13,6 +13,8 @@ import {
   SectionLabel,
   Stagger,
   StaggerItem,
+  cardGridClassForCount,
+  defaultBentoSpan,
 } from "../primitives";
 import { Media } from "../primitives/Media";
 import { SectionIdProvider } from "../SectionContext";
@@ -224,7 +226,7 @@ export function StatsMarquee(props: { id?: string; label?: string; stats: Array<
     <SectionShell id={props.id} templateId="stats_marquee" mode="band" className="border-y border-border bg-surface/50 py-12">
       <Container>
         {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
-        <Stagger className="card-grid sm:grid-cols-2 lg:grid-cols-4">
+        <Stagger className={cardGridClassForCount(props.stats.length, { maxColumns: 4 })}>
           {props.stats.map((s, i) => (
             <StaggerItem key={i} className="border-l-2 border-accent pl-6">
               <div className="font-display text-4xl font-bold text-accent">{s.value}</div>
@@ -295,6 +297,7 @@ export function FeatureBento(props: {
   headline?: string;
   items: Array<{ title: string; description: string; image?: ImageField; span?: string }>;
 }) {
+  const items = props.items ?? [];
   return (
     <SectionShell id={props.id} templateId="feature_bento" mode="contained" className="py-section">
       <Container>
@@ -304,21 +307,32 @@ export function FeatureBento(props: {
             <DisplayHeading className="mb-10">{props.headline}</DisplayHeading>
           </Reveal>
         ) : null}
-        <Stagger className="card-grid auto-rows-[minmax(180px,auto)] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {props.items.map((item, i) => (
+        <Stagger className={cardGridClassForCount(items.length, { bento: true })}>
+          {items.map((item, i) => {
+            const span = defaultBentoSpan(i, items.length, item.span);
+            return (
             <StaggerItem
               key={i}
-              className={`surface-elevated overflow-hidden rounded-lg p-6 ${
-                item.span === "wide" ? "sm:col-span-2" : item.span === "large" ? "sm:col-span-2 sm:row-span-2 lg:col-span-2 lg:row-span-2" : ""
+              className={`surface-elevated flex h-full flex-col overflow-hidden rounded-xl p-6 sm:p-8 ${
+                span === "wide" ? "sm:col-span-2" : span === "large" ? "sm:col-span-2 sm:row-span-2 lg:col-span-2 lg:row-span-2" : ""
               }`}
             >
               {item.image?.src ? (
-                <Media src={item.image.src!} alt={item.title ?? "Feature image"} className="mb-4 h-32 w-full rounded object-cover" />
+                <div className="section-media mb-5 w-full">
+                  <Media
+                    src={item.image.src!}
+                    alt={item.title ?? "Feature image"}
+                    className={`w-full rounded-lg object-cover ${
+                      span === "large" ? "aspect-[4/3] min-h-[220px]" : "aspect-[16/10] min-h-[180px]"
+                    }`}
+                  />
+                </div>
               ) : null}
-              <h3 className="font-display text-lg font-semibold">{item.title}</h3>
-              <p className="mt-2 text-sm text-muted">{item.description}</p>
+              <h3 className="font-display text-xl font-semibold">{item.title}</h3>
+              <p className="mt-3 flex-1 text-base leading-relaxed text-muted">{item.description}</p>
             </StaggerItem>
-          ))}
+            );
+          })}
         </Stagger>
       </Container>
     </SectionShell>
@@ -340,7 +354,7 @@ export function PortfolioStrip(props: {
             <DisplayHeading className="mb-10">{props.headline}</DisplayHeading>
           </Reveal>
         ) : null}
-        <Stagger className="card-grid sm:grid-cols-2 lg:grid-cols-3">
+        <Stagger className={cardGridClassForCount(props.projects.length)}>
           {props.projects.map((p, i) => (
             <StaggerItem key={i} className="group">
               <MonoTag>{String(i + 1).padStart(2, "0")}</MonoTag>
@@ -409,7 +423,7 @@ export function PricingTiers(props: {
             <DisplayHeading className="mb-10 text-center">{props.headline}</DisplayHeading>
           </Reveal>
         ) : null}
-        <Stagger className="card-grid sm:grid-cols-2 lg:grid-cols-3">
+        <Stagger className={cardGridClassForCount(props.tiers.length)}>
           {props.tiers.map((tier, i) => (
             <StaggerItem
               key={i}
@@ -749,7 +763,7 @@ export function TeamGrid(props: {
             <DisplayHeading className="mb-10">{props.headline}</DisplayHeading>
           </Reveal>
         ) : null}
-        <Stagger className="card-grid sm:grid-cols-2 lg:grid-cols-3">
+        <Stagger className={cardGridClassForCount(props.members.length)}>
           {props.members.map((m, i) => (
             <StaggerItem key={i}>
               {m.image?.src ? (

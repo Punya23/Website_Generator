@@ -249,7 +249,7 @@ export function HorizontalGallery(props: {
           {props.items.map((item, i) => (
             <div
               key={i}
-              className="w-[min(85vw,380px)] shrink-0 snap-center overflow-hidden rounded-2xl border border-border bg-surface shadow-lg"
+              className="w-[min(88vw,420px)] shrink-0 snap-center overflow-hidden rounded-2xl border border-border bg-surface shadow-lg"
             >
               {item.image?.src ? (
                 <img src={item.image.src} alt={item.title} className="aspect-[4/3] w-full object-cover" />

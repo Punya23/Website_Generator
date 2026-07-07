@@ -31,7 +31,13 @@ describe("enforceProfileCoherence", () => {
     const theme = {
       ...GENERIC_THEME,
       pageTone: "dark" as const,
-      colors: { ...GENERIC_THEME.colors },
+      colors: {
+        ...GENERIC_THEME.colors,
+        bg: "#0a0a0a",
+        surface: "#141414",
+        text: "#fafafa",
+        muted: "#a3a3a3",
+      },
     };
 
     const fixed = enforceProfileCoherence(theme, {

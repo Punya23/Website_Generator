@@ -38,6 +38,22 @@ export function repairTemplateProps(
   switch (templateId) {
     case "services_showcase": {
       let paragraphs = coerceToStringArray(out.paragraphs);
+      if (!paragraphs?.length && Array.isArray(out.services)) {
+        paragraphs = out.services
+          .map((s) => {
+            if (typeof s === "string") return s.trim();
+            if (!s || typeof s !== "object" || Array.isArray(s)) return null;
+            const row = s as Record<string, unknown>;
+            const title = coerceToString(row.title) ?? coerceToString(row.name);
+            const desc =
+              coerceToString(row.description) ??
+              coerceToString(row.body) ??
+              coerceToString(row.text);
+            if (title && desc) return `${title} — ${desc}`;
+            return desc ?? title;
+          })
+          .filter((p): p is string => Boolean(p));
+      }
       if (!paragraphs?.length) {
         const fallback =
           coerceToString(out.body) ??
@@ -52,6 +68,7 @@ export function repairTemplateProps(
       delete out.subcopy;
       delete out.description;
       delete out.text;
+      delete out.services;
       if (out.image === undefined || out.image === null) out.image = {};
       break;
     }
@@ -76,7 +93,7 @@ export function repairTemplateProps(
         .map((s) => {
           const row = s as Record<string, unknown>;
           return {
-            value: coerceToString(row.value) ?? "—",
+            value: coerceToString(row.value) ?? coerceToString(row.number) ?? "—",
             label: coerceToString(row.label) ?? "Metric",
           };
         });
@@ -190,10 +207,10 @@ export function repairTemplateProps(
             ...(row.image ? { image: row.image } : {}),
           };
         });
-      out.items = padArrayToMin(items, 2, (i) => ({
-        title: `Feature ${i + 1}`,
-        description: "Tailored to your needs.",
-        span: "normal",
+      out.items = padArrayToMin(items, 3, (i) => ({
+        title: `Offering ${i + 1}`,
+        description: "Describe a concrete benefit for this business.",
+        span: i === 0 ? "wide" : "normal",
       }));
       break;
     }

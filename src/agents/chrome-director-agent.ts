@@ -34,10 +34,9 @@ Footer rules:
 - showMood: true for fashion/editorial, false for corporate
 
 Nav rules:
-- compactOnScroll: true for glass/solid nav treatments
-- shadowOnScroll: true when design feels elevated
-- luxury-dark: include announcement bar; clinical-light: omit announcement (trust-first, minimal chrome)
-- luxury-dark / editorial-light: grainOverlay true in immersive; clinical/corporate: grainOverlay false
+- compactOnScroll and shadowOnScroll: only when they genuinely fit the brand — default off for minimal sites
+- Do NOT add announcement, newsletter, or sticky mobile CTA unless the brief demands it
+- grainOverlay and smoothScroll: default false — opt in only for immersive editorial brands
 
 Output JSON only:
 {
@@ -47,9 +46,10 @@ Output JSON only:
     "linkGroups": [{ "label": "Explore", "slugs": ["home", "services"] }],
     "ctaLabel": "...",
     "ctaHref": "/contact",
-    "showMood": true
+    "showMood": false
   },
-  "nav": { "compactOnScroll": true, "shadowOnScroll": true }
+  "nav": { "compactOnScroll": false, "shadowOnScroll": false },
+  "immersive": { "smoothScroll": false, "grainOverlay": false }
 }`;
 
 function mockChromeSpec(ctx: SiteContext, blueprints: PageBlueprint[]): ChromeSpec {
@@ -75,40 +75,39 @@ function mockChromeSpec(ctx: SiteContext, blueprints: PageBlueprint[]): ChromeSp
       showMood: Boolean(isEditorial || isLuxuryDark),
     },
     nav: {
-      compactOnScroll: ctx.designSystem.navTreatment !== "minimal",
-      shadowOnScroll: true,
+      compactOnScroll: false,
+      shadowOnScroll: false,
     },
-    announcement: isLuxuryDark
-      ? {
-          message: ctx.expandedBrief.secondaryCta ?? ctx.expandedBrief.tagline,
-          href: "/contact",
-        }
-      : undefined,
+    announcement: undefined,
     stickyMobileCta: undefined,
     newsletter: undefined,
     immersive: {
-      smoothScroll: true,
-      grainOverlay: ctx.verticalProfile?.grainOverlay ?? (isEditorial || isLuxuryDark),
+      smoothScroll: false,
+      grainOverlay: false,
     },
   };
 }
 
-function mergeChromeProfileDefaults(
-  spec: ChromeSpec,
-  ctx: SiteContext,
-  blueprints: PageBlueprint[]
-): ChromeSpec {
-  const defaults = mockChromeSpec(ctx, blueprints);
-  return ChromeSpecSchema.parse({
-    ...defaults,
-    ...spec,
-    footer: { ...defaults.footer, ...spec.footer },
-    nav: { ...defaults.nav, ...spec.nav },
-    announcement: spec.announcement,
-    stickyMobileCta: spec.stickyMobileCta,
-    newsletter: spec.newsletter,
-    immersive: { ...defaults.immersive, ...spec.immersive },
-  });
+function mergeChromeProfileDefaults(spec: ChromeSpec): ChromeSpec {
+  const parsed = ChromeSpecSchema.parse(spec);
+  return {
+    ...parsed,
+    immersive: {
+      smoothScroll: parsed.immersive?.smoothScroll ?? false,
+      grainOverlay: parsed.immersive?.grainOverlay ?? false,
+    },
+    nav: {
+      compactOnScroll: parsed.nav?.compactOnScroll ?? false,
+      shadowOnScroll: parsed.nav?.shadowOnScroll ?? false,
+    },
+    footer: {
+      ...parsed.footer,
+      showMood: parsed.footer.showMood ?? false,
+    },
+    announcement: parsed.announcement,
+    stickyMobileCta: parsed.stickyMobileCta,
+    newsletter: parsed.newsletter,
+  };
 }
 
 export async function directChromeSpec(
@@ -148,9 +147,7 @@ ${pages}`,
       );
 
       const spec = mergeChromeProfileDefaults(
-        validateAgentOutput(CHROME_CONTRACT, parseLlmJson(raw)),
-        ctx,
-        blueprints
+        validateAgentOutput(CHROME_CONTRACT, parseLlmJson(raw))
       );
       pipelineLog(`[pipeline] Chrome director: footer ${spec.footer.layout}`);
       return spec;

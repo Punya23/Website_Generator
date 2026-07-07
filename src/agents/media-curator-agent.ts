@@ -223,16 +223,15 @@ export async function enrichPropsImages(
   pageSlug: string,
   registry: MediaRegistry
 ): Promise<Record<string, unknown>> {
-  const enriched = await enrichTemplateImages(
+  return enrichTemplateImages(
     templateId,
-    {},
+    { ...props },
     ctx,
     sectionId,
     pageSlug,
     registry,
     props
   );
-  return { ...props, ...enriched };
 }
 
 async function enrichTemplateImages(
@@ -258,7 +257,7 @@ async function enrichTemplateImages(
     if (!field || typeof field !== "object") return;
     const img = field as Record<string, unknown>;
     if (img.src && String(img.src).startsWith("https://")) return;
-    const q = String(img.imageQuery ?? query);
+    const q = String(img.imageQuery ?? img.alt ?? query).trim() || query;
     const cacheKey = `${sectionId}-${key}-${ctx.variationSeed ?? 0}`;
     const src = await resolveUniqueImage(
       `${brief} ${business} ${q}`,
@@ -272,6 +271,26 @@ async function enrichTemplateImages(
       vertical
     );
     obj[key] = { ...img, src, alt: img.alt ?? query };
+  }
+
+  async function enrichFlatGalleryImage(
+    img: Record<string, unknown>,
+    index: number
+  ): Promise<Record<string, unknown>> {
+    if (img.src && String(img.src).startsWith("https://")) return img;
+    const label = String(img.alt ?? img.caption ?? `gallery ${index + 1}`);
+    const src = await resolveUniqueImage(
+      `${brief} ${business} ${label}`,
+      `${sectionId}-gallery-${index}-${ctx.variationSeed ?? 0}`,
+      registry,
+      sectionId,
+      sectionId,
+      pageSlug,
+      1000,
+      1200,
+      vertical
+    );
+    return { ...img, src, alt: img.alt ?? label };
   }
 
   const specs = TEMPLATE_IMAGE_FIELDS[templateId] ?? [];
@@ -328,21 +347,7 @@ async function enrichTemplateImages(
   if (templateId === "gallery_masonry" && Array.isArray(out.images)) {
     const images = [...(out.images as Record<string, unknown>[])];
     for (let i = 0; i < images.length; i++) {
-      const img = { ...images[i]! };
-      if (!img.src) {
-        const src = await resolveUniqueImage(
-          `${brief} ${business} gallery`,
-          `${sectionId}-img-${i}-${ctx.variationSeed ?? 0}`,
-          registry,
-          sectionId,
-          sectionId,
-          pageSlug,
-          1000,
-          1200,
-          vertical
-        );
-        images[i] = { ...img, src, alt: img.alt ?? img.caption ?? "Gallery image" };
-      }
+      images[i] = await enrichFlatGalleryImage(images[i]!, i);
     }
     out.images = images;
   }

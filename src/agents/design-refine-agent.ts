@@ -18,22 +18,16 @@ FORBIDDEN: Do not change profileId semantics — luxury-dark stays dark bg; clin
 Preserve brand mood, fonts, and vertical — only adjust colors and semantic tokens when contrast fails.
 
 Rules:
-- If pageTone is light and nav is unreadable or glass-light on white → use glass-dark + dark-tinted navBg rgba(8,10,16,0.75) + light navText
-- navText/navMuted must contrast against effective nav (blend navBg over page bg mentally)
+- Fix illegible navigation and body contrast only — do not impose glass, grain, or template chrome
+- Preserve the LLM-chosen navTreatment unless contrast truly fails
+- navText/navMuted must contrast against effective nav
 - gradientFrom/gradientTo must work with white text on CTA bands
 - Do not flip a dark luxury palette to light or a clinical palette to charcoal
 
 Output the full corrected SiteTheme JSON only — same schema as input.`;
 
 function mockRefine(theme: SiteTheme): SiteTheme {
-  const out = { ...theme, colors: { ...theme.colors } };
-  if (out.pageTone === "light" && out.navTreatment === "glass-light") {
-    out.navTreatment = "glass-dark";
-    out.colors.navBg = "rgba(12,14,20,0.78)";
-    out.colors.navText = "#f8fafc";
-    out.colors.navMuted = "#cbd5e1";
-  }
-  return out;
+  return theme;
 }
 
 export async function refineDesignSystem(

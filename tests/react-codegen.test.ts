@@ -97,6 +97,80 @@ describe("react codegen", () => {
     expect(homePage).not.toContain('{"id"');
   });
 
+  it("normalizes LLM-shaped props when writing page tsx", async () => {
+    const brief = {
+      businessName: "Linea Studio",
+      tagline: "Architecture",
+      elevatorPitch: "Passive House studio",
+      expandedBrief: "Architecture studio.",
+      targetAudience: "Homeowners",
+      services: ["Design"],
+      differentiators: ["Efficiency"],
+      tone: "Refined",
+      primaryCta: "Book consultation",
+    };
+    const sitePlan = mockPlan(brief);
+    const ctx = initSiteContext("Architecture", brief, sitePlan, {
+      vertical: "architecture",
+      mood: "editorial",
+      fontHeading: "Inter",
+      fontBody: "Inter",
+      colors: {
+        bg: "#fafafa",
+        surface: "#fff",
+        text: "#111",
+        muted: "#666",
+        accent: "#c45c26",
+        accentSoft: "#fff7ed",
+        gradientFrom: "#c45c26",
+        gradientTo: "#e85d04",
+        navBg: "#fff",
+        navText: "#111",
+        navMuted: "#666",
+        navActiveBg: "#c45c26",
+        navActiveText: "#fff",
+      },
+    });
+
+    ctx.reactPages = {
+      home: {
+        slug: "home",
+        title: "Home",
+        sections: [
+          {
+            id: "home_services",
+            templateId: "services_showcase",
+            intent: "Services",
+            props: {
+              headline: "What we do",
+              services: [
+                { title: "Design", description: "Full service design." },
+                { title: "Build", description: "Certified construction." },
+              ],
+            },
+          },
+          {
+            id: "home_contact",
+            templateId: "contact_split",
+            intent: "Contact",
+            props: {
+              headline: "Get in touch",
+              formFields: ["Name", "Email"],
+              contactInfo: { email: "hello@linea.com", phone: "555-0100" },
+            },
+          },
+        ],
+      },
+    };
+
+    const { projectPath } = await generateReactProject(ctx, ctx.reactPages, OUT);
+    const homePage = await fs.readFile(path.join(projectPath, "app", "page.tsx"), "utf8");
+    expect(homePage).toContain('"paragraphs"');
+    expect(homePage).not.toContain('"services"');
+    expect(homePage).not.toContain('"contactInfo"');
+    expect(homePage).toContain('"type":"email"');
+  });
+
   it("writes layout.tsx with typed motion plan for Next build", async () => {
     const brief = {
       businessName: "Linea Studio",

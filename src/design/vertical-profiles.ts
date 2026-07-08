@@ -9,10 +9,14 @@ export type VerticalProfileId =
   | "editorial-light"
   | "warm-consumer";
 
+export type NavShapeHint = "full-width" | "floating-capsule" | "floating-panel" | "split-inline";
+
 export interface VerticalDesignProfile {
   profileId: VerticalProfileId;
   pageTone: "light" | "dark" | "warm" | "cool";
   navTreatment: "glass-dark" | "glass-light" | "solid" | "minimal";
+  /** A prior for nav-surface-agent, not a forced choice — the LLM can and should override it. */
+  navShape: NavShapeHint;
   motionPreset: MotionPreset;
   heroBias: string;
   blueprintFamily: string;
@@ -96,6 +100,7 @@ function profileDefaults(
       profileId: "luxury-dark",
       pageTone: "dark",
       navTreatment: "solid",
+      navShape: "floating-capsule",
       motionPreset: "parallax-hero",
       heroBias: "hero_spotlight",
       blueprintFamily: "luxury-dark",
@@ -112,6 +117,7 @@ function profileDefaults(
       profileId: "clinical-light",
       pageTone: "light",
       navTreatment: "solid",
+      navShape: "full-width",
       motionPreset: "fade-up",
       heroBias: "hero_split_cinematic",
       blueprintFamily: "clinical-light",
@@ -128,6 +134,7 @@ function profileDefaults(
       profileId: "corporate-light",
       pageTone: "cool",
       navTreatment: "solid",
+      navShape: "full-width",
       motionPreset: "fade-up",
       heroBias: "hero_editorial",
       blueprintFamily: "corporate-light",
@@ -144,6 +151,7 @@ function profileDefaults(
       profileId: "editorial-light",
       pageTone: "warm",
       navTreatment: "minimal",
+      navShape: "split-inline",
       motionPreset: "stagger",
       heroBias: "hero_spotlight",
       blueprintFamily: "editorial-light",
@@ -160,6 +168,7 @@ function profileDefaults(
       profileId: "warm-consumer",
       pageTone: "warm",
       navTreatment: "solid",
+      navShape: "floating-panel",
       motionPreset: "stagger",
       heroBias: "hero_video",
       blueprintFamily: "warm-consumer",
@@ -279,6 +288,7 @@ export function mockPaletteForProfile(
 export function mockNavForProfile(profile: VerticalDesignProfile): {
   pageTone: VerticalDesignProfile["pageTone"];
   navTreatment: VerticalDesignProfile["navTreatment"];
+  navShape: VerticalDesignProfile["navShape"];
   surfaces: { default: string; elevated: string; none: string };
   colors: {
     navBg: string;
@@ -292,6 +302,7 @@ export function mockNavForProfile(profile: VerticalDesignProfile): {
   return {
     pageTone: profile.pageTone,
     navTreatment: profile.navTreatment,
+    navShape: profile.navShape,
     surfaces: {
       default: dark ? "subtle elevation on cards" : "none",
       elevated: "pricing and testimonial panels",

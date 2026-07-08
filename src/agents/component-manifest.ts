@@ -18,11 +18,11 @@ export interface ComponentManifestEntry {
 
 const WHEN_TO_USE: Partial<Record<string, string>> = {
   HeroSpotlight:
-    "Premium opening hero — spotlight mesh gradient, strong headline. Prefer for luxury/editorial brands.",
+    "Optional interactive hero — only when the brief wants motion/spotlight FX. Prefer HeroEditorial or HeroSplitCinematic for most brands.",
   HeroEditorial:
-    "Editorial hero with optional side image. Good for studios, agencies, fashion.",
+    "Editorial hero with optional side image. Prefer as the default for studios, agencies, fashion, wellness.",
   HeroSplitCinematic:
-    "Split hero with headline + body copy and cinematic media. Strong for services and B2B.",
+    "Split hero with headline + body copy and cinematic media. Strong default for services and B2B.",
   HeroVideo:
     "Video or poster hero for immersive brands with motion-forward storytelling.",
   IntroStatement:

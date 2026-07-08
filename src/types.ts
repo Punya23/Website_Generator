@@ -185,6 +185,16 @@ export type ReactPage = z.infer<typeof ReactPageSchema>;
 
 export const PageToneSchema = z.enum(["light", "dark", "warm", "cool"]);
 export const NavTreatmentSchema = z.enum(["glass-dark", "glass-light", "solid", "minimal"]);
+/**
+ * The physical shape/layout of the nav bar. This is an LLM design decision (nav-surface-agent),
+ * not a hardcoded rotation — see NAV_SURFACE_PROMPT for the design language given to the model.
+ */
+export const NavShapeSchema = z.enum([
+  "full-width",
+  "floating-capsule",
+  "floating-panel",
+  "split-inline",
+]);
 export const GradientMoodSchema = z.enum(["subtle", "vivid", "monochrome"]);
 export const AccentRoleSchema = z.enum(["sparing", "hero", "editorial"]);
 
@@ -225,6 +235,7 @@ export type TypographyPartial = z.infer<typeof TypographyPartialSchema>;
 export const NavSurfacePartialSchema = z.object({
   pageTone: PageToneSchema.optional(),
   navTreatment: NavTreatmentSchema.optional(),
+  navShape: NavShapeSchema.optional(),
   surfaces: SurfaceModesSchema.optional(),
   colors: z.object({
     navBg: z.string(),
@@ -246,6 +257,7 @@ export const SiteThemeSchema = z.object({
   motionPreset: MotionPresetSchema.optional(),
   pageTone: PageToneSchema.optional(),
   navTreatment: NavTreatmentSchema.optional(),
+  navShape: NavShapeSchema.optional(),
   gradientMood: GradientMoodSchema.optional(),
   accentRole: AccentRoleSchema.optional(),
   layout: ThemeLayoutSchema.optional(),

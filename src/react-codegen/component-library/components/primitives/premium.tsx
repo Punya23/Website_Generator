@@ -60,16 +60,19 @@ export function GlassPanel({
   children,
   className = "",
   id,
+  variant = "glass",
 }: {
   children: ReactNode;
   className?: string;
   id?: string;
+  variant?: "glass" | "solid";
 }) {
+  const surface =
+    variant === "solid"
+      ? "rounded-[var(--radius)] border border-border bg-surface p-6 shadow-[var(--shadow)]"
+      : "rounded-[var(--radius)] border border-white/10 bg-white/5 p-6 shadow-[var(--shadow)] backdrop-blur-md";
   return (
-    <div
-      id={id}
-      className={`rounded-[var(--radius)] border border-white/10 bg-white/5 p-6 shadow-[var(--shadow)] backdrop-blur-md ${className}`}
-    >
+    <div id={id} className={`${surface} ${className}`}>
       {children}
     </div>
   );
@@ -79,17 +82,23 @@ export function NoiseGradientBg({
   children,
   className = "",
   strong = false,
+  mesh = true,
+  grain = true,
   id,
 }: {
   children?: ReactNode;
   className?: string;
   strong?: boolean;
+  mesh?: boolean;
+  grain?: boolean;
   id?: string;
 }) {
   return (
     <div id={id} className={`relative overflow-hidden ${className}`}>
-      <div className={`absolute inset-0 mesh-gradient ${strong ? "opacity-100" : "opacity-70"}`} aria-hidden />
-      <div className="grain-overlay absolute inset-0" aria-hidden />
+      {mesh ? (
+        <div className={`absolute inset-0 mesh-gradient ${strong ? "opacity-100" : "opacity-70"}`} aria-hidden />
+      ) : null}
+      {grain ? <div className="grain-overlay absolute inset-0" aria-hidden /> : null}
       {children ? <div className="relative z-10">{children}</div> : null}
     </div>
   );

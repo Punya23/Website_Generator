@@ -48,6 +48,7 @@ export function mergeDesignSystem(input: DesignCouncilInput): SiteTheme {
     motionPreset: verticalProfile?.motionPreset ?? resolveMotionPreset(motionStyle, brief.tone),
     pageTone,
     navTreatment: navSurface.navTreatment ?? verticalProfile?.navTreatment,
+    navShape: navSurface.navShape ?? verticalProfile?.navShape,
     gradientMood: palette.gradientMood,
     accentRole: palette.accentRole,
     sectionGapMode: typography.sectionGapMode,

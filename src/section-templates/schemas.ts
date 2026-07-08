@@ -13,6 +13,10 @@ const layoutFields = {
   mediaPosition: z.enum(["background", "left", "right"]).optional(),
 };
 
+/** Site-wide FX stamp — injected by pipeline, not LLM. clean|editorial = no cursor blur. */
+export const VisualFxSchema = z.enum(["clean", "editorial", "spotlight", "glass"]);
+const visualFxField = { visualFx: VisualFxSchema.optional() };
+
 /** LLMs sometimes return imageQuery as an array of keywords — coerce to one search string. */
 export function coerceImageQuery(val: unknown): string | undefined {
   return coerceToString(val);
@@ -328,6 +332,7 @@ export const HeroSpotlightPropsSchema = z.object({
   image: imageField,
   cta: ctaField.optional(),
   ...layoutFields,
+  ...visualFxField,
 });
 
 export const ScrollShowcasePropsSchema = z.object({
@@ -346,6 +351,7 @@ export const ScrollShowcasePropsSchema = z.object({
     .optional(),
   image: imageField.optional(),
   cta: ctaField.optional(),
+  ...visualFxField,
 });
 
 export const HorizontalGalleryPropsSchema = z.object({

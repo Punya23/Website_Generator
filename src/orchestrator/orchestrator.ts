@@ -288,6 +288,7 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     profileId: verticalProfile.profileId,
     pageTone: verticalProfile.pageTone,
     navTreatment: verticalProfile.navTreatment,
+    navShape: verticalProfile.navShape,
     motionPreset: verticalProfile.motionPreset,
   };
   designSystem = await refineDesignSystem(

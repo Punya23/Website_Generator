@@ -20,6 +20,7 @@ describe("enforceProfileCoherence", () => {
       profileId: "luxury-dark",
       pageTone: "dark",
       navTreatment: "glass-light",
+      navShape: "floating-capsule",
       motionPreset: "parallax-hero",
     });
 
@@ -44,6 +45,7 @@ describe("enforceProfileCoherence", () => {
       profileId: "clinical-light",
       pageTone: "light",
       navTreatment: "glass-dark",
+      navShape: "full-width",
       motionPreset: "fade-up",
     });
 

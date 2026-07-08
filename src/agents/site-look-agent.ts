@@ -17,13 +17,20 @@ export interface SiteLookProfile {
   preferredTemplateIds: string[];
 }
 
-const SITE_LOOK_PROMPT = `You are an award-winning web art director briefing a design team. Given a business brief, invent a distinctive visual/layout direction for its marketing site — Framer/Awwwards-grade, not a generic SaaS template. Then choose which section types from the catalog best express that direction.
+const SITE_LOOK_PROMPT = `You are an award-winning web art director briefing a design team. Given a business brief, invent a distinctive visual/layout direction for its marketing site — not a repeating Framer kit.
+
+AVOID as the default look (only pick them when the brief truly wants them):
+- Cursor-following radial spotlight / mesh gradient heroes
+- Frosted glass panels and heavy backdrop blur
+- The same "premium dark luxury" package every time
+
+Prefer directions that feel specific to THIS business: editorial type, image-led, dense product bento, warm solid surfaces, cinema stills, print-like typography, etc.
 
 Respond with JSON only:
 {
-  "layoutArchetype": "short label for the direction, e.g. 'cinematic scroll editorial', 'dense bento product tour', 'motion-forward marquee brand'",
-  "toneKeywords": ["3-5 words describing the visual mood"],
-  "preferredComponents": ["8-12 exact component names from the catalog that fit this direction"]
+  "layoutArchetype": "short label for the direction, e.g. 'image-led warm editorial', 'dense bento product tour', 'solid-surface wellness studio'",
+  "toneKeywords": ["3-5 words describing the visual mood — avoid generic 'premium luxury glass blur'"],
+  "preferredComponents": ["8-12 exact component names from the catalog that fit this direction — do NOT always lead with HeroSpotlight"]
 }`;
 
 function catalogForPrompt(): string {

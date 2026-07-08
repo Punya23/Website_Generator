@@ -5,6 +5,7 @@ import {
   Container,
   DisplayHeading,
   MagneticButton,
+  PrimaryButton,
   MonoTag,
   Reveal,
   HeroReveal,
@@ -21,9 +22,11 @@ import {
   TextScrub,
 } from "../primitives/premium";
 import { SectionIdProvider } from "../SectionContext";
+import type { ReactNode } from "react";
 
 type ImageField = { src?: string; alt?: string };
 type CtaField = { label: string; href?: string };
+type VisualFx = "clean" | "editorial" | "spotlight" | "glass";
 
 function PremiumShell({
   id,
@@ -79,6 +82,61 @@ function HeroMedia({
   );
 }
 
+function resolveFx(raw?: string): VisualFx {
+  if (raw === "editorial" || raw === "spotlight" || raw === "glass" || raw === "clean") return raw;
+  return "clean";
+}
+
+function HeroCta({ cta, fx }: { cta: CtaField; fx: VisualFx }) {
+  const href = cta.href ?? "/contact";
+  const className = "bg-accent px-8 py-3 text-sm font-semibold text-white";
+  if (fx === "spotlight" || fx === "glass") {
+    return (
+      <MagneticButton href={href} className={className}>
+        {cta.label}
+      </MagneticButton>
+    );
+  }
+  return <PrimaryButton href={href}>{cta.label}</PrimaryButton>;
+}
+
+function HeroAtmosphere({
+  fx,
+  children,
+}: {
+  fx: VisualFx;
+  children: ReactNode;
+}) {
+  if (fx === "spotlight") {
+    return (
+      <NoiseGradientBg strong mesh grain className="absolute inset-0">
+        <CursorSpotlight className="w-full" intensity={0.42}>
+          {children}
+        </CursorSpotlight>
+      </NoiseGradientBg>
+    );
+  }
+  if (fx === "glass") {
+    return (
+      <NoiseGradientBg strong mesh grain={false} className="absolute inset-0">
+        {children}
+      </NoiseGradientBg>
+    );
+  }
+  if (fx === "editorial") {
+    return (
+      <div className="absolute inset-0 bg-bg">
+        <div className="relative z-10">{children}</div>
+      </div>
+    );
+  }
+  return (
+    <div className="absolute inset-0 bg-bg">
+      <div className="relative z-10">{children}</div>
+    </div>
+  );
+}
+
 export function HeroSpotlight(props: {
   id?: string;
   label?: string;
@@ -89,7 +147,9 @@ export function HeroSpotlight(props: {
   layoutVariant?: string;
   density?: "airy" | "normal" | "compact";
   mediaPosition?: "background" | "left" | "right";
+  visualFx?: VisualFx;
 }) {
+  const fx = resolveFx(props.visualFx);
   const rawVariant = props.layoutVariant ?? "full-bleed-left";
   const variant =
     rawVariant === "split-offset" || rawVariant === "default" ? "full-bleed-left" : rawVariant;
@@ -97,26 +157,22 @@ export function HeroSpotlight(props: {
     props.density === "compact" ? "py-12 md:py-16" : props.density === "airy" ? "py-20 md:py-28" : "py-16 md:py-24";
   const reduce = useReducedMotion();
   const imageRight = props.mediaPosition !== "left";
+  const useSplitReveal = !reduce && (fx === "spotlight" || fx === "glass");
 
   const copyBlock = (
     <HeroReveal>
       {props.label ? <MonoTag>{props.label}</MonoTag> : null}
-      {reduce ? (
+      {useSplitReveal ? (
+        <SplitRevealHeading text={props.headline} as="h1" className="mt-4 max-w-2xl" />
+      ) : (
         <DisplayHeading as="h1" className="mt-4 max-w-2xl">
           {props.headline}
         </DisplayHeading>
-      ) : (
-        <SplitRevealHeading text={props.headline} as="h1" className="mt-4 max-w-2xl" />
       )}
       {props.subcopy ? <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted">{props.subcopy}</p> : null}
       {props.cta ? (
         <div className="mt-8">
-          <MagneticButton
-            href={props.cta.href ?? "/contact"}
-            className="bg-accent px-8 py-3 text-sm font-semibold text-white"
-          >
-            {props.cta.label}
-          </MagneticButton>
+          <HeroCta cta={props.cta} fx={fx} />
         </div>
       ) : null}
     </HeroReveal>
@@ -131,18 +187,16 @@ export function HeroSpotlight(props: {
         layoutVariant={variant}
         className="relative overflow-hidden bg-bg"
       >
-        <NoiseGradientBg strong className="absolute inset-0">
-          <CursorSpotlight className="w-full" intensity={0.42}>
-            <Container className={`${padY} text-center`}>
-              <div className="mx-auto max-w-3xl">{copyBlock}</div>
-              <div className="mx-auto mt-10 w-full max-w-md">
-                <Reveal delay={0.08}>
-                  <HeroMedia image={props.image} headline={props.headline} className="aspect-square max-h-[420px]" />
-                </Reveal>
-              </div>
-            </Container>
-          </CursorSpotlight>
-        </NoiseGradientBg>
+        <HeroAtmosphere fx={fx}>
+          <Container className={`${padY} text-center`}>
+            <div className="mx-auto max-w-3xl">{copyBlock}</div>
+            <div className="mx-auto mt-10 w-full max-w-md">
+              <Reveal delay={0.08}>
+                <HeroMedia image={props.image} headline={props.headline} className="aspect-square max-h-[420px]" />
+              </Reveal>
+            </div>
+          </Container>
+        </HeroAtmosphere>
       </PremiumShell>
     );
   }
@@ -155,21 +209,19 @@ export function HeroSpotlight(props: {
       layoutVariant={variant}
       className="relative overflow-hidden bg-bg"
     >
-      <NoiseGradientBg strong className="absolute inset-0">
-        <CursorSpotlight className="w-full" intensity={0.42}>
-          <Container className={padY}>
-            <SplitHeroLayout
-              mediaRight={imageRight}
-              copy={copyBlock}
-              media={
-                <Reveal delay={0.08}>
-                  <HeroMedia image={props.image} headline={props.headline} />
-                </Reveal>
-              }
-            />
-          </Container>
-        </CursorSpotlight>
-      </NoiseGradientBg>
+      <HeroAtmosphere fx={fx}>
+        <Container className={padY}>
+          <SplitHeroLayout
+            mediaRight={imageRight}
+            copy={copyBlock}
+            media={
+              <Reveal delay={0.08}>
+                <HeroMedia image={props.image} headline={props.headline} />
+              </Reveal>
+            }
+          />
+        </Container>
+      </HeroAtmosphere>
     </PremiumShell>
   );
 }
@@ -182,7 +234,10 @@ export function ScrollShowcase(props: {
   steps?: Array<{ title: string; description: string }>;
   image?: ImageField;
   cta?: CtaField;
+  visualFx?: VisualFx;
 }) {
+  const fx = resolveFx(props.visualFx);
+  const panelVariant = fx === "glass" || fx === "spotlight" ? "glass" : "solid";
   const steps = props.steps ?? [];
   const media = props.image?.src ? (
     <img
@@ -206,7 +261,7 @@ export function ScrollShowcase(props: {
             {props.body ? <TextScrub text={props.body} className="mt-6 max-w-lg text-lg text-muted" /> : null}
             <div className="mt-10 space-y-6">
               {steps.map((step, i) => (
-                <GlassPanel key={i} className="border-border/40 bg-surface/80">
+                <GlassPanel key={i} variant={panelVariant} className="border-border/40 bg-surface/80">
                   <p className="font-mono text-xs uppercase tracking-widest text-accent">0{i + 1}</p>
                   <h3 className="mt-2 font-display text-xl">{step.title}</h3>
                   <p className="mt-2 text-sm text-muted">{step.description}</p>
@@ -215,12 +270,16 @@ export function ScrollShowcase(props: {
             </div>
             {props.cta ? (
               <div className="mt-8">
-                <MagneticButton
-                  href={props.cta.href ?? "/contact"}
-                  className="bg-accent px-6 py-3 text-sm font-semibold text-white"
-                >
-                  {props.cta.label}
-                </MagneticButton>
+                {fx === "spotlight" || fx === "glass" ? (
+                  <MagneticButton
+                    href={props.cta.href ?? "/contact"}
+                    className="bg-accent px-6 py-3 text-sm font-semibold text-white"
+                  >
+                    {props.cta.label}
+                  </MagneticButton>
+                ) : (
+                  <PrimaryButton href={props.cta.href ?? "/contact"}>{props.cta.label}</PrimaryButton>
+                )}
               </div>
             ) : null}
           </div>

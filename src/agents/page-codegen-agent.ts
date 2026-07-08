@@ -33,6 +33,7 @@ RULES:
 - Inner pages: 3–5 sections; when a hero is assigned, open with that hero
 - At most ONE conversion closer per page: CtaBand OR FooterCta OR NewsletterBand (not multiple)
 - Do NOT default to FaqAccordion, HeroSpotlight, or StatsMarquee unless the composition hint assigns them
+- Prefer HeroEditorial / HeroSplitCinematic over HeroSpotlight — spotlight FX are opt-in, not the house style
 - FeatureBento: 3–6 items with specific titles and descriptions for THIS business; set span "wide" or "large" on at least one item
 - Do NOT add newsletter, announcement, or generic "Ready to get started?" filler — write specific copy for THIS business
 - Vary section types — avoid repeating the same component twice on this page

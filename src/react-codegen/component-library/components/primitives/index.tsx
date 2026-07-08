@@ -282,3 +282,4 @@ export {
   cardGridClassForCount,
   defaultBentoSpan,
 } from "./layout";
+export { navShapeStyle, isNavShape, type NavShape } from "./nav-shape";

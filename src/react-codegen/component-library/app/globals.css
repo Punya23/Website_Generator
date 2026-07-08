@@ -36,32 +36,44 @@
   }
 }
 
-/* Token-driven nav treatments — set via data-nav-treatment on body */
-[data-nav-treatment="glass-dark"] .site-nav,
-[data-nav-treatment="glass-light"] .site-nav {
+/* Token-driven nav treatments — set via data-nav-treatment on body.
+   Applies to .nav-surface, the element that actually carries the nav
+   background (the whole bar for full-width, or the floating pill/panel
+   for floating-capsule / floating-panel / split-inline shapes). */
+[data-nav-treatment="glass-dark"] .nav-surface,
+[data-nav-treatment="glass-light"] .nav-surface {
   background: var(--color-nav);
   backdrop-filter: blur(var(--nav-blur));
   -webkit-backdrop-filter: blur(var(--nav-blur));
 }
 
-[data-nav-treatment="solid"] .site-nav {
+[data-nav-treatment="solid"] .nav-surface {
   background: var(--color-nav);
   backdrop-filter: none;
 }
 
-[data-nav-treatment="minimal"] .site-nav {
+[data-nav-treatment="minimal"] .nav-surface {
   background: transparent;
   backdrop-filter: none;
   border-bottom-color: transparent;
 }
 
-.site-nav.is-scrolled {
+.site-nav .nav-surface {
+  transition: box-shadow 0.3s ease, background 0.3s ease;
+}
+
+.site-nav.is-scrolled .nav-surface {
   box-shadow: var(--shadow);
 }
 
-[data-nav-treatment="glass-dark"] .site-nav.is-scrolled,
-[data-nav-treatment="glass-light"] .site-nav.is-scrolled {
+[data-nav-treatment="glass-dark"] .site-nav.is-scrolled .nav-surface,
+[data-nav-treatment="glass-light"] .site-nav.is-scrolled .nav-surface {
   background: color-mix(in srgb, var(--color-nav) 95%, transparent);
+}
+
+.site-nav.nav-compact .nav-surface {
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
 }
 
 .cta-gradient {

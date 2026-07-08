@@ -1,4 +1,4 @@
-import type { SiteContext } from "../site-context/types.js";
+import type { SiteContext } from "../types.js";
 import { pickFrom } from "../design/variation.js";
 import { SECTION_TEMPLATES } from "../section-templates/registry.js";
 import { CONVERSION_COMPONENT_NAMES } from "./component-manifest.js";
@@ -16,11 +16,28 @@ export interface SiteCompositionPlan {
   siteAvoid: string[];
 }
 
+/** Heroes weighted against always picking HeroSpotlight (cursor/mesh FX). */
+const HERO_WEIGHT: Record<string, number> = {
+  HeroEditorial: 3,
+  HeroSplitCinematic: 3,
+  HeroVideo: 2,
+  HeroSpotlight: 1,
+};
+
 /** Only templates registered as hero_* are shaped to open a page — derived, not hand-capped,
  *  so a newly registered hero template is picked up automatically. */
 const HERO_COMPONENTS = SECTION_TEMPLATES.filter((t) => t.id.startsWith("hero_")).map(
   (t) => t.componentName
 );
+
+function weightedHeroPool(): string[] {
+  const pool: string[] = [];
+  for (const name of HERO_COMPONENTS) {
+    const weight = HERO_WEIGHT[name] ?? 2;
+    for (let i = 0; i < weight; i++) pool.push(name);
+  }
+  return pool.length > 0 ? pool : [...HERO_COMPONENTS];
+}
 
 /** Components that read as repetitive when reused across pages — capped to one page per site. */
 const RARE_COMPONENT_ASSIGNMENTS: Array<{ name: string; candidateSlugs: string[] }> = [
@@ -50,7 +67,8 @@ function seededShuffle(seed: number | string, key: string, items: string[]): str
 }
 
 function shuffledHeroes(seed: number | string): string[] {
-  return seededShuffle(seed, "hero-shuffle", HERO_COMPONENTS);
+  const unique = [...new Set(seededShuffle(seed, "hero-shuffle", weightedHeroPool()))];
+  return unique.length > 0 ? unique : seededShuffle(seed, "hero-shuffle", HERO_COMPONENTS);
 }
 
 /** Pick this page's encouraged components: LLM-proposed preferences first (this is what makes

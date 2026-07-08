@@ -48,6 +48,7 @@ import {
 } from "../agents/page-codegen-agent.js";
 import { buildSiteCompositionPlan } from "../agents/page-composition-hints.js";
 import { proposeSiteLookProfile } from "../agents/site-look-agent.js";
+import { resolveSiteFxTreatment, type SiteFxTreatment } from "../design/site-fx.js";
 import { minimalChromeSpec, minimalMotionPlan } from "../agents/minimal-site-chrome.js";
 
 export function getOutputMode(): "react" | "html" {
@@ -319,7 +320,9 @@ export async function runReactPipeline(
     };
 
     const lookProfile = await proposeSiteLookProfile(ctx);
+    const siteFx: SiteFxTreatment = resolveSiteFxTreatment(ctx, lookProfile);
     const siteComposition = buildSiteCompositionPlan(ctx, lookProfile);
+    pipelineLog(`[pipeline] Site FX treatment: ${siteFx}`);
     pipelineLog(
       `[pipeline] Site composition: ${Object.entries(siteComposition.pages)
         .map(([slug, h]) => `${slug}→${h.heroComponent}`)
@@ -360,12 +363,16 @@ export async function runReactPipeline(
     const chromeQa = runChromeQA(chromeSpec0);
     const motionQa = runMotionQA(motionPlan, blueprints);
     const layoutQa = runLayoutQA(layoutPlan, blueprints);
-    pipelineLog("[pipeline] Page codegen: minimal chrome (no grain/blur directors)");
+    pipelineLog(`[pipeline] Page codegen: minimal chrome; visualFx=${siteFx}`);
 
     for (const pagePlan of pages) {
       const row = pageRows.find((r) => r.blueprint.slug === pagePlan.slug)!;
+      const stamped: SectionInstance[] = row.instances.map((s) => ({
+        ...s,
+        props: { ...s.props, visualFx: siteFx },
+      }));
       const composed = attachMotionPlan(
-        composePageSections(row.blueprint, row.instances),
+        composePageSections(row.blueprint, stamped),
         ctx.motionPlan!
       );
       reactPages[pagePlan.slug] = {

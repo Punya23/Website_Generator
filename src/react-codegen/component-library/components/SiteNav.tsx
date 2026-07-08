@@ -5,18 +5,24 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useChromeNavSpec } from "./MotionProvider";
+import { navShapeStyle, type NavShape } from "./primitives/nav-shape";
+
+const MotionLink = motion(Link);
 
 export function SiteNav({
   businessName,
   links,
+  navShape,
 }: {
   businessName: string;
   links: Array<{ slug: string; label: string }>;
+  navShape?: NavShape;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const navSpec = useChromeNavSpec();
+  const style = navShapeStyle(navShape);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
@@ -37,27 +43,55 @@ export function SiteNav({
   const activeSlug =
     pathname === "/" ? "home" : pathname.replace(/^\//, "").split("/")[0] ?? "home";
 
+  const toggleButton = (
+    <button
+      type="button"
+      className="relative z-[60] md:hidden text-nav-text"
+      onClick={() => setOpen((v) => !v)}
+      aria-label="Toggle menu"
+      aria-expanded={open}
+    >
+      {open ? "✕" : "☰"}
+    </button>
+  );
+
+  const desktopNav = (
+    <nav className="hidden md:flex md:flex-row md:gap-1">
+      {links.map((link) => (
+        <NavLink key={link.slug} link={link} active={link.slug === activeSlug} onNavigate={() => setOpen(false)} />
+      ))}
+    </nav>
+  );
+
+  const logo = (
+    <Link href="/" className="font-display text-lg font-bold text-nav-text">
+      {businessName}
+    </Link>
+  );
+
   return (
-    <header className={`site-nav sticky top-0 z-50 border-b border-border/60 ${showScrolled ? "is-scrolled" : ""} ${navSpec?.compactOnScroll && scrolled ? "py-2" : ""}`}>
-      <div className="content-rail flex items-center justify-between py-4">
-        <Link href="/" className="font-display text-lg font-bold text-nav-text">
-          {businessName}
-        </Link>
-        <button
-          type="button"
-          className="relative z-[60] md:hidden text-nav-text"
-          onClick={() => setOpen((v) => !v)}
-          aria-label="Toggle menu"
-          aria-expanded={open}
-        >
-          {open ? "✕" : "☰"}
-        </button>
-        <nav className="hidden md:flex md:flex-row md:gap-1">
-          {links.map((link) => (
-            <NavLink key={link.slug} link={link} active={link.slug === activeSlug} onNavigate={() => setOpen(false)} />
-          ))}
-        </nav>
-      </div>
+    <header
+      className={`site-nav sticky top-0 z-50 ${style.headerClass} ${
+        showScrolled ? "is-scrolled" : ""
+      } ${navSpec?.compactOnScroll && scrolled ? "nav-compact" : ""}`}
+    >
+      {style.split ? (
+        <div className={style.railClass}>
+          <div className={`${style.surfaceClass} flex items-center`}>{logo}</div>
+          <div className={`${style.surfaceClass} flex items-center gap-1`}>
+            {toggleButton}
+            {desktopNav}
+          </div>
+        </div>
+      ) : (
+        <div className={style.surfaceClass}>
+          <div className={style.railClass}>
+            {logo}
+            {toggleButton}
+            {desktopNav}
+          </div>
+        </div>
+      )}
 
       <AnimatePresence>
         {open ? (
@@ -105,19 +139,23 @@ function NavLink({
   className?: string;
 }) {
   const href = link.slug === "home" ? "/" : `/${link.slug}`;
+  const isMobileLink = className.includes("text-3xl");
   return (
-    <Link
+    <MotionLink
       href={href}
       onClick={onNavigate}
+      whileHover={isMobileLink ? undefined : { scale: 1.06 }}
+      whileTap={isMobileLink ? undefined : { scale: 0.95 }}
+      transition={{ type: "spring", stiffness: 420, damping: 22 }}
       className={`rounded-full px-3 py-1.5 text-sm transition ${className} ${
-        active && !className.includes("text-3xl")
-          ? "bg-nav-active text-nav-active-text"
+        active && !isMobileLink
+          ? "bg-nav-active text-nav-active-text shadow-sm"
           : active
             ? "text-accent"
             : "text-nav-muted hover:text-nav-text"
       }`}
     >
       {link.label}
-    </Link>
+    </MotionLink>
   );
 }

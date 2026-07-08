@@ -11,6 +11,7 @@ export interface ProfileCoherenceInput {
   profileId: VerticalProfileId;
   pageTone: VerticalDesignProfile["pageTone"];
   navTreatment: VerticalDesignProfile["navTreatment"];
+  navShape: VerticalDesignProfile["navShape"];
   motionPreset: VerticalDesignProfile["motionPreset"];
 }
 
@@ -22,6 +23,7 @@ export function profileCoherenceFromContext(
     profileId: ctx.verticalProfile.profileId,
     pageTone: ctx.verticalProfile.pageTone,
     navTreatment: ctx.designSystem.navTreatment ?? "solid",
+    navShape: ctx.designSystem.navShape ?? "full-width",
     motionPreset: ctx.designSystem.motionPreset ?? "fade-up",
   };
 }
@@ -31,6 +33,7 @@ function stubProfile(profile: ProfileCoherenceInput): VerticalDesignProfile {
     profileId: profile.profileId,
     pageTone: profile.pageTone,
     navTreatment: profile.navTreatment,
+    navShape: profile.navShape,
     motionPreset: profile.motionPreset,
     heroBias: "",
     blueprintFamily: profile.profileId,
@@ -59,6 +62,7 @@ export function enforceProfileCoherence(
     colors: { ...theme.colors },
     motionPreset: theme.motionPreset ?? profile.motionPreset,
     navTreatment: theme.navTreatment ?? profile.navTreatment,
+    navShape: theme.navShape ?? profile.navShape,
   };
 
   const bgLum = luminance(out.colors.bg);

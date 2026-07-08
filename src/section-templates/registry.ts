@@ -259,7 +259,7 @@ export const SECTION_TEMPLATES: SectionTemplateDef[] = [
   {
     id: "hero_spotlight",
     name: "Spotlight Hero",
-    description: "Cursor-reactive radial spotlight with split headline and magnetic CTA",
+    description: "Premium hero with optional atmosphere (clean, editorial, or spotlight FX)",
     sectionMode: "bleed",
     defaultMotion: "parallax",
     componentName: "HeroSpotlight",
@@ -269,7 +269,7 @@ export const SECTION_TEMPLATES: SectionTemplateDef[] = [
   {
     id: "scroll_showcase",
     name: "Scroll Showcase",
-    description: "Pinned scroll narrative with glass step cards",
+    description: "Pinned scroll narrative with step cards (glass or solid)",
     sectionMode: "contained",
     defaultMotion: "slide-up",
     componentName: "ScrollShowcase",

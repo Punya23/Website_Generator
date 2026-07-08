@@ -1,4 +1,12 @@
-import { SECTION_TEMPLATES, type SectionTemplateDef } from "../section-templates/registry.js";
+import {
+  SECTION_TEMPLATES,
+  PREMIUM_TEMPLATE_IDS,
+  IMMERSIVE_TEMPLATE_IDS,
+  type SectionTemplateDef,
+} from "../section-templates/registry.js";
+
+const PREMIUM_IDS = new Set<string>(PREMIUM_TEMPLATE_IDS);
+const IMMERSIVE_IDS = new Set<string>(IMMERSIVE_TEMPLATE_IDS);
 
 export interface ComponentManifestEntry {
   componentName: string;
@@ -60,6 +68,41 @@ const EXAMPLE_PROPS: Partial<Record<string, string>> = {
     '{ "headline": "...", "slides": [{ "title": "Project name", "category": "Residential", "image": { "alt": "..." } }] }',
   FaqAccordion:
     '{ "headline": "...", "items": [{ "question": "...", "answer": "..." }] }',
+  HeroEditorial:
+    '{ "label": "...", "headline": "...", "subcopy": "...", "cta": { "label": "...", "href": "/contact" }, "image": { "alt": "..." } }',
+  HeroSplitCinematic:
+    '{ "headline": "...", "subcopy": "...", "cta": { "label": "...", "href": "/contact" }, "image": { "alt": "..." } }',
+  HeroVideo:
+    '{ "headline": "...", "subcopy": "...", "video": { "poster": { "alt": "..." } }, "cta": { "label": "...", "href": "/contact" } }',
+  StatsMarquee:
+    '{ "stats": [{ "value": "10+", "label": "Years experience" }, { "value": "500+", "label": "Projects delivered" }] }',
+  StatsAnimated:
+    '{ "headline": "...", "stats": [{ "value": "98%", "label": "Client satisfaction" }] }',
+  PortfolioStrip:
+    '{ "headline": "...", "projects": [{ "title": "Project name", "category": "Residential", "year": "2024" }] }',
+  TestimonialFeatured: '{ "quote": "...", "author": "Jane Doe", "role": "CEO, Client Co." }',
+  TestimonialCarousel:
+    '{ "headline": "...", "items": [{ "quote": "...", "author": "Jane Doe", "role": "Client" }] }',
+  PricingTiers:
+    '{ "headline": "...", "tiers": [{ "name": "Starter", "price": "$99", "period": "/mo", "features": ["Feature one", "Feature two"] }] }',
+  PricingToggle:
+    '{ "headline": "...", "tiers": [{ "name": "Pro", "monthlyPrice": "$49", "yearlyPrice": "$470" }] }',
+  TextMarquee: '{ "phrases": ["Crafted", "Considered", "Built to last"] }',
+  FooterCta:
+    '{ "headline": "...", "subcopy": "...", "cta": { "label": "Book a call", "href": "/contact" } }',
+  NewsletterBand: '{ "headline": "...", "subcopy": "...", "buttonLabel": "Subscribe" }',
+  LogoMarquee:
+    '{ "logos": [{ "name": "Client One" }, { "name": "Client Two" }, { "name": "Client Three" }] }',
+  TeamGrid:
+    '{ "headline": "...", "members": [{ "name": "Jane Doe", "role": "Founder", "bio": "..." }] }',
+  GalleryMasonry:
+    '{ "images": [{ "alt": "..." }, { "alt": "..." }, { "alt": "..." }] }',
+  BeforeAfter:
+    '{ "headline": "...", "before": { "alt": "Before" }, "after": { "alt": "After" }, "caption": "..." }',
+  ScrollShowcase:
+    '{ "headline": "...", "steps": [{ "title": "Step one", "description": "..." }, { "title": "Step two", "description": "..." }] }',
+  HorizontalGallery:
+    '{ "headline": "...", "items": [{ "title": "Project one" }, { "title": "Project two" }, { "title": "Project three" }] }',
 };
 
 function entryForTemplate(t: SectionTemplateDef): ComponentManifestEntry {
@@ -112,6 +155,11 @@ export function componentManifestForPrompt(
     }
     return t.pages.includes("any");
   })
-    .map((t) => `- ${t.componentName}: ${t.description}`)
+    .map((t) => {
+      const tags = [PREMIUM_IDS.has(t.id) ? "[premium]" : "", IMMERSIVE_IDS.has(t.id) ? "[immersive]" : ""]
+        .filter(Boolean)
+        .join(" ");
+      return `- ${t.componentName}: ${t.description}${tags ? ` ${tags}` : ""}`;
+    })
     .join("\n");
 }

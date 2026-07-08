@@ -47,7 +47,6 @@ import { requireLlm } from "../util/llm-required.js";
 import { persistDebugArtifacts } from "../util/debug-artifacts.js";
 import { getOutputMode, runReactPipeline } from "./react-pipeline.js";
 import { applyHtmlVisionRetry } from "./html-vision-retry.js";
-import { renderReactPreviewFallback } from "../react-codegen/preview-fallback.js";
 import { inferVerticalProfile } from "../design/vertical-profiles.js";
 import {
   autoPublishEnabled,
@@ -385,22 +384,18 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
       };
     }
 
-    try {
-      if (reactResult.buildSucceeded) {
-        const outDir = reactResult.previewPath;
-        for (const slug of Object.keys(reactResult.reactPages)) {
-          const file =
-            slug === "home"
-              ? path.join(outDir, "index.html")
-              : path.join(outDir, slug, "index.html");
-          htmlPages[slug] = await fs.readFile(file, "utf8");
-        }
-      } else {
-        throw new Error("build failed");
-      }
-    } catch {
-      pipelineLog("[pipeline] React static export unavailable — using styled HTML preview fallback");
-      htmlPages = renderReactPreviewFallback(ctx, reactResult.reactPages);
+    if (!reactResult.buildSucceeded) {
+      throw new Error(
+        `React site build failed after automatic repair attempts were exhausted: ${
+          reactResult.buildError ?? "unknown build error"
+        }`
+      );
+    }
+    const outDir = reactResult.previewPath;
+    for (const slug of Object.keys(reactResult.reactPages)) {
+      const file =
+        slug === "home" ? path.join(outDir, "index.html") : path.join(outDir, slug, "index.html");
+      htmlPages[slug] = await fs.readFile(file, "utf8");
     }
 
     pageResults = sitePlan.pages.map((p) => ({

@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { normalizePageCodegenProps } from "../src/agents/page-codegen-normalize.js";
+import {
+  normalizePageCodegenProps,
+  trimPageCodegenPlan,
+} from "../src/agents/page-codegen-normalize.js";
 
 describe("page codegen normalize", () => {
   it("maps stats number field to value", () => {
@@ -45,6 +48,7 @@ describe("page codegen normalize", () => {
     expect(props.slides).toEqual([
       { title: "River House", category: "Residential", image: undefined },
       { title: "Studio Annex", category: "Commercial", image: undefined },
+      { title: "Project 3" },
     ]);
   });
 
@@ -61,5 +65,38 @@ describe("page codegen normalize", () => {
       "Design — Full service design.",
       "Build — Certified construction.",
     ]);
+  });
+
+  it("coalesces title into headline and trims extra sections", () => {
+    const props = normalizePageCodegenProps(
+      "intro_statement",
+      { title: "Our approach", body: "We craft every detail." },
+      "Philosophy statement"
+    );
+    expect(props.headline).toBe("Our approach");
+
+    const trimmed = trimPageCodegenPlan(
+      {
+        sections: [
+          { component: "HeroEditorial", intent: "Open", props: { headline: "Hi" } },
+          { component: "IntroStatement", intent: "A", props: { headline: "A", body: "B" } },
+          { component: "FeatureBento", intent: "B", props: { headline: "B", items: [] } },
+          { component: "ScrollShowcase", intent: "C", props: { headline: "C", steps: [] } },
+          { component: "ServicesShowcase", intent: "D", props: { headline: "D", paragraphs: ["x"] } },
+          { component: "FooterCta", intent: "Close", props: { headline: "Go", cta: { label: "Go" } } },
+        ],
+      },
+      "services"
+    );
+    expect(trimmed.sections).toHaveLength(5);
+  });
+
+  it("fills headline from section intent when LLM omits it", () => {
+    const props = normalizePageCodegenProps(
+      "feature_bento",
+      { items: [{ title: "Yoga", description: "Flow classes daily." }] },
+      "Class formats overview"
+    );
+    expect(props.headline).toBe("Class formats overview");
   });
 });

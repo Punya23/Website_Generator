@@ -15,7 +15,7 @@ import {
 } from "./page-codegen-validate.js";
 import { getTemplateByComponentName } from "../section-templates/registry.js";
 import { enrichPropsImages } from "./media-curator-agent.js";
-import { normalizePageCodegenProps, normalizePageCodegenPlan } from "./page-codegen-normalize.js";
+import { normalizePageCodegenProps, preparePageCodegenPlan } from "./page-codegen-normalize.js";
 import type { MediaRegistry } from "../media/media-registry.js";
 import {
   formatCompositionHintBlock,
@@ -36,6 +36,7 @@ RULES:
 - FeatureBento: 3–6 items with specific titles and descriptions for THIS business; set span "wide" or "large" on at least one item
 - Do NOT add newsletter, announcement, or generic "Ready to get started?" filler — write specific copy for THIS business
 - Vary section types — avoid repeating the same component twice on this page
+- Prefer [premium] and [immersive] tagged components in the palette when they fit this page's intent — they are the signature, Framer-grade layouts; do not default to plain/untagged sections when a tagged one fits
 - Be visually distinctive for THIS brand — avoid generic SaaS patterns and stock phrasing
 - Props must include real copy (headlines, body, items) specific to the business — not placeholders
 - For images use { "alt": "descriptive alt" } only — never src URLs
@@ -140,6 +141,7 @@ export async function generatePageSections(
   try {
     let lastValidationError: string | undefined;
     let plan: PageCodegenPlan | null = null;
+    let lastCandidate: PageCodegenPlan | null = null;
     const validateOptions: PageCodegenValidateOptions = {
       requiredHero: composition?.pages[page.slug]?.heroComponent,
       avoidComponents: composition?.pages[page.slug]?.avoidComponents,
@@ -160,7 +162,8 @@ export async function generatePageSections(
         (raw) => parseLlmJson(raw)
       );
 
-      const candidate = normalizePageCodegenPlan(parsePageCodegenPlan(parsed));
+      const candidate = preparePageCodegenPlan(parsePageCodegenPlan(parsed), page.slug);
+      lastCandidate = candidate;
       const validationError = validatePageCodegenPlan(candidate, page.slug, validateOptions);
       if (validationError) {
         lastValidationError = validationError;
@@ -171,6 +174,20 @@ export async function generatePageSections(
       }
       plan = candidate;
       break;
+    }
+
+    if (!plan && lastCandidate) {
+      const salvaged = preparePageCodegenPlan(lastCandidate, page.slug);
+      const salvageError = validatePageCodegenPlan(salvaged, page.slug, {
+        ...validateOptions,
+        requiredHero: undefined,
+      });
+      if (!salvageError) {
+        pipelineLog(
+          `[pipeline] Page codegen salvage (${page.slug}): accepted repaired plan after retries`
+        );
+        plan = salvaged;
+      }
     }
 
     if (!plan) {

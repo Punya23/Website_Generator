@@ -74,6 +74,13 @@ export function repairTemplateProps(
     }
 
     case "intro_statement": {
+      if (!coerceToString(out.headline)) {
+        out.headline =
+          coerceToString(out.title) ??
+          coerceToString(out.label) ??
+          coerceToString(out.heading) ??
+          "Our story";
+      }
       if (!coerceToString(out.body)) {
         out.body =
           coerceToString(out.subcopy) ??
@@ -191,6 +198,187 @@ export function repairTemplateProps(
           coerceToString(out.headline) ??
           "Get started",
       };
+      break;
+    }
+
+    case "hero_editorial":
+    case "hero_split_cinematic":
+    case "hero_spotlight":
+    case "hero_video": {
+      if (!coerceToString(out.headline)) {
+        out.headline =
+          coerceToString(out.title) ??
+          coerceToString(out.label) ??
+          coerceToString(out.heading) ??
+          "Welcome";
+      }
+      break;
+    }
+
+    case "testimonial_featured": {
+      if (!coerceToString(out.quote)) {
+        out.quote =
+          coerceToString(out.text) ??
+          coerceToString(out.body) ??
+          "Outstanding experience from start to finish.";
+      }
+      if (!coerceToString(out.author)) {
+        out.author = coerceToString(out.name) ?? coerceToString(out.client) ?? "Happy client";
+      }
+      break;
+    }
+
+    case "testimonial_carousel": {
+      const rawItems = Array.isArray(out.items) ? out.items : [];
+      const items = rawItems
+        .filter((s) => s && typeof s === "object" && !Array.isArray(s))
+        .map((s) => {
+          const row = s as Record<string, unknown>;
+          return {
+            ...row,
+            quote:
+              coerceToString(row.quote) ??
+              coerceToString(row.text) ??
+              coerceToString(row.body) ??
+              "Outstanding experience from start to finish.",
+            author: coerceToString(row.author) ?? coerceToString(row.name) ?? "Happy client",
+          };
+        });
+      out.items = padArrayToMin(items, 2, (i) => ({
+        quote: "Outstanding experience from start to finish.",
+        author: `Client ${i + 1}`,
+      }));
+      break;
+    }
+
+    case "pricing_tiers": {
+      const rawTiers = Array.isArray(out.tiers) ? out.tiers : [];
+      const tiers = rawTiers
+        .filter((s) => s && typeof s === "object" && !Array.isArray(s))
+        .map((s, i) => {
+          const row = s as Record<string, unknown>;
+          return {
+            ...row,
+            name: coerceToString(row.name) ?? coerceToString(row.title) ?? `Plan ${i + 1}`,
+            price: coerceToString(row.price) ?? "Contact us",
+          };
+        });
+      out.tiers = padArrayToMin(tiers, 1, (i) => ({ name: `Plan ${i + 1}`, price: "Contact us" }));
+      break;
+    }
+
+    case "pricing_toggle": {
+      const rawTiers = Array.isArray(out.tiers) ? out.tiers : [];
+      const tiers = rawTiers
+        .filter((s) => s && typeof s === "object" && !Array.isArray(s))
+        .map((s, i) => {
+          const row = s as Record<string, unknown>;
+          return {
+            ...row,
+            name: coerceToString(row.name) ?? coerceToString(row.title) ?? `Plan ${i + 1}`,
+            monthlyPrice: coerceToString(row.monthlyPrice) ?? coerceToString(row.price) ?? "Contact us",
+            yearlyPrice: coerceToString(row.yearlyPrice) ?? coerceToString(row.price) ?? "Contact us",
+          };
+        });
+      out.tiers = padArrayToMin(tiers, 1, (i) => ({
+        name: `Plan ${i + 1}`,
+        monthlyPrice: "Contact us",
+        yearlyPrice: "Contact us",
+      }));
+      break;
+    }
+
+    case "contact_split": {
+      if (!coerceToString(out.headline)) {
+        out.headline = coerceToString(out.title) ?? coerceToString(out.label) ?? "Get in touch";
+      }
+      break;
+    }
+
+    case "portfolio_strip": {
+      const rawProjects = Array.isArray(out.projects) ? out.projects : [];
+      const projects = rawProjects
+        .filter((s) => s && typeof s === "object" && !Array.isArray(s))
+        .map((s, i) => {
+          const row = s as Record<string, unknown>;
+          return {
+            ...row,
+            title: coerceToString(row.title) ?? coerceToString(row.name) ?? `Project ${i + 1}`,
+          };
+        });
+      out.projects = padArrayToMin(projects, 2, (i) => ({ title: `Project ${i + 1}` }));
+      break;
+    }
+
+    case "portfolio_carousel": {
+      const rawSlides = Array.isArray(out.slides) ? out.slides : [];
+      const slides = rawSlides
+        .filter((s) => s && typeof s === "object" && !Array.isArray(s))
+        .map((s, i) => {
+          const row = s as Record<string, unknown>;
+          return {
+            ...row,
+            title: coerceToString(row.title) ?? coerceToString(row.name) ?? `Project ${i + 1}`,
+          };
+        });
+      out.slides = padArrayToMin(slides, 3, (i) => ({ title: `Project ${i + 1}` }));
+      break;
+    }
+
+    case "team_grid": {
+      const rawMembers = Array.isArray(out.members) ? out.members : [];
+      const members = rawMembers
+        .filter((s) => s && typeof s === "object" && !Array.isArray(s))
+        .map((s, i) => {
+          const row = s as Record<string, unknown>;
+          return {
+            ...row,
+            name: coerceToString(row.name) ?? `Team member ${i + 1}`,
+            role:
+              coerceToString(row.role) ??
+              coerceToString(row.title) ??
+              coerceToString(row.position) ??
+              "Team member",
+          };
+        });
+      out.members = padArrayToMin(members, 2, (i) => ({
+        name: `Team member ${i + 1}`,
+        role: "Team member",
+      }));
+      break;
+    }
+
+    case "logo_marquee": {
+      const rawLogos = Array.isArray(out.logos) ? out.logos : [];
+      const logos = rawLogos
+        .filter((s) => s && typeof s === "object" && !Array.isArray(s))
+        .map((s, i) => {
+          const row = s as Record<string, unknown>;
+          return { ...row, name: coerceToString(row.name) ?? `Partner ${i + 1}` };
+        });
+      out.logos = padArrayToMin(logos, 3, (i) => ({ name: `Partner ${i + 1}` }));
+      break;
+    }
+
+    case "horizontal_gallery": {
+      const rawItems = Array.isArray(out.items) ? out.items : [];
+      const items = rawItems
+        .filter((s) => s && typeof s === "object" && !Array.isArray(s))
+        .map((s, i) => {
+          const row = s as Record<string, unknown>;
+          return {
+            ...row,
+            title: coerceToString(row.title) ?? coerceToString(row.name) ?? `Highlight ${i + 1}`,
+          };
+        });
+      out.items = padArrayToMin(items, 3, (i) => ({ title: `Highlight ${i + 1}` }));
+      break;
+    }
+
+    case "newsletter_band": {
+      if (!coerceToString(out.headline)) {
+        out.headline = coerceToString(out.title) ?? coerceToString(out.label) ?? "Stay in the loop";
+      }
       break;
     }
 

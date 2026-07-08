@@ -1,7 +1,17 @@
 /** Light prop normalization for page-codegen LLM output — structure only, no copy rewriting. */
 import { getTemplateByComponentName } from "../section-templates/registry.js";
 import { repairTemplateProps } from "../section-templates/repair-props.js";
+import { COPY_PROP_SCHEMAS } from "../section-templates/schemas.js";
 import type { PageCodegenPlan } from "./page-codegen-validate.js";
+
+/** Whether this template's own schema actually has the given top-level field — avoids inventing
+ *  props (like a "headline" on TestimonialFeatured, which has none) that the component never reads. */
+function templateHasField(templateId: string, field: string): boolean {
+  const schema = COPY_PROP_SCHEMAS[templateId as keyof typeof COPY_PROP_SCHEMAS] as unknown as
+    | { shape?: Record<string, unknown> }
+    | undefined;
+  return Boolean(schema?.shape && field in schema.shape);
+}
 
 export function normalizePageCodegenPlan(plan: PageCodegenPlan): PageCodegenPlan {
   return {
@@ -10,17 +20,84 @@ export function normalizePageCodegenPlan(plan: PageCodegenPlan): PageCodegenPlan
       if (!template) return section;
       return {
         ...section,
-        props: normalizePageCodegenProps(template.id, section.props),
+        props: normalizePageCodegenProps(template.id, section.props, section.intent),
       };
     }),
   };
 }
 
+/** Trim over-long plans and coalesce missing fields before validation. */
+export function preparePageCodegenPlan(plan: PageCodegenPlan, pageSlug: string): PageCodegenPlan {
+  return trimPageCodegenPlan(normalizePageCodegenPlan(plan), pageSlug);
+}
+
+export function trimPageCodegenPlan(plan: PageCodegenPlan, pageSlug: string): PageCodegenPlan {
+  const max = pageSlug === "home" ? 7 : 5;
+  if (plan.sections.length <= max) return plan;
+
+  const sections = [...plan.sections];
+  while (sections.length > max) {
+    let dropAt = 1;
+    while (
+      dropAt < sections.length - 1 &&
+      ["CtaBand", "FooterCta", "NewsletterBand"].includes(sections[dropAt]!.component)
+    ) {
+      dropAt++;
+    }
+    if (dropAt >= sections.length - 1) dropAt = Math.max(1, sections.length - 2);
+    sections.splice(dropAt, 1);
+  }
+  return { ...plan, sections };
+}
+
+function nonEmptyString(val: unknown): string | undefined {
+  if (typeof val !== "string") return undefined;
+  const t = val.trim();
+  return t.length > 0 ? t : undefined;
+}
+
+function pickString(...values: unknown[]): string | undefined {
+  for (const v of values) {
+    const s = nonEmptyString(v);
+    if (s) return s;
+  }
+  return undefined;
+}
+
+function coalesceCommonProps(props: Record<string, unknown>, templateId: string, intent?: string): void {
+  if (templateHasField(templateId, "headline") && !nonEmptyString(props.headline)) {
+    const named = pickString(props.title, props.label, props.heading, props.name);
+    if (named) {
+      props.headline = named;
+    } else if (intent && intent.trim().length >= 8) {
+      // Last resort only — the planning intent is an internal one-line note, not visitor-facing
+      // copy. Flag it so validatePageCodegenPlan forces a real rewrite instead of silently
+      // shipping "Bold opening for the brand" as the section's actual headline.
+      props.headline = intent.slice(0, 100);
+      props.__intentDerivedHeadline = true;
+    }
+  }
+  if (!nonEmptyString(props.body)) {
+    const body = pickString(props.subcopy, props.description, props.text, props.content);
+    if (body) props.body = body;
+  }
+  if (!nonEmptyString(props.quote)) {
+    const quote = pickString(props.text, props.body, props.testimonial);
+    if (quote) props.quote = quote;
+  }
+  if (!nonEmptyString(props.author)) {
+    const author = pickString(props.name, props.client, props.customer);
+    if (author) props.author = author;
+  }
+}
+
 export function normalizePageCodegenProps(
   templateId: string,
-  props: Record<string, unknown>
+  props: Record<string, unknown>,
+  intent?: string
 ): Record<string, unknown> {
   let out = { ...props };
+  coalesceCommonProps(out, templateId, intent);
 
   if (templateId === "stats_marquee" || templateId === "stats_animated") {
     out.stats = normalizeStatItems(out.stats);
@@ -62,19 +139,46 @@ export function normalizePageCodegenProps(
     out = normalizeTestimonialFeatured(out);
   }
 
-  if (templateId === "scroll_showcase" && Array.isArray(out.steps)) {
-    out.steps = out.steps.map((step) => normalizeScrollStep(step));
+  if (templateId === "scroll_showcase" && out.steps !== undefined) {
+    out.steps = Array.isArray(out.steps) ? out.steps.map((step) => normalizeScrollStep(step)) : undefined;
   }
 
   if (templateId === "horizontal_gallery" && Array.isArray(out.items)) {
     out.items = out.items.map((item) => normalizeGalleryItem(item));
   }
 
-  if (out.cta && typeof out.cta === "object" && !Array.isArray(out.cta)) {
-    out.cta = normalizeCta(out.cta as Record<string, unknown>);
+  out.cta = coerceCtaField(out.cta);
+  if (out.secondaryCta !== undefined) out.secondaryCta = coerceCtaField(out.secondaryCta);
+
+  if (templateId === "hero_video" && out.video !== undefined) {
+    if (!out.video || typeof out.video !== "object" || Array.isArray(out.video)) {
+      delete out.video;
+    }
+  }
+
+  if (templateId === "contact_split" && out.formFields !== undefined && !Array.isArray(out.formFields)) {
+    delete out.formFields;
+  }
+
+  if (templateId === "text_marquee" && out.speed !== undefined) {
+    const validSpeeds = new Set(["slow", "normal", "fast"]);
+    if (!validSpeeds.has(String(out.speed))) delete out.speed;
   }
 
   return repairTemplateProps(templateId, out);
+}
+
+/** LLMs sometimes return a CTA as a bare string ("Book a table") instead of { label, href }. */
+function coerceCtaField(val: unknown): Record<string, unknown> | undefined {
+  if (val === undefined || val === null) return undefined;
+  if (typeof val === "string") {
+    const label = val.trim();
+    return label ? normalizeCta({ label }) : undefined;
+  }
+  if (typeof val === "object" && !Array.isArray(val)) {
+    return normalizeCta(val as Record<string, unknown>);
+  }
+  return undefined;
 }
 
 function normalizeStatItems(raw: unknown): Array<{ value: string; label: string }> {

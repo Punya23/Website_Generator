@@ -41,11 +41,13 @@ import {
   generateBespokeSection,
   shouldAttemptBespokeSection,
 } from "../agents/section-codegen-agent.js";
+import { repairBespokeSectionWithBuildError } from "../agents/build-repair-agent.js";
 import {
   generatePageSections,
   instancesToBlueprint,
 } from "../agents/page-codegen-agent.js";
 import { buildSiteCompositionPlan } from "../agents/page-composition-hints.js";
+import { proposeSiteLookProfile } from "../agents/site-look-agent.js";
 import { minimalChromeSpec, minimalMotionPlan } from "../agents/minimal-site-chrome.js";
 
 export function getOutputMode(): "react" | "html" {
@@ -90,6 +92,9 @@ export interface ReactPipelineResult {
   projectPath: string;
   previewPath: string;
   buildSucceeded: boolean;
+  /** The real compiler/build error from the final failed attempt, once repair + mechanical
+   *  fallbacks are exhausted. Only set when buildSucceeded is false. */
+  buildError?: string;
   qaResults: Record<string, QAResult>;
 }
 
@@ -121,6 +126,8 @@ async function finishReactPipeline(
   let lastBuildError = "";
 
   const MAX_BUILD_ATTEMPTS = 6;
+  const MAX_REPAIR_ATTEMPTS_PER_FILE = 2;
+  const repairAttemptsByFile = new Map<string, number>();
   for (let attempt = 0; attempt < MAX_BUILD_ATTEMPTS; attempt++) {
     try {
       previewPath = await buildReactProject(projectPath);
@@ -135,6 +142,26 @@ async function finishReactPipeline(
 
       const brokenFile =
         attempt < MAX_BUILD_ATTEMPTS - 1 ? parseFailedCustomComponent(lastBuildError) : null;
+
+      if (brokenFile) {
+        const repairsUsed = repairAttemptsByFile.get(brokenFile) ?? 0;
+        if (repairsUsed < MAX_REPAIR_ATTEMPTS_PER_FILE) {
+          repairAttemptsByFile.set(brokenFile, repairsUsed + 1);
+          const repaired = await repairBespokeSectionWithBuildError(
+            reactPages,
+            brokenFile,
+            lastBuildError,
+            repairsUsed + 1,
+            MAX_REPAIR_ATTEMPTS_PER_FILE
+          );
+          if (repaired) {
+            projectPath = (
+              await generateReactProject(ctx, reactPages, outputDir, { basePath: options.previewBasePath })
+            ).projectPath;
+            continue;
+          }
+        }
+      }
       if (brokenFile && dropCustomCodegenByFileName(reactPages, brokenFile)) {
         pipelineLog(
           `[pipeline] Dropping bespoke section ${brokenFile} after build failure — falling back to its template render…`
@@ -249,7 +276,14 @@ async function finishReactPipeline(
     }
   }
 
-  return { reactPages, projectPath, previewPath, buildSucceeded, qaResults };
+  return {
+    reactPages,
+    projectPath,
+    previewPath,
+    buildSucceeded,
+    buildError: buildSucceeded ? undefined : lastBuildError,
+    qaResults,
+  };
 }
 
 export async function runReactPipeline(
@@ -284,7 +318,8 @@ export async function runReactPipeline(
       instances: SectionInstance[];
     };
 
-    const siteComposition = buildSiteCompositionPlan(ctx);
+    const lookProfile = await proposeSiteLookProfile(ctx);
+    const siteComposition = buildSiteCompositionPlan(ctx, lookProfile);
     pipelineLog(
       `[pipeline] Site composition: ${Object.entries(siteComposition.pages)
         .map(([slug, h]) => `${slug}→${h.heroComponent}`)

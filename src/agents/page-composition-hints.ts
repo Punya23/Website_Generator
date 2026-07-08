@@ -1,5 +1,8 @@
 import type { SiteContext } from "../site-context/types.js";
 import { pickFrom } from "../design/variation.js";
+import { SECTION_TEMPLATES } from "../section-templates/registry.js";
+import { CONVERSION_COMPONENT_NAMES } from "./component-manifest.js";
+import type { SiteLookProfile } from "./site-look-agent.js";
 
 export interface PageCompositionHint {
   heroComponent: string;
@@ -13,14 +16,13 @@ export interface SiteCompositionPlan {
   siteAvoid: string[];
 }
 
-const HERO_COMPONENTS = [
-  "HeroEditorial",
-  "HeroSplitCinematic",
-  "HeroSpotlight",
-  "HeroVideo",
-] as const;
+/** Only templates registered as hero_* are shaped to open a page — derived, not hand-capped,
+ *  so a newly registered hero template is picked up automatically. */
+const HERO_COMPONENTS = SECTION_TEMPLATES.filter((t) => t.id.startsWith("hero_")).map(
+  (t) => t.componentName
+);
 
-/** Components that read as repetitive when reused across pages. */
+/** Components that read as repetitive when reused across pages — capped to one page per site. */
 const RARE_COMPONENT_ASSIGNMENTS: Array<{ name: string; candidateSlugs: string[] }> = [
   { name: "FaqAccordion", candidateSlugs: ["contact", "services", "about"] },
   { name: "StatsMarquee", candidateSlugs: ["home", "about", "services", "portfolio"] },
@@ -29,63 +31,45 @@ const RARE_COMPONENT_ASSIGNMENTS: Array<{ name: string; candidateSlugs: string[]
   { name: "NewsletterBand", candidateSlugs: ["home", "about"] },
 ];
 
-const PAGE_ENCOURAGE: Record<string, string[]> = {
-  home: [
-    "FeatureBento",
-    "PortfolioStrip",
-    "ScrollShowcase",
-    "HorizontalGallery",
-    "StatsAnimated",
-    "TestimonialFeatured",
-    "GalleryMasonry",
-  ],
-  about: [
-    "TeamGrid",
-    "ScrollShowcase",
-    "BeforeAfter",
-    "TestimonialFeatured",
-    "StatsAnimated",
-    "TextMarquee",
-  ],
-  services: [
-    "ServicesShowcase",
-    "ScrollShowcase",
-    "FeatureBento",
-    "PricingTiers",
-    "BeforeAfter",
-    "StatsAnimated",
-  ],
-  portfolio: [
-    "GalleryMasonry",
-    "PortfolioCarousel",
-    "HorizontalGallery",
-    "PortfolioStrip",
-    "ScrollShowcase",
-  ],
-  contact: [
-    "ContactSplit",
-    "ServicesShowcase",
-    "ScrollShowcase",
-    "IntroStatement",
-  ],
-};
-
-function shuffledHeroes(seed: number | string): string[] {
-  const heroes = [...HERO_COMPONENTS];
-  for (let i = heroes.length - 1; i > 0; i--) {
-    const j = Number(pickFrom(seed, `hero-shuffle-${i}`, Array.from({ length: i + 1 }, (_, k) => k)));
-    [heroes[i], heroes[j]] = [heroes[j]!, heroes[i]!];
-  }
-  return heroes;
+/** Every non-hero, non-conversion template — the real pool the LLM should be encouraged to use,
+ *  instead of a small hand-curated list that structurally excluded most of the library. */
+function nonHeroNonConversionComponents(): string[] {
+  const heroSet = new Set(HERO_COMPONENTS);
+  return SECTION_TEMPLATES.map((t) => t.componentName).filter(
+    (name) => !heroSet.has(name) && !CONVERSION_COMPONENT_NAMES.has(name)
+  );
 }
 
-function pickEncourage(seed: number | string, slug: string, pool: string[]): string[] {
-  const shuffled = [...pool];
+function seededShuffle(seed: number | string, key: string, items: string[]): string[] {
+  const shuffled = [...items];
   for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Number(pickFrom(seed, `encourage-shuffle-${slug}-${i}`, Array.from({ length: i + 1 }, (_, k) => k)));
+    const j = Number(pickFrom(seed, `${key}-${i}`, Array.from({ length: i + 1 }, (_, k) => k)));
     [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
   }
-  return shuffled.slice(0, Math.min(4, shuffled.length));
+  return shuffled;
+}
+
+function shuffledHeroes(seed: number | string): string[] {
+  return seededShuffle(seed, "hero-shuffle", HERO_COMPONENTS);
+}
+
+/** Pick this page's encouraged components: LLM-proposed preferences first (this is what makes
+ *  composition follow the brief instead of just reshuffling a fixed pool), then the rest of the
+ *  library ranked by how little it's been used on earlier pages of this same site so distinct
+ *  pages favor distinct sections, seeded-shuffled for tie-breaking. */
+function pickEncourage(
+  seed: number | string,
+  slug: string,
+  pool: string[],
+  preferred: string[] = [],
+  usageCounts?: Map<string, number>
+): string[] {
+  const preferredSet = new Set(preferred.filter((c) => pool.includes(c)));
+  const rest = pool.filter((c) => !preferredSet.has(c));
+  const shuffled = seededShuffle(seed, `encourage-shuffle-${slug}`, rest);
+  shuffled.sort((a, b) => (usageCounts?.get(a) ?? 0) - (usageCounts?.get(b) ?? 0));
+  const ranked = [...preferredSet, ...shuffled];
+  return ranked.slice(0, Math.min(10, ranked.length));
 }
 
 function assignRareComponents(
@@ -102,18 +86,26 @@ function assignRareComponents(
         pages[slug]!.avoidComponents.push(rare.name);
       } else {
         pages[slug]!.encourageComponents.unshift(rare.name);
+        pages[slug]!.avoidComponents = pages[slug]!.avoidComponents.filter((c) => c !== rare.name);
       }
     }
   }
 }
 
-/** Deterministic per-page composition hints so parallel codegen does not converge on the same hero/FAQ. */
-export function buildSiteCompositionPlan(ctx: SiteContext): SiteCompositionPlan {
+/** Deterministic per-page composition hints so parallel codegen does not converge on the same
+ *  hero/FAQ. `lookProfile` (from site-look-agent) is an optional per-brief bias so composition
+ *  follows the business, not just a random seed reshuffling the same small pool. */
+export function buildSiteCompositionPlan(
+  ctx: SiteContext,
+  lookProfile?: SiteLookProfile
+): SiteCompositionPlan {
   const seed = ctx.variationSeed ?? ctx.businessName;
   const pageSlugs = ctx.sitePlan.pages.map((p) => p.slug);
   const heroes = shuffledHeroes(seed);
   const pages: Record<string, PageCompositionHint> = {};
   const usedHeroes = new Set<string>();
+  const usageCounts = new Map<string, number>();
+  const encouragePool = nonHeroNonConversionComponents();
 
   for (const page of ctx.sitePlan.pages) {
     const pool =
@@ -126,25 +118,43 @@ export function buildSiteCompositionPlan(ctx: SiteContext): SiteCompositionPlan 
         : pickFrom(seed, `hero-${page.slug}`, heroes);
     usedHeroes.add(hero);
 
-    const encouragePool = PAGE_ENCOURAGE[page.slug] ?? PAGE_ENCOURAGE.home ?? [];
     const notes = [
       page.contentFocus?.length
         ? `Content focus: ${page.contentFocus.join(", ")}`
         : "",
       page.layoutHint ? `Layout hint: ${page.layoutHint}` : "",
+      lookProfile?.layoutArchetype ? `Visual direction: ${lookProfile.layoutArchetype}` : "",
     ]
       .filter(Boolean)
       .join(". ");
 
+    const encourageComponents = pickEncourage(
+      seed,
+      page.slug,
+      encouragePool,
+      lookProfile?.preferredTemplateIds,
+      usageCounts
+    );
+    for (const c of encourageComponents) {
+      usageCounts.set(c, (usageCounts.get(c) ?? 0) + 1);
+    }
+
     pages[page.slug] = {
       heroComponent: hero,
       avoidComponents: ["NewsletterBand"],
-      encourageComponents: pickEncourage(seed, page.slug, encouragePool),
+      encourageComponents,
       notes,
     };
   }
 
   assignRareComponents(seed, pageSlugs, pages);
+
+  for (const slug of pageSlugs) {
+    const hint = pages[slug]!;
+    hint.encourageComponents = hint.encourageComponents.filter(
+      (c) => !hint.avoidComponents.includes(c)
+    );
+  }
 
   const siteAvoid = [
     ...(ctx.sitePlan.avoidPatterns ?? []),

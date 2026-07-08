@@ -16,7 +16,9 @@ export type FallbackAgent =
   | "layout_director"
   | "section_codegen"
   | "section_props"
-  | "page_codegen";
+  | "page_codegen"
+  | "site_look"
+  | "build_repair";
 
 const counts: Record<string, number> = {};
 

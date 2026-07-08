@@ -27,6 +27,10 @@ export interface LLMOptions {
   model?: string;
   temperature?: number;
   jsonMode?: boolean;
+  /** Enforce a JSON Schema via the provider's native structured-output mode instead of prompt-
+   *  engineered "return JSON" text. Falls back to jsonMode's loose json_object mode on providers
+   *  that don't support it (see supportsJsonSchema) or if the provider rejects the schema. */
+  responseSchema?: { name: string; schema: Record<string, unknown>; strict?: boolean };
   maxTokens?: number;
   /** Token budget role when maxTokens omitted */
   tokenRole?: TokenRole;
@@ -173,6 +177,13 @@ export class LLMClient {
 
   get isAvailable(): boolean {
     return this.client !== null;
+  }
+
+  /** OpenRouter and OpenAI reliably support response_format: json_schema across the models this
+   *  project targets; other providers (Groq/Mistral/Ollama) fall back to the looser json_object
+   *  mode even when a responseSchema is requested. */
+  get supportsJsonSchema(): boolean {
+    return this.provider === "openrouter" || this.provider === "openai";
   }
 
   get supportsVision(): boolean {
@@ -393,7 +404,8 @@ export class LLMClient {
     user: string,
     options: LLMOptions,
     attempt = 0,
-    modelOverride?: string
+    modelOverride?: string,
+    schemaFallback = false
   ): Promise<string> {
     const MAX_RETRIES = llmMaxRetries();
 
@@ -407,6 +419,7 @@ export class LLMClient {
     );
 
     const maxTokens = resolveRequestMaxTokens(options, this.provider);
+    const useJsonSchema = Boolean(options.responseSchema) && this.supportsJsonSchema && !schemaFallback;
 
     try {
       const response = await this.client!.chat.completions.create({
@@ -414,7 +427,18 @@ export class LLMClient {
         temperature: options.temperature ?? 0.7,
         max_tokens: maxTokens,
         messages,
-        response_format: options.jsonMode ? { type: "json_object" } : undefined,
+        response_format: useJsonSchema
+          ? {
+              type: "json_schema",
+              json_schema: {
+                name: options.responseSchema!.name,
+                schema: options.responseSchema!.schema,
+                strict: options.responseSchema!.strict ?? true,
+              },
+            }
+          : options.jsonMode || options.responseSchema
+            ? { type: "json_object" }
+            : undefined,
       });
 
       this.recordUsage(model, response.usage);
@@ -426,12 +450,18 @@ export class LLMClient {
             `[llm] Empty response (${this.provider}, ${model}) — retrying in ${(waitMs / 1000).toFixed(1)}s (${attempt + 1}/${MAX_RETRIES})`
           );
           await sleep(waitMs);
-          return this.chatWithRetry(system, user, options, attempt + 1, modelOverride);
+          return this.chatWithRetry(system, user, options, attempt + 1, modelOverride, schemaFallback);
         }
         throw new Error("Empty response from LLM");
       }
-      return options.jsonMode ? normalizeLlmJsonContent(content) : content;
+      return options.jsonMode || options.responseSchema ? normalizeLlmJsonContent(content) : content;
     } catch (err: unknown) {
+      if (useJsonSchema && isUnsupportedResponseFormatError(err)) {
+        console.warn(
+          `[llm] Provider rejected json_schema response_format (${this.provider}, ${model}) — retrying with json_object`
+        );
+        return this.chatWithRetry(system, user, options, attempt, modelOverride, true);
+      }
       const affordable = parseAffordableMaxTokens(err);
       if (isOpenRouterMaxTokensCapError(err) && affordable && attempt < MAX_RETRIES) {
         const reduced = Math.min(maxTokens, Math.max(256, affordable - 64));
@@ -444,7 +474,8 @@ export class LLMClient {
             user,
             { ...options, maxTokens: reduced },
             attempt + 1,
-            modelOverride
+            modelOverride,
+            schemaFallback
           );
         }
       }
@@ -462,7 +493,7 @@ export class LLMClient {
             console.warn(
               `[llm] Groq model "${model}" over capacity — trying fallback "${fallback}"`
             );
-            return this.chatWithRetry(system, user, options, attempt, fallback);
+            return this.chatWithRetry(system, user, options, attempt, fallback, schemaFallback);
           }
         }
 
@@ -476,7 +507,7 @@ export class LLMClient {
           `[llm] ${reason} (${this.provider}, ${model}) — waiting ${(waitMs / 1000).toFixed(1)}s (retry ${attempt + 1}/${MAX_RETRIES})`
         );
         await sleep(waitMs);
-        return this.chatWithRetry(system, user, options, attempt + 1, modelOverride);
+        return this.chatWithRetry(system, user, options, attempt + 1, modelOverride, schemaFallback);
       }
       throw enhanceGroqModelError(err, model);
     }
@@ -656,6 +687,11 @@ function enhanceGroqModelError(err: unknown, model: string): Error {
     return new Error(`${message}.${hint}`, { cause: err });
   }
   return err instanceof Error ? err : new Error(String(err));
+}
+
+function isUnsupportedResponseFormatError(err: unknown): boolean {
+  const message = extractErrorMessage(err).toLowerCase();
+  return message.includes("response_format") || message.includes("json_schema");
 }
 
 function extractErrorMessage(err: unknown): string {

@@ -139,12 +139,20 @@ export function minimalMotionPlan(
 
   void chrome;
 
+  // Motion intensity (art-director decision) scales the timing envelope — subtle sites animate
+  // quicker and tighter, expressive sites slower with more pronounced stagger.
+  const intensity = ctx.designSystem.motionIntensity ?? "standard";
+  const durationPool =
+    intensity === "subtle" ? [340, 420, 480] : intensity === "expressive" ? [600, 700, 800] : [450, 550, 650, 750];
+  const staggerPool =
+    intensity === "subtle" ? [40, 50, 60] : intensity === "expressive" ? [90, 110, 130] : [50, 60, 80, 100];
+
   return {
     globalPreset: ctx.designSystem.motionPreset ?? "fade-up",
     reducedMotion: "respect",
     timing: {
-      durationMs: pickFrom(seed, "motion-duration", [450, 550, 650, 750]),
-      staggerMs: pickFrom(seed, "motion-stagger", [50, 60, 80, 100]),
+      durationMs: pickFrom(seed, "motion-duration", durationPool),
+      staggerMs: pickFrom(seed, "motion-stagger", staggerPool),
       ease: pickFrom(seed, "motion-ease", ["out-expo", "out-quart"] as const),
     },
     sections,

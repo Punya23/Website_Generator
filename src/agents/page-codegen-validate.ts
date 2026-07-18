@@ -32,6 +32,9 @@ function isPlaceholderCopy(text: string): boolean {
   if (!t) return true;
   return (
     /^feature \d+$/.test(t) ||
+    /^offering \d+$/.test(t) ||
+    /^plan \d+$/.test(t) ||
+    t.startsWith("describe a concrete benefit") ||
     t === "tailored to your needs." ||
     t === "tailored to your needs" ||
     t === "details coming soon." ||

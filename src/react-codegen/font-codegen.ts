@@ -85,8 +85,19 @@ ${fontInstance(bExport, body, "--font-body", "fontBody")}`;
  */
 function typeScaleTokens(theme: SiteTheme): string {
   const gap = theme.sectionGapMode ?? "normal";
-  // Ratio tier: airy/editorial → dramatic (~1.5), tight → compact (~1.25), else the 1.333 workhorse.
-  const tier = gap === "airy" ? "dramatic" : gap === "tight" ? "compact" : "normal";
+  // The art director's committed typeScaleRatio wins when present (decouples heading drama from
+  // spacing); otherwise fall back to inferring the tier from section density.
+  const tier: "dramatic" | "normal" | "compact" = theme.typeScaleRatio
+    ? theme.typeScaleRatio === "dramatic"
+      ? "dramatic"
+      : theme.typeScaleRatio === "compact"
+        ? "compact"
+        : "normal"
+    : gap === "airy"
+      ? "dramatic"
+      : gap === "tight"
+        ? "compact"
+        : "normal";
 
   const scales = {
     dramatic: {

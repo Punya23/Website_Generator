@@ -14,6 +14,8 @@ export interface PageCompositionHint {
 export interface SiteCompositionPlan {
   pages: Record<string, PageCompositionHint>;
   siteAvoid: string[];
+  /** The committed one-sentence art direction, injected verbatim into every page's copy prompt. */
+  aestheticDirection: string;
 }
 
 /** Heroes weighted against always picking HeroSpotlight (cursor/mesh FX). */
@@ -179,7 +181,7 @@ export function buildSiteCompositionPlan(
     "Do not reuse the same section types across pages unless the brief explicitly requires it.",
   ];
 
-  return { pages, siteAvoid };
+  return { pages, siteAvoid, aestheticDirection: lookProfile?.aestheticDirection ?? "" };
 }
 
 export function formatCompositionHintBlock(
@@ -190,6 +192,9 @@ export function formatCompositionHintBlock(
   if (!hint) return "";
 
   const lines = [
+    plan.aestheticDirection
+      ? `ART DIRECTION (hold this look across every section — copy, tone, and mood must match it): ${plan.aestheticDirection}`
+      : "",
     "COMPOSITION HINT (follow this — do not default to FAQ or HeroSpotlight):",
     `- Required hero: ${hint.heroComponent}`,
     hint.encourageComponents.length > 0

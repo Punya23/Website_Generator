@@ -30,7 +30,7 @@ import {
   instancesToBlueprint,
 } from "../agents/page-codegen-agent.js";
 import { buildSiteCompositionPlan } from "../agents/page-composition-hints.js";
-import { proposeSiteLookProfile } from "../agents/site-look-agent.js";
+import { proposeSiteLookProfile, applyDesignBriefToTheme } from "../agents/site-look-agent.js";
 import { resolveSiteFxTreatment } from "../design/site-fx.js";
 import {
   applyPageRhythm,
@@ -299,6 +299,9 @@ export async function runReactPipeline(
   };
 
   const lookProfile = await proposeSiteLookProfile(ctx);
+  // Commit the art-director's decisions to the theme BEFORE tokens/contract/motion are derived, so
+  // type scale, spacing and motion all follow the brief rather than heuristic defaults.
+  applyDesignBriefToTheme(ctx.designSystem, lookProfile);
   const siteFx = resolveSiteFxTreatment(ctx, lookProfile);
   const visualContract = resolveSiteVisualContract(ctx.designSystem, siteFx);
   ctx.siteFx = siteFx;

@@ -241,6 +241,9 @@ export type PalettePartial = z.infer<typeof PalettePartialSchema>;
 
 export const RadiusScaleSchema = z.enum(["sharp", "soft", "rounded", "pill"]);
 export const ShadowDepthSchema = z.enum(["flat", "soft", "elevated", "dramatic"]);
+/** Art-director design decisions the LLM commits to per brief (see site-look-agent DesignBrief). */
+export const TypeScaleRatioSchema = z.enum(["compact", "balanced", "dramatic"]);
+export const MotionIntensitySchema = z.enum(["subtle", "standard", "expressive"]);
 
 export const TypographyPartialSchema = z.object({
   fontHeading: z.string(),
@@ -286,6 +289,8 @@ export const SiteThemeSchema = z.object({
   typography: TypographyScaleSchema.optional(),
   surfaces: SurfaceModesSchema.optional(),
   sectionGapMode: z.enum(["tight", "normal", "airy"]).optional(),
+  typeScaleRatio: TypeScaleRatioSchema.optional(),
+  motionIntensity: MotionIntensitySchema.optional(),
   radiusScale: RadiusScaleSchema.optional(),
   shadowDepth: ShadowDepthSchema.optional(),
   colors: z.object({

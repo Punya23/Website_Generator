@@ -43,6 +43,14 @@ RULES:
 - For images use { "alt": "descriptive alt" } only — never src URLs
 - intent: max 12 words describing the section's job on this page
 
+ANTI-SLOP — the fastest tell of an AI-generated site is bland, interchangeable copy. Do NOT ship any of these:
+- Empty hype adjectives as headlines: "Exceptional/Premium/Unparalleled/Elevate your X", "Crafting X Experiences", "Where X meets Y". Name the specific thing this business does.
+- Filler openers: "Welcome to", "Discover", "Experience the difference", "Ready to get started?", "Take your X to the next level".
+- Lorem ipsum or meta-text ("this section will…", "insert…", "content goes here") — ever.
+- Vague benefits ("tailored to your needs", "world-class service", "we care about quality"). Use concrete, specific, verifiable nouns from the brief (real services, places, methods, numbers).
+- Headlines should be short, concrete, and could ONLY belong to this business — a competitor's name should not fit in the same sentence.
+Write like a sharp brand copywriter who knows this business intimately, not a template.
+
 LAYOUT VARIATION — many components (heroes, FaqAccordion, CtaBand, FooterCta) accept an optional
 "layoutVariant" prop. If you omit it, the component silently falls back to ONE fixed default every
 time, which is exactly the sameness you must avoid. Set it deliberately per section:
@@ -80,10 +88,22 @@ export function minimalBriefContext(ctx: SiteContext): string {
     b.elevatorPitch.length > 40
       ? b.elevatorPitch
       : b.expandedBrief.slice(0, 320).replace(/\s+/g, " ").trim();
-  return `Business: ${ctx.businessName}
-Essence: ${essence}
-Tone: ${b.tone}
-Primary CTA: ${b.primaryCta}`;
+  // A real content pack grounds copy in concrete nouns (services, differentiators, audience) so the
+  // model writes about THIS business instead of inventing generic filler — the direct fix for the
+  // "copy feels generic" vision flag. Kept compact; lists trimmed to the strongest few.
+  const services = b.services.slice(0, 5).join(", ");
+  const edge = b.differentiators.slice(0, 4).join(", ");
+  const lines = [
+    `Business: ${ctx.businessName}`,
+    b.tagline ? `Tagline: ${b.tagline}` : "",
+    `Essence: ${essence}`,
+    `Audience: ${b.targetAudience}`,
+    services ? `Services / offerings: ${services}` : "",
+    edge ? `What makes it different: ${edge}` : "",
+    `Tone: ${b.tone}`,
+    `Primary CTA: ${b.primaryCta}`,
+  ].filter(Boolean);
+  return lines.join("\n");
 }
 
 function buildUserPrompt(

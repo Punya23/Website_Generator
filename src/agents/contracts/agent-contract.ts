@@ -67,11 +67,32 @@ function normalizeDesignEnums(payload: Record<string, unknown>): Record<string, 
   const accentRoles = new Set(["sparing", "hero", "editorial"]);
   const pageTones = new Set(["light", "dark", "warm", "cool"]);
   const navTreatments = new Set(["glass-dark", "glass-light", "solid", "minimal"]);
+  const surfaces = new Set(["none", "subtle", "elevated", "bordered"]);
 
   if (out.gradientMood && !gradientMoods.has(String(out.gradientMood))) delete out.gradientMood;
   if (out.accentRole && !accentRoles.has(String(out.accentRole))) delete out.accentRole;
   if (out.pageTone && !pageTones.has(String(out.pageTone))) delete out.pageTone;
   if (out.navTreatment && !navTreatments.has(String(out.navTreatment))) delete out.navTreatment;
+
+  if (out.surfaces && typeof out.surfaces === "object" && !Array.isArray(out.surfaces)) {
+    const raw = { ...(out.surfaces as Record<string, unknown>) };
+    const coerced: Record<string, string> = {};
+    for (const key of ["default", "elevated", "none"] as const) {
+      const v = String(raw[key] ?? "").toLowerCase();
+      if (surfaces.has(v)) {
+        coerced[key] = v;
+      } else if (/elevat|shadow|lift/.test(v)) {
+        coerced[key] = "elevated";
+      } else if (/border|card|panel/.test(v)) {
+        coerced[key] = "bordered";
+      } else if (/subtle|soft|wash/.test(v)) {
+        coerced[key] = "subtle";
+      } else if (v) {
+        coerced[key] = "none";
+      }
+    }
+    out.surfaces = coerced;
+  }
 
   if (out.layout && typeof out.layout === "object" && !Array.isArray(out.layout)) {
     const layout = { ...(out.layout as Record<string, unknown>) };

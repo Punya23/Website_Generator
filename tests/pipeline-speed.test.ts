@@ -36,14 +36,14 @@ describe("pipeline-speed", () => {
     expect(skipDirectorRetries()).toBe(false);
   });
 
-  it("page codegen is on by default in quality mode", async () => {
+  it("page codegen is always on (legacy architect path removed)", async () => {
     const { usePageCodegenPipeline } = await import("../src/llm/pipeline-speed.js");
     delete process.env.PIPELINE_PAGE_CODEGEN;
     delete process.env.PIPELINE_FAST;
     delete process.env.PIPELINE_QUALITY;
     expect(usePageCodegenPipeline()).toBe(true);
     process.env.PIPELINE_PAGE_CODEGEN = "0";
-    expect(usePageCodegenPipeline()).toBe(false);
+    expect(usePageCodegenPipeline()).toBe(true);
     process.env.PIPELINE_PAGE_CODEGEN = "1";
     expect(usePageCodegenPipeline()).toBe(true);
   });

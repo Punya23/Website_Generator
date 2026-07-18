@@ -30,28 +30,18 @@ Rules:
   - Prefer solid or minimal unless the brief explicitly calls for glass/translucent chrome
   - Do NOT default to glass — choose what fits THIS business
 - navBg should be opaque for solid/minimal (hex colors), translucent only for glass
-- surfaces: describe how cards/panels feel for this brand
+- surfaces: closed vocabulary for card/panel language on this brand
+  - each of default / elevated / none must be one of: none | subtle | elevated | bordered
+  - Example: editorial brands often use default "none", elevated "bordered"; product brands use default "bordered", elevated "elevated"
 
 - navShape: full-width | floating-capsule | floating-panel | split-inline
   This is the physical shape of the nav bar. Pick deliberately — it is one of the first
   things a visitor notices, and it should feel considered for THIS brand, not default.
-  - full-width: classic edge-to-edge bar flush with the top of the viewport, straight
-    bottom border, logo left / links right. Reads formal, institutional, dependable —
-    good for clinics, law/finance, enterprise SaaS, corporate services.
-  - floating-capsule: the whole nav (logo + links together) sits inset from the browser
-    edges as one continuous rounded pill, floating with visible page background around
-    it. Reads modern, app-like, confident — good for boutique/premium/nightlife/tech
-    brands that want to feel current.
-  - floating-panel: like floating-capsule but a softer-cornered rounded rectangle instead
-    of a full pill, roomier internal padding. Reads warm, considered, editorial-adjacent —
-    good for hospitality, wellness, food, community brands.
-  - split-inline: the logo renders as its OWN small floating pill on the left, and the nav
-    links render as a SEPARATE floating pill on the right, with a visible gap of page
-    background between them. Reads distinctive, asymmetric, design-forward — good for
-    creative studios, fashion, architecture, agencies, portfolio-driven brands.
-  Vary this choice with the brand's personality and energy — do not fall back to
-  full-width by default. Most current, well-designed brand sites lean toward one of the
-  floating or split shapes; reserve full-width for genuinely formal/institutional brands.
+  - full-width: classic edge-to-edge bar flush with the top of the viewport — formal/institutional
+  - floating-capsule: whole nav as one inset rounded pill — modern/app-like/premium
+  - floating-panel: softer rounded rectangle floating bar — warm/hospitality/wellness
+  - split-inline: logo pill + links pill as two surfaces with a gap — design-forward studios
+  Vary with brand personality — do not default to full-width every time.
 
 Output valid JSON only.
 
@@ -62,8 +52,8 @@ Output JSON:
   "navShape": "floating-capsule",
   "surfaces": {
     "default": "none",
-    "elevated": "subtle borders only",
-    "none": "typography-first sections"
+    "elevated": "bordered",
+    "none": "none"
   },
   "colors": {
     "navBg": "#ffffff",
@@ -139,7 +129,7 @@ function mockNavSurface(businessBrief: string, verticalProfile?: VerticalDesignP
     navTreatment: editorial ? "minimal" : "solid",
     navShape: editorial ? "split-inline" : "floating-capsule",
     surfaces: editorial
-      ? { default: "none", elevated: "pricing panels only", none: "typography-first sections" }
+      ? { default: "none", elevated: "bordered", none: "none" }
       : GENERIC_THEME.surfaces,
     colors: editorial
       ? {

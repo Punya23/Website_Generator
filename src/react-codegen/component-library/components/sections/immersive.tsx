@@ -15,9 +15,19 @@ import {
   SplitRevealHeading,
   Stagger,
   StaggerItem,
+  bandFillClass,
   cardGridClassForCount,
+  mediaOverlayClass,
+  panelClass,
+  surfaceClass,
+  type BandFill,
+  type Divider,
+  type MediaOverlay,
+  type Panel,
+  type Surface,
 } from "../primitives";
 import { SectionIdProvider } from "../SectionContext";
+import { useSectionParallax } from "../MotionProvider";
 
 type ImageField = { src?: string; alt?: string };
 type CtaField = { label: string; href?: string };
@@ -37,7 +47,7 @@ function ImmersiveShell({
   children: React.ReactNode;
   className?: string;
   layoutVariant?: string;
-  divider?: boolean;
+  divider?: Divider;
 }) {
   const ref = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
@@ -45,7 +55,7 @@ function ImmersiveShell({
 
   return (
     <SectionIdProvider id={id}>
-      {divider ? <SectionDivider /> : null}
+      {divider && divider !== "none" ? <SectionDivider divider={divider} /> : null}
       <motion.section
         ref={ref}
         data-section={id}
@@ -54,8 +64,8 @@ function ImmersiveShell({
         data-layout-variant={layoutVariant}
         className={`section-shell ${className}`}
         initial={reduce ? false : { opacity: 0.85, scale: 0.98 }}
-        animate={inView ? { opacity: 1, scale: 1 } : undefined}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        animate={reduce ? undefined : inView ? { opacity: 1, scale: 1 } : undefined}
+        transition={reduce ? { duration: 0 } : { duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       >
         {children}
       </motion.section>
@@ -111,10 +121,25 @@ export function HeroVideo(props: {
   video?: { src?: string; poster?: ImageField };
   cta?: CtaField;
   layoutVariant?: string;
+  density?: "airy" | "normal" | "compact";
+  bandFill?: BandFill;
+  mediaOverlay?: MediaOverlay;
 }) {
+  const centered = (props.layoutVariant ?? "full-bleed-left") === "centered-stack";
+  const contentAlign = centered ? "text-center" : "text-left";
+  const bodyAlign = centered ? "mx-auto flex min-h-[75vh] flex-col items-center justify-center" : "";
+  const parallax = useSectionParallax(props.id);
+
   return (
     <ImmersiveShell id={props.id} templateId="hero_video" mode="bleed" layoutVariant={props.layoutVariant} className="relative min-h-[75vh] overflow-hidden">
-      <div className="absolute inset-0">
+      <motion.div
+        className="absolute inset-0"
+        style={parallax ? { y: 0 } : undefined}
+        initial={parallax ? { scale: 1.08 } : false}
+        whileInView={parallax ? { scale: 1 } : undefined}
+        transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+        viewport={{ once: true }}
+      >
         {props.video?.src ? (
           <video
             className="h-full w-full object-cover"
@@ -129,16 +154,18 @@ export function HeroVideo(props: {
         ) : props.video?.poster?.src ? (
           <img src={props.video.poster.src} alt={props.video.poster.alt ?? props.headline} className="h-full w-full object-cover" />
         ) : (
-          <div className="h-full w-full mesh-gradient bg-accent/10" />
+          <div className={`h-full w-full ${bandFillClass(props.bandFill ?? "subtle")}`} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-bg/90 via-bg/30 to-transparent" />
-      </div>
-      <Container className="relative z-10 pb-16 pt-32">
-        <SectionBody>
+        {props.mediaOverlay === "none" ? null : (
+          <div className={mediaOverlayClass(props.mediaOverlay, "scrim-bottom")} />
+        )}
+      </motion.div>
+      <Container className={`relative z-10 pb-16 pt-32 ${contentAlign}`}>
+        <SectionBody className={bodyAlign}>
           <Reveal>
             {props.label ? <MonoTag>{props.label}</MonoTag> : null}
-            <SplitRevealHeading text={props.headline} className="mt-4 max-w-3xl text-text" />
-            {props.subcopy ? <p className="mt-4 max-w-xl text-lg text-muted">{props.subcopy}</p> : null}
+            <SplitRevealHeading text={props.headline} className={`mt-4 max-w-3xl text-text ${centered ? "mx-auto" : ""}`} />
+            {props.subcopy ? <p className={`mt-4 max-w-xl text-lg text-muted ${centered ? "mx-auto" : ""}`}>{props.subcopy}</p> : null}
             {props.cta ? (
               <div className="mt-8">
                 <MagneticButton href={props.cta.href ?? "#contact"} className="bg-accent px-6 py-3 text-sm font-semibold text-white">
@@ -158,6 +185,7 @@ export function TestimonialCarousel(props: {
   label?: string;
   headline?: string;
   items: Array<{ quote: string; author: string; role?: string; avatar?: ImageField }>;
+  panel?: Panel;
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "center" });
   const [index, setIndex] = useState(0);
@@ -185,7 +213,7 @@ export function TestimonialCarousel(props: {
           <div className="flex">
             {props.items.map((item, i) => (
               <div key={i} className="min-w-0 flex-[0_0_100%] px-2 md:flex-[0_0_80%] lg:flex-[0_0_60%]">
-                <div className="rounded-2xl border border-border bg-surface/80 p-8 backdrop-blur-sm md:p-10">
+                <div className={`${panelClass(props.panel ?? "bordered")} p-8 md:p-10`}>
                   <p className="font-display text-xl leading-relaxed text-text md:text-2xl">&ldquo;{item.quote}&rdquo;</p>
                   <div className="mt-6 flex items-center gap-4">
                     {item.avatar?.src ? (
@@ -239,7 +267,7 @@ export function PortfolioCarousel(props: {
         <div className="flex gap-4">
           {props.slides.map((slide, i) => (
             <div key={i} className="min-w-0 flex-[0_0_85%] sm:flex-[0_0_50%] lg:flex-[0_0_38%]">
-              <div className="section-media group relative overflow-hidden rounded-2xl">
+              <div className="section-media group relative overflow-hidden rounded-[var(--radius-lg)]">
                 {slide.image?.src ? (
                   <img
                     src={slide.image.src}
@@ -270,15 +298,16 @@ export function BeforeAfter(props: {
   before: ImageField;
   after: ImageField;
   caption?: string;
+  divider?: Divider;
 }) {
   const [position, setPosition] = useState(50);
 
   return (
-    <ImmersiveShell id={props.id} templateId="before_after" mode="contained" divider className="py-section">
+    <ImmersiveShell id={props.id} templateId="before_after" mode="contained" divider={props.divider} className="py-section">
       <Container>
         {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
         {props.headline ? <DisplayHeading className="mt-2">{props.headline}</DisplayHeading> : null}
-        <div className="relative mt-8 aspect-[16/10] overflow-hidden rounded-2xl">
+        <div className="relative mt-8 aspect-[16/10] overflow-hidden rounded-[var(--radius-lg)]">
           {props.after.src ? (
             <img src={props.after.src} alt={props.after.alt ?? "After"} className="absolute inset-0 h-full w-full object-cover" />
           ) : (
@@ -301,8 +330,8 @@ export function BeforeAfter(props: {
             aria-label="Compare before and after"
           />
           <div className="pointer-events-none absolute bottom-0 top-0 z-[5] w-0.5 bg-white shadow-lg" style={{ left: `${position}%` }} />
-          <span className="pointer-events-none absolute left-4 top-4 rounded-full bg-black/50 px-3 py-1 text-xs text-white">Before</span>
-          <span className="pointer-events-none absolute right-4 top-4 rounded-full bg-black/50 px-3 py-1 text-xs text-white">After</span>
+          <span className="pointer-events-none absolute left-4 top-4 rounded-[var(--radius)] bg-black/50 px-3 py-1 text-xs text-white">Before</span>
+          <span className="pointer-events-none absolute right-4 top-4 rounded-[var(--radius)] bg-black/50 px-3 py-1 text-xs text-white">After</span>
         </div>
         {props.caption ? <p className="mt-4 text-center text-muted">{props.caption}</p> : null}
       </Container>
@@ -317,6 +346,8 @@ export function PricingToggle(props: {
   monthlyLabel?: string;
   yearlyLabel?: string;
   layoutVariant?: string;
+  bandFill?: BandFill;
+  panel?: Panel;
   tiers: Array<{
     name: string;
     monthlyPrice: string;
@@ -335,22 +366,22 @@ export function PricingToggle(props: {
   const toggleAlign = centered ? "justify-center" : "justify-start";
 
   return (
-    <ImmersiveShell id={props.id} templateId="pricing_toggle" mode="contained" className="py-section mesh-gradient">
+    <ImmersiveShell id={props.id} templateId="pricing_toggle" mode="contained" className={`py-section ${bandFillClass(props.bandFill ?? "plain")}`}>
       <Container>
         {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
         {props.headline ? <DisplayHeading className={`mt-2 ${headerAlign}`}>{props.headline}</DisplayHeading> : null}
         <div className={`mt-6 flex ${toggleAlign}`}>
-          <div className="inline-flex rounded-full border border-border bg-surface p-1">
+          <div className="inline-flex rounded-[var(--radius)] border border-border bg-surface p-1">
             <button
               type="button"
-              className={`rounded-full px-4 py-2 text-sm font-medium transition ${!yearly ? "bg-accent text-white" : "text-muted"}`}
+              className={`rounded-[var(--radius)] px-4 py-2 text-sm font-medium transition ${!yearly ? "bg-accent text-white" : "text-muted"}`}
               onClick={() => setYearly(false)}
             >
               {monthlyLabel}
             </button>
             <button
               type="button"
-              className={`rounded-full px-4 py-2 text-sm font-medium transition ${yearly ? "bg-accent text-white" : "text-muted"}`}
+              className={`rounded-[var(--radius)] px-4 py-2 text-sm font-medium transition ${yearly ? "bg-accent text-white" : "text-muted"}`}
               onClick={() => setYearly(true)}
             >
               {yearlyLabel}
@@ -361,7 +392,7 @@ export function PricingToggle(props: {
           {props.tiers.map((tier) => (
             <StaggerItem key={tier.name}>
               <div
-                className={`flex h-full flex-col rounded-2xl border p-6 ${tier.highlighted ? "border-accent bg-surface shadow-xl" : "border-border bg-surface/80"}`}
+                className={`flex h-full flex-col ${panelClass(props.panel)} ${tier.highlighted ? "ring-2 ring-accent" : ""}`}
               >
                 <p className="font-semibold text-text">{tier.name}</p>
                 <p className="mt-2 font-display text-3xl font-bold text-text">
@@ -399,9 +430,16 @@ export function StatsAnimated(props: {
   label?: string;
   headline?: string;
   stats: Array<{ value: string; label: string }>;
+  bandFill?: BandFill;
+  surface?: Surface;
 }) {
   return (
-    <ImmersiveShell id={props.id} templateId="stats_animated" mode="band" className="border-y border-border py-section">
+    <ImmersiveShell
+      id={props.id}
+      templateId="stats_animated"
+      mode="band"
+      className={`py-section ${bandFillClass(props.bandFill)} ${surfaceClass(props.surface)}`}
+    >
       <Container>
         {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
         {props.headline ? <DisplayHeading className="mt-2 text-center">{props.headline}</DisplayHeading> : null}
@@ -421,9 +459,16 @@ export function NewsletterBand(props: {
   subcopy?: string;
   placeholder?: string;
   buttonLabel?: string;
+  bandFill?: BandFill;
+  surface?: Surface;
 }) {
   return (
-    <ImmersiveShell id={props.id} templateId="newsletter_band" mode="band" className="border-t border-border bg-surface/60 py-section">
+    <ImmersiveShell
+      id={props.id}
+      templateId="newsletter_band"
+      mode="band"
+      className={`py-section ${bandFillClass(props.bandFill)} ${surfaceClass(props.surface)}`}
+    >
       <Container narrow="sm" className="text-center">
         <Reveal>
           <DisplayHeading as="h2">{props.headline}</DisplayHeading>
@@ -435,7 +480,7 @@ export function NewsletterBand(props: {
             <input
               type="email"
               placeholder={props.placeholder ?? "you@example.com"}
-              className="rounded-full border border-border bg-bg px-5 py-3 text-sm outline-none focus:border-accent"
+              className="rounded-[var(--radius)] border border-border bg-bg px-5 py-3 text-sm outline-none focus:border-accent"
               aria-label="Email"
             />
             <MagneticButton className="bg-accent px-6 py-3 text-sm font-semibold text-white">

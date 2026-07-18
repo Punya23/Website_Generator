@@ -1,46 +1,29 @@
-import type { PageBlueprint, PagePlan, QAResult, ReactPage, SectionInstance, SiteContext } from "../types.js";
-import { directPageBlueprints } from "../agents/creative-director-agent.js";
-import { directChromeSpec } from "../agents/chrome-director-agent.js";
-import { directMotionPlan } from "../agents/motion-director-agent.js";
-import { directLayoutPlan } from "../agents/layout-director-agent.js";
-import { fillSectionProps } from "../agents/section-props-agent.js";
+import type { PageBlueprint, QAResult, ReactPage, SectionInstance, SiteContext } from "../types.js";
 import { composePageSections } from "../agents/page-composer-agent.js";
-import { generateReactProject } from "../react-codegen/assemble-project.js";
-import { buildReactProject } from "../react-codegen/build-project.js";
+import { generateReactProject, buildReactProject } from "../react-codegen/assemble-project.js";
 import { startReactPreviewServer, stopReactPreviewServer } from "../react-codegen/react-preview-server.js";
 import { runReactQA, runDesignQA } from "../qa/react-qa.js";
 import { runMotionQA } from "../qa/motion-qa.js";
 import { runChromeQA } from "../qa/chrome-qa.js";
 import { runLayoutQA } from "../qa/layout-qa.js";
 import { runBlueprintQA } from "../qa/blueprint-qa.js";
-import { repairBlueprints } from "../design/blueprint-repair.js";
 import {
-  creativeDirectorPoolOnly,
-  isFastPipeline,
   isQualityPipeline,
-  sectionFillConcurrency,
-  bespokeCodegenConcurrency,
-  skipDirectorRetries,
+  isFastPipeline,
   visionQaEnabled,
   visionQaHomeOnly,
   maxVisionRetries,
-  usePageCodegenPipeline,
 } from "../llm/pipeline-speed.js";
 import { mapPool } from "../util/async-pool.js";
 import { attachMotionPlan } from "../agents/contracts/index.js";
 import { MediaRegistry } from "../media/media-registry.js";
 import { timedStep } from "../util/timed.js";
 import { pipelineLog } from "../util/pipeline-log.js";
-import { getPagePlan } from "../agents/site-planner-agent.js";
 import { llm } from "../llm/client.js";
 import {
   buildAndVisionQa,
   runSiteVisionRetryLoop,
 } from "./react-vision-retry.js";
-import {
-  generateBespokeSection,
-  shouldAttemptBespokeSection,
-} from "../agents/section-codegen-agent.js";
 import { repairBespokeSectionWithBuildError } from "../agents/build-repair-agent.js";
 import {
   generatePageSections,
@@ -48,8 +31,13 @@ import {
 } from "../agents/page-codegen-agent.js";
 import { buildSiteCompositionPlan } from "../agents/page-composition-hints.js";
 import { proposeSiteLookProfile } from "../agents/site-look-agent.js";
-import { resolveSiteFxTreatment, type SiteFxTreatment } from "../design/site-fx.js";
+import { resolveSiteFxTreatment } from "../design/site-fx.js";
+import {
+  applyPageRhythm,
+  resolveSiteVisualContract,
+} from "../design/design-language.js";
 import { minimalChromeSpec, minimalMotionPlan } from "../agents/minimal-site-chrome.js";
+import { acceptGeneratedProject } from "../react-codegen/accept-generated.js";
 
 export function getOutputMode(): "react" | "html" {
   const mode = (process.env.OUTPUT_MODE ?? "react").toLowerCase();
@@ -61,8 +49,6 @@ export function parseFailedCustomComponent(buildError: string): string | null {
   return match?.[1] ?? null;
 }
 
-/** Drops a broken bespoke section's customCodegen so it falls back to its already-valid
- *  fixed-template render (writePageTsx uses the template component whenever customCodegen is absent). */
 export function dropCustomCodegenByFileName(reactPages: Record<string, ReactPage>, fileName: string): boolean {
   for (const page of Object.values(reactPages)) {
     const section = page.sections.find((s) => s.customCodegen?.fileName === fileName);
@@ -74,7 +60,6 @@ export function dropCustomCodegenByFileName(reactPages: Record<string, ReactPage
   return false;
 }
 
-/** Drop every bespoke section when the build error has no parseable file (e.g. prerender useContext). */
 export function dropAllCustomCodegen(reactPages: Record<string, ReactPage>): number {
   let dropped = 0;
   for (const page of Object.values(reactPages)) {
@@ -93,8 +78,6 @@ export interface ReactPipelineResult {
   projectPath: string;
   previewPath: string;
   buildSucceeded: boolean;
-  /** The real compiler/build error from the final failed attempt, once repair + mechanical
-   *  fallbacks are exhausted. Only set when buildSucceeded is false. */
   buildError?: string;
   qaResults: Record<string, QAResult>;
 }
@@ -131,6 +114,11 @@ async function finishReactPipeline(
   const repairAttemptsByFile = new Map<string, number>();
   for (let attempt = 0; attempt < MAX_BUILD_ATTEMPTS; attempt++) {
     try {
+      // Hard typecheck gate before/during build acceptance
+      const typeGate = await acceptGeneratedProject(projectPath, { skipBuild: true });
+      if (!typeGate.ok) {
+        throw new Error(typeGate.error ?? "Generated project typecheck failed");
+      }
       previewPath = await buildReactProject(projectPath);
       buildSucceeded = true;
       pipelineLog(`[pipeline] React build complete → ${previewPath}`);
@@ -194,7 +182,7 @@ async function finishReactPipeline(
 
   if (!buildSucceeded) {
     pipelineLog(
-      `[pipeline] React build skipped (${lastBuildError.slice(0, 400)}) — using HTML preview fallback`
+      `[pipeline] React build failed after acceptance attempts — site will not be marked successful. Last error: ${lastBuildError.slice(0, 400)}`
     );
     pipelineLog(
       `[pipeline] Failed React project kept at ${projectPath} (npm run build && npm run preview — open /preview/)`
@@ -202,7 +190,7 @@ async function finishReactPipeline(
   }
 
   for (const slug of Object.keys(reactPages)) {
-    qaResults[slug] = await runReactQA(reactPages[slug]!, slug, ctx.expandedBrief.expandedBrief);
+    qaResults[slug] = runReactQA(reactPages[slug]!, slug, ctx.expandedBrief.expandedBrief);
   }
 
   const designQa = runDesignQA(ctx.designSystem);
@@ -277,6 +265,9 @@ async function finishReactPipeline(
     }
   }
 
+  void isQualityPipeline;
+  void isFastPipeline;
+
   return {
     reactPages,
     projectPath,
@@ -287,6 +278,10 @@ async function finishReactPipeline(
   };
 }
 
+/**
+ * Single production React path: page-codegen only.
+ * Design council → visual contract → composition → typed acceptance → chrome/motion → assemble → accept.
+ */
 export async function runReactPipeline(
   ctx: SiteContext,
   registry: MediaRegistry,
@@ -294,259 +289,87 @@ export async function runReactPipeline(
   options: { previewBasePath?: string } = {}
 ): Promise<ReactPipelineResult> {
   const pages = ctx.sitePlan.pages;
-  const pageCodegen = usePageCodegenPipeline();
-
-  if (pageCodegen) {
-    pipelineLog(
-      "[pipeline] Page codegen mode: one LLM call per page composes components + copy"
-    );
-  } else if (isQualityPipeline()) {
-    pipelineLog(
-      `[pipeline] Quality mode: site architect (GLM), Gemini section copy, concurrency ×${sectionFillConcurrency()}`
-    );
-  } else if (isFastPipeline()) {
-    pipelineLog(
-      `[pipeline] Fast mode: parallel sections (×${sectionFillConcurrency()}), unified section LLM, pool blueprints`
-    );
-  }
-
-  let blueprints: PageBlueprint[];
-  const reactPages: Record<string, ReactPage> = {};
-
-  if (pageCodegen) {
-    type PageRow = {
-      blueprint: PageBlueprint;
-      instances: SectionInstance[];
-    };
-
-    const lookProfile = await proposeSiteLookProfile(ctx);
-    const siteFx: SiteFxTreatment = resolveSiteFxTreatment(ctx, lookProfile);
-    const siteComposition = buildSiteCompositionPlan(ctx, lookProfile);
-    pipelineLog(`[pipeline] Site FX treatment: ${siteFx}`);
-    pipelineLog(
-      `[pipeline] Site composition: ${Object.entries(siteComposition.pages)
-        .map(([slug, h]) => `${slug}→${h.heroComponent}`)
-        .join(", ")}`
-    );
-
-    const pageRows = await mapPool(
-      pages,
-      Math.min(4, Math.max(1, pages.length)),
-      async (pagePlan): Promise<PageRow> => {
-        const instances = await timedStep(pagePlan.slug, "page codegen", () =>
-          generatePageSections(ctx, pagePlan, registry, siteComposition)
-        );
-        const blueprint = instancesToBlueprint(pagePlan.slug, instances);
-        pipelineLog(
-          `[pipeline] ${pagePlan.slug}: ${instances.map((s) => s.templateId).join("→")}`
-        );
-        return { blueprint, instances };
-      }
-    );
-
-    blueprints = pageRows.map((r) => r.blueprint);
-
-    const blueprintQa = runBlueprintQA(blueprints, ctx);
-    if (!blueprintQa.passed) {
-      pipelineLog(
-        `[pipeline] Blueprint QA notes (page codegen): ${blueprintQa.issues.map((i) => i.message).join("; ")}`
-      );
-    }
-
-    const chromeSpec0 = minimalChromeSpec(ctx, blueprints);
-    const motionPlan = minimalMotionPlan(ctx, blueprints);
-    const layoutPlan = { sections: {} };
-    ctx.chromeSpec = chromeSpec0;
-    ctx.motionPlan = motionPlan;
-    ctx.layoutPlan = layoutPlan;
-
-    const chromeQa = runChromeQA(chromeSpec0);
-    const motionQa = runMotionQA(motionPlan, blueprints);
-    const layoutQa = runLayoutQA(layoutPlan, blueprints);
-    pipelineLog(`[pipeline] Page codegen: minimal chrome; visualFx=${siteFx}`);
-
-    for (const pagePlan of pages) {
-      const row = pageRows.find((r) => r.blueprint.slug === pagePlan.slug)!;
-      const stamped: SectionInstance[] = row.instances.map((s) => ({
-        ...s,
-        props: { ...s.props, visualFx: siteFx },
-      }));
-      const composed = attachMotionPlan(
-        composePageSections(row.blueprint, stamped),
-        ctx.motionPlan!
-      );
-      reactPages[pagePlan.slug] = {
-        slug: pagePlan.slug,
-        title: pagePlan.title,
-        navLabel: pagePlan.navLabel,
-        sections: composed,
-      };
-      ctx.reactPages = { ...ctx.reactPages, [pagePlan.slug]: reactPages[pagePlan.slug] };
-    }
-
-    return finishReactPipeline(ctx, reactPages, blueprints, registry, outputDir, options, {
-      blueprintQa,
-      chromeQa,
-      motionQa,
-      layoutQa,
-    });
-  }
-
-  blueprints = await timedStep("site", "creative director", () =>
-    directPageBlueprints(ctx, pages, { poolOnly: creativeDirectorPoolOnly() })
+  pipelineLog(
+    `[pipeline] Page codegen (sole React path)${isQualityPipeline() ? " · quality" : isFastPipeline() ? " · fast" : ""}`
   );
 
-  let blueprintQa = runBlueprintQA(blueprints, ctx);
-  const homeBp = blueprints.find((b) => b.slug === "home");
-  if (homeBp) {
-    const closer = homeBp.sections.find((s) => ["cta_band", "footer_cta"].includes(s.templateId));
-    pipelineLog(
-      `[pipeline] Home blueprint: ${homeBp.sections.length} sections, closer=${closer?.templateId ?? "none"}, profile=${ctx.verticalProfile?.profileId ?? "—"}, seed=${ctx.variationSeed ?? "—"}`
-    );
-  }
+  type PageRow = {
+    blueprint: PageBlueprint;
+    instances: SectionInstance[];
+  };
+
+  const lookProfile = await proposeSiteLookProfile(ctx);
+  const siteFx = resolveSiteFxTreatment(ctx, lookProfile);
+  const visualContract = resolveSiteVisualContract(ctx.designSystem, siteFx);
+  ctx.siteFx = siteFx;
+
+  const siteComposition = buildSiteCompositionPlan(ctx, lookProfile);
+  pipelineLog(`[pipeline] Site FX treatment: ${siteFx}`);
+  pipelineLog(
+    `[pipeline] Site composition: ${Object.entries(siteComposition.pages)
+      .map(([slug, h]) => `${slug}→${h.heroComponent}`)
+      .join(", ")}`
+  );
+
+  const pageRows = await mapPool(
+    pages,
+    Math.min(4, Math.max(1, pages.length)),
+    async (pagePlan): Promise<PageRow> => {
+      const instances = await timedStep(pagePlan.slug, "page codegen", () =>
+        generatePageSections(ctx, pagePlan, registry, siteComposition)
+      );
+      const blueprint = instancesToBlueprint(pagePlan.slug, instances);
+      pipelineLog(
+        `[pipeline] ${pagePlan.slug}: ${instances.map((s) => s.templateId).join("→")}`
+      );
+      return { blueprint, instances };
+    }
+  );
+
+  const blueprints = pageRows.map((r) => r.blueprint);
+
+  const blueprintQa = runBlueprintQA(blueprints, ctx);
   if (!blueprintQa.passed) {
-    const issueMessages = blueprintQa.issues.map((i) => i.message);
     pipelineLog(
-      `[pipeline] Blueprint QA failed (${issueMessages.join("; ")}); ${isQualityPipeline() ? "architect retry…" : "regenerating from profile pool…"}`
+      `[pipeline] Blueprint QA notes: ${blueprintQa.issues.map((i) => i.message).join("; ")}`
     );
-    if (isQualityPipeline()) {
-      blueprints = await timedStep("site", "site architect (QA retry)", () =>
-        directPageBlueprints(ctx, pages, { qaIssues: issueMessages })
-      );
-    } else {
-      blueprints = await timedStep("site", "creative director (pool retry)", () =>
-        directPageBlueprints(ctx, pages, { poolOnly: true })
-      );
-    }
-    blueprintQa = runBlueprintQA(blueprints, ctx);
-    if (!blueprintQa.passed) {
-      pipelineLog(
-        `[pipeline] Blueprint QA still failing — applying deterministic repair…`
-      );
-      blueprints = repairBlueprints(blueprints, ctx);
-      blueprintQa = runBlueprintQA(blueprints, ctx);
-    }
   }
 
-  // Chrome, motion, and layout directors all take just (ctx, blueprints) and don't consume each
-  // other's output — no reason to serialize them.
-  const [chromeSpec0, motionPlan, layoutPlan] = await timedStep(
-    "site",
-    "chrome + motion + layout directors",
-    () =>
-      Promise.all([
-        directChromeSpec(ctx, blueprints),
-        directMotionPlan(ctx, blueprints),
-        directLayoutPlan(ctx, blueprints),
-      ])
-  );
+  const chromeSpec0 = minimalChromeSpec(ctx, blueprints);
+  const motionPlan = minimalMotionPlan(ctx, blueprints, chromeSpec0);
+  const layoutPlan = { sections: {} };
   ctx.chromeSpec = chromeSpec0;
   ctx.motionPlan = motionPlan;
   ctx.layoutPlan = layoutPlan;
 
-  let chromeQa = runChromeQA(chromeSpec0);
-  let motionQa = runMotionQA(motionPlan, blueprints);
-  let layoutQa = runLayoutQA(layoutPlan, blueprints);
+  const chromeQa = runChromeQA(chromeSpec0);
+  const motionQa = runMotionQA(motionPlan, blueprints);
+  const layoutQa = runLayoutQA(layoutPlan, blueprints);
+  pipelineLog(
+    `[pipeline] Visual contract: fx=${visualContract.visualFx} surface=${visualContract.defaultSurface} panel=${visualContract.defaultPanel}`
+  );
 
-  if (!skipDirectorRetries()) {
-    await Promise.all([
-      (async () => {
-        if (chromeQa.passed) return;
-        pipelineLog(
-          `[pipeline] Chrome QA failed (${chromeQa.issues.map((i) => i.message).join("; ")}); retrying chrome director…`
-        );
-        ctx.chromeSpec = await directChromeSpec(ctx, blueprints);
-        chromeQa = runChromeQA(ctx.chromeSpec);
-      })(),
-      (async () => {
-        if (motionQa.passed) return;
-        pipelineLog(
-          `[pipeline] Motion QA failed (${motionQa.issues.map((i) => i.message).join("; ")}); retrying motion director…`
-        );
-        ctx.motionPlan = await directMotionPlan(ctx, blueprints);
-        motionQa = runMotionQA(ctx.motionPlan, blueprints);
-      })(),
-      (async () => {
-        if (layoutQa.passed) return;
-        pipelineLog(
-          `[pipeline] Layout QA failed (${layoutQa.issues.map((i) => i.message).join("; ")}); retrying layout director…`
-        );
-        ctx.layoutPlan = await directLayoutPlan(ctx, blueprints);
-        layoutQa = runLayoutQA(ctx.layoutPlan, blueprints);
-      })(),
-    ]);
-  }
-
-  type SectionJob = {
-    blueprint: (typeof blueprints)[number];
-    section: (typeof blueprints)[number]["sections"][number];
-    sectionIndex: number;
-  };
-
-  const jobs: SectionJob[] = [];
-  for (const blueprint of blueprints) {
-    pipelineLog(`[pipeline] ${blueprint.slug}: filling ${blueprint.sections.length} sections…`);
-    blueprint.sections.forEach((section, sectionIndex) => {
-      jobs.push({ blueprint, section, sectionIndex });
-    });
-  }
-
-  const concurrency = sectionFillConcurrency();
-  const filled = await mapPool(jobs, concurrency, async (job) => {
-    const instance = await timedStep(job.blueprint.slug, `${job.section.id}: props`, () =>
-      fillSectionProps(ctx, job.blueprint.slug, job.section, registry)
-    );
-    return { ...job, instance };
-  });
-
-  // Bespoke codegen is a separate, slower pass with its own (wider) concurrency and request
-  // queue — mixing it into the props-fill pool above serializes fast prop-fills behind slow
-  // (10-150s) codegen calls sharing the same worker slots.
-  const codegenEligible = filled
-    .map((row, i) => ({ row, i }))
-    .filter(({ row }) => shouldAttemptBespokeSection(ctx, row.section));
-
-  if (codegenEligible.length > 0) {
-    const codegenConcurrency = bespokeCodegenConcurrency();
-    pipelineLog(
-      `[pipeline] Bespoke codegen: ${codegenEligible.length} eligible section(s), concurrency ×${codegenConcurrency}`
-    );
-    await mapPool(codegenEligible, codegenConcurrency, async ({ row, i }) => {
-      const custom = await timedStep(row.blueprint.slug, `${row.section.id}: bespoke codegen`, () =>
-        generateBespokeSection(ctx, row.instance)
-      );
-      if (custom) {
-        filled[i] = { ...row, instance: { ...row.instance, customCodegen: custom } };
-      }
-    });
-  }
-
-  const byPage = new Map<string, typeof filled>();
-  for (const row of filled) {
-    const list = byPage.get(row.blueprint.slug) ?? [];
-    list.push(row);
-    byPage.set(row.blueprint.slug, list);
-  }
-
-  for (const blueprint of blueprints) {
-    const pagePlan = getPagePlan(ctx.sitePlan, blueprint.slug)!;
-    const rows = (byPage.get(blueprint.slug) ?? []).sort(
-      (a, b) => a.sectionIndex - b.sectionIndex
-    );
-    const instances = rows.map((r) => r.instance);
-
+  const reactPages: Record<string, ReactPage> = {};
+  for (const pagePlan of pages) {
+    const row = pageRows.find((r) => r.blueprint.slug === pagePlan.slug)!;
+    // Clone props, then run the sequence-aware rhythm pass so surfaces/bandFills alternate down the
+    // page instead of every section sharing one identical treatment (the "monotonous rhythm" fix).
+    const stamped: SectionInstance[] = row.instances.map((s) => ({
+      ...s,
+      props: { ...s.props },
+    }));
+    applyPageRhythm(stamped, visualContract);
     const composed = attachMotionPlan(
-      composePageSections(blueprint, instances),
+      composePageSections(row.blueprint, stamped),
       ctx.motionPlan!
     );
-    reactPages[blueprint.slug] = {
-      slug: blueprint.slug,
+    reactPages[pagePlan.slug] = {
+      slug: pagePlan.slug,
       title: pagePlan.title,
       navLabel: pagePlan.navLabel,
       sections: composed,
     };
-
-    ctx.reactPages = { ...ctx.reactPages, [blueprint.slug]: reactPages[blueprint.slug] };
+    ctx.reactPages = { ...ctx.reactPages, [pagePlan.slug]: reactPages[pagePlan.slug]! };
   }
 
   return finishReactPipeline(ctx, reactPages, blueprints, registry, outputDir, options, {

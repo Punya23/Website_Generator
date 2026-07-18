@@ -33,10 +33,11 @@ Footer rules:
 - ctaLabel + ctaHref: primary conversion action
 - showMood: true for fashion/editorial, false for corporate
 
-Nav rules:
-- compactOnScroll and shadowOnScroll: only when they genuinely fit the brand — default off for minimal sites
+Nav / immersive rules:
+- Do NOT output nav scroll behavior (compactOnScroll / shadowOnScroll) — that lives on the motion plan
 - Do NOT add announcement, newsletter, or sticky mobile CTA unless the brief demands it
 - grainOverlay and smoothScroll: default false — opt in only for immersive editorial brands
+- footer.surface: none | subtle | elevated | bordered; footer.divider: none | line | fade | angle
 
 Output JSON only:
 {
@@ -46,9 +47,10 @@ Output JSON only:
     "linkGroups": [{ "label": "Explore", "slugs": ["home", "services"] }],
     "ctaLabel": "...",
     "ctaHref": "/contact",
-    "showMood": false
+    "showMood": false,
+    "surface": "subtle",
+    "divider": "line"
   },
-  "nav": { "compactOnScroll": false, "shadowOnScroll": false },
   "immersive": { "smoothScroll": false, "grainOverlay": false }
 }`;
 
@@ -73,10 +75,8 @@ function mockChromeSpec(ctx: SiteContext, blueprints: PageBlueprint[]): ChromeSp
       ctaLabel: ctx.expandedBrief.primaryCta,
       ctaHref: "/contact",
       showMood: Boolean(isEditorial || isLuxuryDark),
-    },
-    nav: {
-      compactOnScroll: false,
-      shadowOnScroll: false,
+      surface: isEditorial ? "none" : "subtle",
+      divider: "line",
     },
     announcement: undefined,
     stickyMobileCta: undefined,
@@ -95,10 +95,6 @@ function mergeChromeProfileDefaults(spec: ChromeSpec): ChromeSpec {
     immersive: {
       smoothScroll: parsed.immersive?.smoothScroll ?? false,
       grainOverlay: parsed.immersive?.grainOverlay ?? false,
-    },
-    nav: {
-      compactOnScroll: parsed.nav?.compactOnScroll ?? false,
-      shadowOnScroll: parsed.nav?.shadowOnScroll ?? false,
     },
     footer: {
       ...parsed.footer,

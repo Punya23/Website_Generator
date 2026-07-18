@@ -3,25 +3,30 @@
 @tailwind utilities;
 
 :root {
-  --color-bg: #fafafa;
+  /* Neutral-ink fallbacks. themeCssVars overrides these per site at assemble time; these only show
+     if a color is missing — and they must NEVER be the indigo-on-white "AI default" the research
+     flags as the single most recognizable "a machine built this" tell. Ink accent reads premium. */
+  --color-bg: #fafaf9;
   --color-surface: #ffffff;
-  --color-text: #0f172a;
-  --color-muted: #64748b;
-  --color-accent: #6366f1;
-  --color-border: rgba(15, 23, 42, 0.1);
+  --color-text: #18181b;
+  --color-muted: #6b7280;
+  --color-accent: #171717;
+  --color-border: rgba(24, 24, 27, 0.1);
   --color-nav: rgba(255, 255, 255, 0.92);
-  --color-nav-text: #0f172a;
-  --color-nav-muted: #64748b;
-  --color-nav-active: #6366f1;
+  --color-nav-text: #18181b;
+  --color-nav-muted: #6b7280;
+  --color-nav-active: #171717;
   --color-nav-active-text: #ffffff;
-  --color-gradient-from: #6366f1;
-  --color-gradient-to: #818cf8;
+  --color-gradient-from: #171717;
+  --color-gradient-to: #3f3f46;
   --nav-blur: 12px;
   --max-content: 1280px;
   --content-padding: clamp(1.25rem, 4vw, 2.5rem);
   --section-gap: 5rem;
   --radius: 0.75rem;
-  --shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --radius-lg: 1.25rem;
+  /* Layered, low-opacity shadow (research: premium depth = 3-4 stacked layers, never one flat blur). */
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06), 0 16px 32px -12px rgba(0, 0, 0, 0.1);
 }
 
 @layer base {
@@ -58,6 +63,29 @@
   border-bottom-color: transparent;
 }
 
+/* Transparent/minimal navs sit over full-bleed hero imagery whose brightness we can't predict, so
+   nav text can vanish over a light photo (a real readability failure, not a style choice). A subtle
+   top-down scrim behind the nav guarantees contrast over any hero, then fades once scrolled onto
+   solid surfaces — the standard premium pattern (Framer/Stripe). */
+[data-nav-treatment="minimal"] .site-nav::before,
+[data-nav-treatment="glass-light"] .site-nav::before,
+[data-nav-treatment="glass-dark"] .site-nav::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 220%;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0));
+  pointer-events: none;
+  z-index: -1;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+[data-nav-treatment="minimal"] .site-nav.is-scrolled::before,
+[data-nav-treatment="glass-light"] .site-nav.is-scrolled::before,
+[data-nav-treatment="glass-dark"] .site-nav.is-scrolled::before {
+  opacity: 0;
+}
+
 .site-nav .nav-surface {
   transition: box-shadow 0.3s ease, background 0.3s ease;
 }
@@ -76,8 +104,31 @@
   padding-bottom: 0.6rem;
 }
 
+/* Base fallback if data-gradient-mood is ever absent; the three moods below are what
+   actually render since the body always carries one of these values. */
 .cta-gradient {
   background: linear-gradient(135deg, var(--color-gradient-from), var(--color-gradient-to));
+}
+
+[data-gradient-mood="subtle"] .cta-gradient {
+  background: linear-gradient(
+    160deg,
+    var(--color-gradient-from),
+    color-mix(in srgb, var(--color-gradient-from) 65%, var(--color-gradient-to)) 100%
+  );
+}
+
+[data-gradient-mood="vivid"] .cta-gradient {
+  background: linear-gradient(
+    115deg,
+    var(--color-gradient-from),
+    var(--color-gradient-to) 55%,
+    color-mix(in srgb, var(--color-gradient-to) 65%, white) 100%
+  );
+}
+
+[data-gradient-mood="monochrome"] .cta-gradient {
+  background: linear-gradient(135deg, var(--color-accent), color-mix(in srgb, var(--color-accent) 65%, black));
 }
 
 .hero-split-offset {
@@ -178,11 +229,40 @@
   .font-mono {
     font-family: ui-monospace, monospace;
   }
+  /* Real modular type scale — h1 ≫ h2 > h3, each with its own leading + tracking so headings
+     read as a system with a clear focal point (fed by font-codegen typeScaleTokens). */
   .text-display {
-    font-size: clamp(2.25rem, 5vw, 3.75rem);
+    font-size: var(--text-display, clamp(3rem, 7vw, 5.25rem));
+    line-height: var(--lh-display, 1.03);
+    letter-spacing: var(--tracking-display, -0.035em);
+  }
+  .text-h1 {
+    font-size: var(--text-h1, clamp(2.75rem, 6vw, 4.5rem));
+    line-height: var(--lh-h1, 1.05);
+    letter-spacing: var(--tracking-display, -0.035em);
+  }
+  .text-h2 {
+    font-size: var(--text-h2, clamp(1.875rem, 4vw, 2.75rem));
+    line-height: var(--lh-h2, 1.12);
+    letter-spacing: var(--tracking-h2, -0.02em);
+  }
+  .text-h3 {
+    font-size: var(--text-h3, clamp(1.375rem, 2.5vw, 1.75rem));
+    line-height: var(--lh-h3, 1.22);
+    letter-spacing: var(--tracking-h3, -0.01em);
+  }
+  /* Cap prose line length to ~65ch so body copy reads considered, not edge-to-edge. */
+  .prose-measure {
+    max-width: 65ch;
+  }
+  .text-balance {
+    text-wrap: balance;
   }
   .py-section {
-    padding-block: var(--section-gap);
+    padding-block: clamp(4rem, 10vw, 8rem);
+  }
+  .py-section-hero {
+    padding-block: clamp(5.5rem, 13vw, 10.5rem);
   }
   .surface-elevated {
     @apply bg-surface shadow-[var(--shadow)];

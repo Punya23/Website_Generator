@@ -24,7 +24,12 @@ export interface SectionMotionConfig {
 export interface SiteMotionPlanData {
   globalPreset: MotionPresetName;
   reducedMotion: "respect" | "minimal";
-  navScrollEnhance: boolean;
+  navScrollEnhance?: boolean;
+  timing?: {
+    durationMs?: number;
+    staggerMs?: number;
+    ease?: string;
+  };
   sections: Record<string, SectionMotionConfig>;
   chrome: {
     footer: SectionMotionConfig;
@@ -91,7 +96,24 @@ export function coerceMotionPlan(raw: unknown): SiteMotionPlanData | null {
   return {
     globalPreset: coercePreset(plan.globalPreset, "stagger"),
     reducedMotion: plan.reducedMotion === "minimal" ? "minimal" : "respect",
-    navScrollEnhance: plan.navScrollEnhance !== false,
+    navScrollEnhance: plan.navScrollEnhance === true,
+    timing:
+      plan.timing && typeof plan.timing === "object"
+        ? {
+            durationMs:
+              typeof (plan.timing as Record<string, unknown>).durationMs === "number"
+                ? ((plan.timing as Record<string, unknown>).durationMs as number)
+                : undefined,
+            staggerMs:
+              typeof (plan.timing as Record<string, unknown>).staggerMs === "number"
+                ? ((plan.timing as Record<string, unknown>).staggerMs as number)
+                : undefined,
+            ease:
+              typeof (plan.timing as Record<string, unknown>).ease === "string"
+                ? ((plan.timing as Record<string, unknown>).ease as string)
+                : undefined,
+          }
+        : undefined,
     sections: Object.fromEntries(
       Object.entries(sectionsRaw).map(([id, cfg]) => [id, coerceSectionMotion(cfg)])
     ),
@@ -103,8 +125,8 @@ export function coerceMotionPlan(raw: unknown): SiteMotionPlanData | null {
             ? (chromeRaw.nav as Record<string, unknown>)
             : null;
         return {
-          compactOnScroll: nav?.compactOnScroll !== false,
-          shadowOnScroll: nav?.shadowOnScroll !== false,
+          compactOnScroll: nav?.compactOnScroll === true,
+          shadowOnScroll: nav?.shadowOnScroll === true,
         };
       })(),
     },
@@ -164,6 +186,35 @@ export function useChromeNavSpec(): SiteMotionPlanData["chrome"]["nav"] | null {
   return plan?.chrome?.nav ?? null;
 }
 
+export function useMotionTiming(): {
+  duration: number;
+  stagger: number;
+  ease: [number, number, number, number];
+} {
+  const plan = useMotionPlan();
+  const ease: [number, number, number, number] =
+    plan?.timing?.ease === "out-quart"
+      ? [0.25, 1, 0.5, 1]
+      : plan?.timing?.ease === "linear"
+        ? [0, 0, 1, 1]
+        : [0.16, 1, 0.3, 1];
+  return {
+    duration: (plan?.timing?.durationMs ?? 650) / 1000,
+    stagger: (plan?.timing?.staggerMs ?? 80) / 1000,
+    ease,
+  };
+}
+
+/** Snappy interaction curve for hover/tap/press — distinct from the slower entrance ease.
+ *  A second, faster curve for direct manipulation is a premium cue (research: motion_and_polish). */
+export const INTERACTION_EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
+export function useInteractionTiming(): {
+  duration: number;
+  ease: [number, number, number, number];
+} {
+  return { duration: 0.18, ease: INTERACTION_EASE };
+}
+
 function entranceToPreset(entrance: SectionEntrance): MotionPresetName {
   switch (entrance) {
     case "scale-in":
@@ -183,13 +234,14 @@ export function useRevealVariants(sectionId?: string): Variants {
   const { preset } = useContext(MotionContext);
   const sectionMotion = useSectionMotion(sectionId);
   const plan = useMotionPlan();
+  const timing = useMotionTiming();
   const prefersReduced = useReducedMotion();
   const effective =
     sectionMotion?.presetOverride ??
     (sectionMotion ? entranceToPreset(sectionMotion.entrance) : preset);
 
   return useMemo(() => {
-    if (prefersReduced || plan?.reducedMotion === "respect") {
+    if (prefersReduced || plan?.reducedMotion === "minimal") {
       return {
         hidden: { opacity: 1, y: 0, scale: 1, x: 0 },
         visible: { opacity: 1, y: 0, scale: 1, x: 0 },
@@ -200,12 +252,12 @@ export function useRevealVariants(sectionId?: string): Variants {
       case "scale-in":
         return {
           hidden: { opacity: 0, scale: 0.96 },
-          visible: { opacity: 1, scale: 1 },
+          visible: { opacity: 1, scale: 1, transition: { duration: timing.duration, ease: timing.ease } },
         };
       case "slide-left":
         return {
           hidden: { opacity: 0, x: 32 },
-          visible: { opacity: 1, x: 0 },
+          visible: { opacity: 1, x: 0, transition: { duration: timing.duration, ease: timing.ease } },
         };
       case "none":
         return {
@@ -215,27 +267,34 @@ export function useRevealVariants(sectionId?: string): Variants {
       case "parallax-hero":
         return {
           hidden: { opacity: 0, y: 60, scale: 1.03 },
-          visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] } },
+          visible: { opacity: 1, y: 0, scale: 1, transition: { duration: timing.duration, ease: timing.ease } },
         };
       case "stagger":
         return {
           hidden: { opacity: 0, y: 32 },
-          visible: { opacity: 1, y: 0 },
+          visible: {
+            opacity: 1,
+            y: 0,
+            transition: { duration: timing.duration, ease: timing.ease, staggerChildren: timing.stagger },
+          },
         };
       case "fade-up":
       default:
         return {
           hidden: { opacity: 0, y: 40 },
-          visible: { opacity: 1, y: 0 },
+          visible: { opacity: 1, y: 0, transition: { duration: timing.duration, ease: timing.ease } },
         };
     }
-  }, [effective, prefersReduced, plan?.reducedMotion]);
+  }, [effective, prefersReduced, plan?.reducedMotion, timing.duration, timing.ease, timing.stagger]);
 }
 
 export function useStaggerDelay(sectionId?: string): number {
   const { preset } = useContext(MotionContext);
   const sectionMotion = useSectionMotion(sectionId);
+  const plan = useMotionPlan();
+  const timing = useMotionTiming();
   if (sectionMotion?.staggerDelay != null) return sectionMotion.staggerDelay;
+  if (plan?.timing?.staggerMs != null) return timing.stagger;
   if (sectionMotion?.entrance === "stagger") return 0.08;
   if (preset === "stagger") return 0.08;
   if (preset === "scale-in") return 0.07;
@@ -245,4 +304,14 @@ export function useStaggerDelay(sectionId?: string): number {
 export function useSectionParallax(sectionId?: string): boolean {
   const sectionMotion = useSectionMotion(sectionId);
   return sectionMotion?.parallax ?? false;
+}
+
+export function useSectionMarquee(sectionId?: string): boolean {
+  const sectionMotion = useSectionMotion(sectionId);
+  const prefersReduced = useReducedMotion();
+  const plan = useMotionPlan();
+  if (prefersReduced || plan?.reducedMotion === "minimal") return false;
+  // Default true for marquee templates when plan omits the flag
+  if (sectionMotion == null) return true;
+  return sectionMotion.marquee !== false;
 }

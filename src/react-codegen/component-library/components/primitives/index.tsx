@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
 import { useMotionPreset, useRevealVariants, useStaggerDelay, useSectionMotion } from "../MotionProvider";
 import { useCurrentSectionId } from "../SectionContext";
+import { bandFillClass, dividerClass, type BandFill, type Divider } from "./design-language";
 
 export function Reveal({
   children,
@@ -166,9 +167,18 @@ export function MonoTag({ children }: { children: ReactNode }) {
   );
 }
 
+/** Heading level maps to a fixed step on the site's modular type scale — h1 ≫ h2 > h3 — so
+ *  hierarchy is global and consistent, never chosen per-section. Each level carries its own
+ *  leading/tracking via the .text-h* utilities (globals.css). */
+const HEADING_SCALE_CLASS: Record<"h1" | "h2" | "h3", string> = {
+  h1: "text-h1",
+  h2: "text-h2",
+  h3: "text-h3",
+};
+
 export function DisplayHeading({ children, as: Tag = "h2", className = "" }: { children: ReactNode; as?: "h1" | "h2" | "h3"; className?: string }) {
   return (
-    <Tag className={`font-display text-display leading-[1.05] tracking-tight text-text ${className}`}>
+    <Tag className={`font-display ${HEADING_SCALE_CLASS[Tag]} text-balance text-text ${className}`}>
       {children}
     </Tag>
   );
@@ -176,18 +186,23 @@ export function DisplayHeading({ children, as: Tag = "h2", className = "" }: { c
 
 export function PrimaryButton({ href, children }: { href?: string; children: ReactNode }) {
   const cls =
-    "magnetic-btn inline-flex items-center justify-center rounded-[var(--radius)] bg-accent px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90";
+    "magnetic-btn inline-flex items-center justify-center rounded-[var(--radius)] bg-accent px-6 py-3 text-sm font-semibold text-white shadow-[var(--shadow)] will-change-transform";
+  // Real interaction envelope (lift + subtle scale + press) instead of a flat opacity fade — the
+  // single cheapest "this feels alive" upgrade (research: motion_and_polish interaction envelopes).
+  const hover = { y: -3, scale: 1.02 };
+  const tap = { scale: 0.97 };
+  const transition = { type: "spring" as const, stiffness: 420, damping: 26 };
   if (href) {
     return (
-      <a href={href} className={cls}>
+      <motion.a href={href} className={cls} whileHover={hover} whileTap={tap} transition={transition}>
         {children}
-      </a>
+      </motion.a>
     );
   }
   return (
-    <button type="button" className={cls}>
+    <motion.button type="button" className={cls} whileHover={hover} whileTap={tap} transition={transition}>
       {children}
-    </button>
+    </motion.button>
   );
 }
 
@@ -241,7 +256,7 @@ export function SplitRevealHeading({
     return <DisplayHeading as={Tag} className={className}>{text}</DisplayHeading>;
   }
   return (
-    <Tag className={`font-display text-display leading-[1.05] tracking-tight text-text ${className}`}>
+    <Tag className={`font-display ${HEADING_SCALE_CLASS[Tag]} text-balance text-text ${className}`}>
       {lines.map((line, i) => (
         <motion.span
           key={i}
@@ -258,11 +273,18 @@ export function SplitRevealHeading({
   );
 }
 
-export function SectionDivider({ variant = "angle" }: { variant?: "angle" | "fade" }) {
-  if (variant === "fade") {
-    return <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent" aria-hidden />;
+export function SectionDivider({
+  divider = "angle",
+  bandFill = "plain",
+}: {
+  divider?: Divider;
+  bandFill?: BandFill;
+}) {
+  if (divider === "none") return null;
+  if (divider === "angle") {
+    return <div className={`${dividerClass(divider)} h-16 w-full ${bandFillClass(bandFill)}`} aria-hidden />;
   }
-  return <div className="section-divider-angle h-16 w-full bg-surface mesh-gradient" aria-hidden />;
+  return <div className={`${dividerClass(divider)} h-px w-full`} aria-hidden />;
 }
 
 export {
@@ -283,3 +305,15 @@ export {
   defaultBentoSpan,
 } from "./layout";
 export { navShapeStyle, isNavShape, type NavShape } from "./nav-shape";
+export {
+  bandFillClass,
+  surfaceClass,
+  panelClass,
+  mediaOverlayClass,
+  dividerClass,
+  type BandFill,
+  type Surface,
+  type Panel,
+  type Divider,
+  type MediaOverlay,
+} from "./design-language";

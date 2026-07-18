@@ -243,10 +243,10 @@ export function ScrollShowcase(props: {
     <img
       src={props.image.src}
       alt={props.image.alt ?? props.headline}
-      className="aspect-[4/5] w-full rounded-xl object-cover shadow-xl"
+      className="aspect-[4/5] w-full rounded-[var(--radius-lg)] object-cover shadow-[var(--shadow)]"
     />
   ) : (
-    <div className="aspect-[4/5] w-full rounded-xl bg-accent/10" />
+    <div className="aspect-[4/5] w-full rounded-[var(--radius-lg)] bg-accent/10" />
   );
 
   return (
@@ -308,7 +308,7 @@ export function HorizontalGallery(props: {
           {props.items.map((item, i) => (
             <div
               key={i}
-              className="w-[min(88vw,420px)] shrink-0 snap-center overflow-hidden rounded-2xl border border-border bg-surface shadow-lg"
+              className="w-[min(88vw,420px)] shrink-0 snap-center overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface shadow-[var(--shadow)]"
             >
               {item.image?.src ? (
                 <img src={item.image.src} alt={item.title} className="aspect-[4/3] w-full object-cover" />

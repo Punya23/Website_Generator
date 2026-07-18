@@ -51,7 +51,7 @@ describe("pipeline quality mode", () => {
 
     process.env.PIPELINE_QUALITY = "0";
     expect(isQualityPipeline()).toBe(false);
-    expect(usePageCodegenPipeline()).toBe(false);
+    expect(usePageCodegenPipeline()).toBe(true);
   });
 
   it("vision QA checks every page by default; VISION_QA_HOME_ONLY=1 restricts to home", () => {

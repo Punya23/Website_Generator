@@ -47,7 +47,7 @@ export function resolveMotionPreset(
 export function normalizeMotionPlan<T extends {
   globalPreset: string;
   reducedMotion: string;
-  navScrollEnhance: boolean;
+  navScrollEnhance?: boolean;
   sections: Record<string, { entrance: string; staggerDelay?: number; parallax?: boolean; marquee?: boolean; presetOverride?: string }>;
   chrome: {
     footer: { entrance: string; staggerDelay?: number };
@@ -58,6 +58,7 @@ export function normalizeMotionPlan<T extends {
     ...plan,
     globalPreset: resolveMotionPreset(plan.globalPreset) as T["globalPreset"],
     reducedMotion: (plan.reducedMotion === "minimal" ? "minimal" : "respect") as T["reducedMotion"],
+    navScrollEnhance: plan.navScrollEnhance === true,
     sections: Object.fromEntries(
       Object.entries(plan.sections).map(([id, cfg]) => [
         id,

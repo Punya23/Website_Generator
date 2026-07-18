@@ -13,11 +13,19 @@ import {
   SectionLabel,
   Stagger,
   StaggerItem,
+  bandFillClass,
   cardGridClassForCount,
   defaultBentoSpan,
+  panelClass,
+  surfaceClass,
+  type BandFill,
+  type Divider,
+  type Panel,
+  type Surface,
 } from "../primitives";
 import { Media } from "../primitives/Media";
 import { SectionIdProvider } from "../SectionContext";
+import { useSectionMarquee } from "../MotionProvider";
 
 type ImageField = { src?: string; alt?: string };
 type CtaField = { label: string; href?: string };
@@ -29,6 +37,8 @@ function SectionShell({
   children,
   className = "",
   layoutVariant,
+  bandFill,
+  surface,
 }: {
   id?: string;
   templateId: string;
@@ -36,6 +46,8 @@ function SectionShell({
   children: React.ReactNode;
   className?: string;
   layoutVariant?: string;
+  bandFill?: BandFill;
+  surface?: Surface;
 }) {
   return (
     <SectionIdProvider id={id}>
@@ -44,7 +56,7 @@ function SectionShell({
         data-template={templateId}
         data-mode={mode}
         data-layout-variant={layoutVariant}
-        className={`section-shell ${className}`}
+        className={`section-shell ${bandFill ? bandFillClass(bandFill) : ""} ${surfaceClass(surface)} ${className}`}
       >
         {children}
       </section>
@@ -114,7 +126,7 @@ export function HeroEditorial(props: {
             }
             media={
               <div className="section-media aspect-[4/5] max-h-[min(72vh,640px)]">
-                <img src={props.image.src} alt={props.image.alt ?? props.headline} className="h-full w-full rounded-2xl object-cover shadow-2xl" />
+                <img src={props.image.src} alt={props.image.alt ?? props.headline} className="h-full w-full rounded-[var(--radius-lg)] object-cover shadow-[var(--shadow)]" />
               </div>
             }
           />
@@ -143,9 +155,9 @@ export function HeroEditorial(props: {
           media={
             <div className="section-media aspect-[4/5] max-h-[min(72vh,640px)]">
               {props.image?.src ? (
-                <img src={props.image.src} alt={props.image.alt ?? props.headline} className="h-full w-full rounded-2xl object-cover shadow-2xl" />
+                <img src={props.image.src} alt={props.image.alt ?? props.headline} className="h-full w-full rounded-[var(--radius-lg)] object-cover shadow-[var(--shadow)]" />
               ) : (
-                <div className="h-full min-h-[280px] w-full rounded-2xl bg-accent/10" />
+                <div className="h-full min-h-[280px] w-full rounded-[var(--radius-lg)] bg-accent/10" />
               )}
             </div>
           }
@@ -189,9 +201,9 @@ export function HeroSplitCinematic(props: {
   const mediaBlock = (
     <div className="section-media aspect-video max-h-[min(50vh,480px)]">
       {props.image?.src ? (
-        <Media src={props.image.src!} alt={props.image.alt ?? props.headline ?? "Hero image"} className="h-full w-full rounded-xl object-cover shadow-xl" />
+        <Media src={props.image.src!} alt={props.image.alt ?? props.headline ?? "Hero image"} className="h-full w-full rounded-[var(--radius-lg)] object-cover shadow-[var(--shadow)]" />
       ) : (
-        <div className="h-full min-h-[240px] w-full rounded-xl bg-accent/10" />
+        <div className="h-full min-h-[240px] w-full rounded-[var(--radius-lg)] bg-accent/10" />
       )}
     </div>
   );
@@ -212,8 +224,8 @@ export function IntroStatement(props: { id?: string; label?: string; headline: s
         <SectionBody>
           <Reveal>
             {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
-            <DisplayHeading className="max-w-4xl">{props.headline}</DisplayHeading>
-            <p className="mt-6 max-w-3xl text-xl leading-relaxed text-muted">{props.body}</p>
+            <DisplayHeading as="h2" className="max-w-4xl">{props.headline}</DisplayHeading>
+            <p className="prose-measure mt-6 text-xl leading-relaxed text-muted">{props.body}</p>
           </Reveal>
         </SectionBody>
       </Container>
@@ -221,9 +233,23 @@ export function IntroStatement(props: { id?: string; label?: string; headline: s
   );
 }
 
-export function StatsMarquee(props: { id?: string; label?: string; stats: Array<{ value: string; label: string }> }) {
+export function StatsMarquee(props: {
+  id?: string;
+  label?: string;
+  stats: Array<{ value: string; label: string }>;
+  bandFill?: BandFill;
+  surface?: Surface;
+  divider?: Divider;
+}) {
   return (
-    <SectionShell id={props.id} templateId="stats_marquee" mode="band" className="border-y border-border bg-surface/50 py-12">
+    <SectionShell
+      id={props.id}
+      templateId="stats_marquee"
+      mode="band"
+      bandFill={props.bandFill}
+      surface={props.surface}
+      className={`${props.divider === "line" ? "border-y border-border" : ""} py-12`}
+    >
       <Container>
         {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
         <Stagger className={cardGridClassForCount(props.stats.length, { maxColumns: 4 })}>
@@ -277,10 +303,10 @@ export function ServicesShowcase(props: {
                   <img
                     src={props.image.src}
                     alt={props.image.alt ?? props.headline}
-                    className="h-full w-full rounded-sm object-cover shadow-2xl"
+                    className="h-full w-full rounded-[var(--radius-lg)] object-cover shadow-[var(--shadow)]"
                   />
                 ) : (
-                  <div className="h-full min-h-[280px] w-full rounded-sm bg-accent/10" />
+                  <div className="h-full min-h-[280px] w-full rounded-[var(--radius-lg)] bg-accent/10" />
                 )}
               </div>
             </Reveal>
@@ -313,7 +339,7 @@ export function FeatureBento(props: {
             return (
             <StaggerItem
               key={i}
-              className={`surface-elevated flex h-full flex-col overflow-hidden rounded-xl p-6 sm:p-8 ${
+              className={`surface-elevated flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] p-6 sm:p-8 ${
                 span === "wide" ? "sm:col-span-2" : span === "large" ? "sm:col-span-2 sm:row-span-2 lg:col-span-2 lg:row-span-2" : ""
               }`}
             >
@@ -322,7 +348,7 @@ export function FeatureBento(props: {
                   <Media
                     src={item.image.src!}
                     alt={item.title ?? "Feature image"}
-                    className={`w-full rounded-lg object-cover ${
+                    className={`w-full rounded-[var(--radius-lg)] object-cover ${
                       span === "large" ? "aspect-[4/3] min-h-[220px]" : "aspect-[16/10] min-h-[180px]"
                     }`}
                   />
@@ -359,9 +385,9 @@ export function PortfolioStrip(props: {
             <StaggerItem key={i} className="group">
               <MonoTag>{String(i + 1).padStart(2, "0")}</MonoTag>
               {p.image?.src ? (
-                <img src={p.image.src} alt={p.title} className="mt-3 aspect-[4/3] w-full rounded-sm object-cover" />
+                <img src={p.image.src} alt={p.title} className="mt-3 aspect-[4/3] w-full rounded-[var(--radius-lg)] object-cover" />
               ) : (
-                <div className="mt-3 aspect-[4/3] w-full rounded-sm bg-accent/10" />
+                <div className="mt-3 aspect-[4/3] w-full rounded-[var(--radius-lg)] bg-accent/10" />
               )}
               <h3 className="mt-4 font-display text-lg">{p.title}</h3>
               <p className="text-sm text-muted">
@@ -381,9 +407,10 @@ export function TestimonialFeatured(props: {
   quote: string;
   author: string;
   role?: string;
+  surface?: Surface;
 }) {
   return (
-    <SectionShell id={props.id} templateId="testimonial_featured" mode="editorial" className="py-section">
+    <SectionShell id={props.id} templateId="testimonial_featured" mode="editorial" surface={props.surface} className="py-section">
       <Container>
         <Reveal>
           {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
@@ -404,6 +431,7 @@ export function PricingTiers(props: {
   id?: string;
   label?: string;
   headline?: string;
+  panel?: Panel;
   tiers: Array<{
     name: string;
     price: string;
@@ -427,7 +455,7 @@ export function PricingTiers(props: {
           {props.tiers.map((tier, i) => (
             <StaggerItem
               key={i}
-              className={`rounded-xl p-8 ${tier.highlighted ? "surface-elevated ring-2 ring-accent" : "border border-border"}`}
+              className={`${panelClass(props.panel)} p-8 ${tier.highlighted ? "ring-2 ring-accent" : ""}`}
             >
               <h3 className="font-display text-xl">{tier.name}</h3>
               <div className="mt-4 font-display text-4xl font-bold text-accent">
@@ -460,9 +488,74 @@ export function FaqAccordion(props: {
   label?: string;
   headline?: string;
   items: Array<{ question: string; answer: string }>;
+  layoutVariant?: string;
 }) {
+  const variant = props.layoutVariant ?? "centered-stack";
+  const items = props.items ?? [];
+
+  if (variant === "split-offset" || variant === "band-wide") {
+    return (
+      <SectionShell id={props.id} templateId="faq_accordion" mode="contained" layoutVariant={variant} className="py-section">
+        <Container>
+          {props.headline ? (
+            <Reveal>
+              {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
+              <DisplayHeading className="mb-10 max-w-2xl">{props.headline}</DisplayHeading>
+            </Reveal>
+          ) : null}
+          <Stagger className="grid gap-4 sm:grid-cols-2">
+            {items.map((item, i) => (
+              <StaggerItem
+                key={i}
+                className="rounded-[var(--radius-lg)] border border-border bg-surface/60 p-6"
+              >
+                <details className="group">
+                  <summary className="flex cursor-pointer list-none items-start justify-between gap-4 font-display text-lg font-medium marker:content-none">
+                    {item.question}
+                    <span className="mt-1 shrink-0 text-accent transition-transform group-open:rotate-45">
+                      +
+                    </span>
+                  </summary>
+                  <p className="mt-3 text-muted">{item.answer}</p>
+                </details>
+              </StaggerItem>
+            ))}
+          </Stagger>
+        </Container>
+      </SectionShell>
+    );
+  }
+
+  if (variant === "full-bleed-left" || variant === "band-compact") {
+    return (
+      <SectionShell id={props.id} templateId="faq_accordion" mode="contained" layoutVariant={variant} className="py-section">
+        <Container narrow="md">
+          {props.headline ? (
+            <Reveal>
+              {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
+              <DisplayHeading className="mb-10">{props.headline}</DisplayHeading>
+            </Reveal>
+          ) : null}
+          <div className="space-y-8">
+            {items.map((item, i) => (
+              <details key={i} className="flex flex-col gap-2 sm:flex-row sm:gap-8">
+                <MonoTag>{String(i + 1).padStart(2, "0")}</MonoTag>
+                <div className="flex-1">
+                  <summary className="cursor-pointer list-none font-display text-lg font-medium marker:content-none">
+                    {item.question}
+                  </summary>
+                  <p className="mt-3 text-muted">{item.answer}</p>
+                </div>
+              </details>
+            ))}
+          </div>
+        </Container>
+      </SectionShell>
+    );
+  }
+
   return (
-    <SectionShell id={props.id} templateId="faq_accordion" mode="contained" className="py-section">
+    <SectionShell id={props.id} templateId="faq_accordion" mode="contained" layoutVariant={variant} className="py-section">
       <Container narrow="md">
         {props.headline ? (
           <Reveal>
@@ -471,10 +564,13 @@ export function FaqAccordion(props: {
           </Reveal>
         ) : null}
         <div className="divide-y divide-border">
-          {props.items.map((item, i) => (
+          {items.map((item, i) => (
             <details key={i} className="group py-4">
-              <summary className="cursor-pointer list-none font-display text-lg font-medium marker:content-none">
+              <summary className="flex cursor-pointer list-none items-start justify-between gap-4 font-display text-lg font-medium marker:content-none">
                 {item.question}
+                <span className="mt-1 shrink-0 text-muted transition-transform group-has-[details[open]]:rotate-180">
+                  ⌄
+                </span>
               </summary>
               <p className="mt-3 text-muted">{item.answer}</p>
             </details>
@@ -493,6 +589,7 @@ export function CtaBand(props: {
   cta: CtaField;
   layoutVariant?: string;
   density?: "airy" | "normal" | "compact";
+  bandFill?: BandFill;
 }) {
   const variant = props.layoutVariant ?? "centered-stack";
   const pad =
@@ -503,6 +600,7 @@ export function CtaBand(props: {
         : "py-20";
   const isCentered = variant === "centered-stack" || variant === "default";
   const narrowSize = isCentered ? "md" : variant === "band-wide" ? "lg" : "sm";
+  const highContrast = props.bandFill == null || props.bandFill === "gradient" || props.bandFill === "accent";
 
   return (
     <SectionShell
@@ -510,21 +608,21 @@ export function CtaBand(props: {
       templateId="cta_band"
       mode="band"
       layoutVariant={variant}
-      className={`cta-gradient ${pad} text-white`}
+      className={`${bandFillClass(props.bandFill ?? "gradient")} ${pad}`}
     >
       <Container narrow={narrowSize} className={isCentered ? "text-center" : "text-left"}>
         <Reveal>
           {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
-          <DisplayHeading className={`text-white ${variant === "band-wide" ? "text-display" : ""}`}>
+          <DisplayHeading className={`${highContrast ? "text-white" : "text-text"} ${variant === "band-wide" ? "text-display" : ""}`}>
             {props.headline}
           </DisplayHeading>
           {props.subcopy ? (
-            <p className={`mt-4 max-w-2xl text-white/90 ${isCentered ? "mx-auto" : ""}`}>{props.subcopy}</p>
+            <p className={`mt-4 max-w-2xl ${highContrast ? "text-white/90" : "text-muted"} ${isCentered ? "mx-auto" : ""}`}>{props.subcopy}</p>
           ) : null}
           <div className={`mt-8 ${isCentered ? "flex justify-center" : ""}`}>
             <a
               href={props.cta.href ?? "#contact"}
-              className="inline-flex rounded-full bg-white px-8 py-3 font-semibold text-accent"
+              className={`inline-flex rounded-[var(--radius)] px-8 py-3 font-semibold ${highContrast ? "bg-white text-accent" : "bg-accent text-white"}`}
             >
               {props.cta.label}
             </a>
@@ -576,9 +674,9 @@ export function ContactSplit(props: {
                 <label key={i} className="block">
                   <span className="text-sm font-medium">{field.label}</span>
                   {field.type === "textarea" ? (
-                    <textarea className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2" rows={4} />
+                    <textarea className="mt-1 w-full rounded-[var(--radius)] border border-border bg-bg px-3 py-2" rows={4} />
                   ) : field.type === "select" ? (
-                    <select className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2">
+                    <select className="mt-1 w-full rounded-[var(--radius)] border border-border bg-bg px-3 py-2">
                       {field.options?.map((o) => (
                         <option key={o}>{o}</option>
                       ))}
@@ -587,12 +685,12 @@ export function ContactSplit(props: {
                     <input
                       type={field.type}
                       required={field.required}
-                      className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2"
+                      className="mt-1 w-full rounded-[var(--radius)] border border-border bg-bg px-3 py-2"
                     />
                   )}
                 </label>
               ))}
-              <button type="submit" className="rounded-full bg-accent px-6 py-3 font-semibold text-white">
+              <button type="submit" className="rounded-[var(--radius)] bg-accent px-6 py-3 font-semibold text-white">
                 {props.submitLabel ?? "Send"}
               </button>
             </form>
@@ -605,11 +703,12 @@ export function ContactSplit(props: {
 }
 
 export function LogoMarquee(props: { id?: string; label?: string; logos: Array<{ name: string; src?: string }> }) {
+  const animate = useSectionMarquee(props.id);
   return (
     <SectionShell id={props.id} templateId="logo_marquee" mode="band" className="overflow-hidden border-y border-border py-10">
       <Container>
         {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
-        <div className="flex animate-marquee gap-12 whitespace-nowrap">
+        <div className={`flex gap-12 whitespace-nowrap ${animate ? "animate-marquee" : ""}`}>
           {[...props.logos, ...props.logos].map((logo, i) => (
             <span key={i} className="font-display text-lg text-muted/70">
               {logo.name}
@@ -629,6 +728,7 @@ export function TextMarquee(props: {
 }) {
   const duration = props.speed === "fast" ? "20s" : props.speed === "slow" ? "45s" : "30s";
   const items = [...props.phrases, ...props.phrases];
+  const animate = useSectionMarquee(props.id);
 
   return (
     <SectionShell
@@ -640,7 +740,7 @@ export function TextMarquee(props: {
       <Container>
         {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
         <div
-          className="flex animate-marquee gap-16 whitespace-nowrap"
+          className={`flex gap-16 whitespace-nowrap ${animate ? "animate-marquee" : ""}`}
           style={{ "--marquee-duration": duration } as React.CSSProperties}
         >
           {items.map((phrase, i) => (
@@ -665,6 +765,7 @@ export function FooterCta(props: {
   secondaryCta?: CtaField;
   layoutVariant?: string;
   density?: "airy" | "normal" | "compact";
+  bandFill?: BandFill;
 }) {
   const variant = props.layoutVariant ?? "band-wide";
   const pad =
@@ -682,7 +783,7 @@ export function FooterCta(props: {
         templateId="footer_cta"
         mode="band"
         layoutVariant={variant}
-        className={`border-t border-border bg-surface ${pad}`}
+        className={`border-t border-border ${bandFillClass(props.bandFill ?? "subtle")} ${pad}`}
       >
         <Container narrow="md" className="text-center">
           <Reveal>
@@ -691,14 +792,14 @@ export function FooterCta(props: {
             <div className="mt-8 flex flex-wrap justify-center gap-4">
               <a
                 href={props.cta.href ?? "#contact"}
-                className="inline-flex rounded-full bg-accent px-8 py-3 font-semibold text-white"
+                className="inline-flex rounded-[var(--radius)] bg-accent px-8 py-3 font-semibold text-white"
               >
                 {props.cta.label}
               </a>
               {props.secondaryCta ? (
                 <a
                   href={props.secondaryCta.href ?? "/contact"}
-                  className="inline-flex rounded-full border border-border px-8 py-3 font-semibold text-text"
+                  className="inline-flex rounded-[var(--radius)] border border-border px-8 py-3 font-semibold text-text"
                 >
                   {props.secondaryCta.label}
                 </a>
@@ -716,7 +817,7 @@ export function FooterCta(props: {
       templateId="footer_cta"
       mode="band"
       layoutVariant={variant}
-      className={`border-t border-border bg-surface ${pad}`}
+      className={`border-t border-border ${bandFillClass(props.bandFill ?? "subtle")} ${pad}`}
     >
       <Container>
         <Reveal>
@@ -728,14 +829,14 @@ export function FooterCta(props: {
             <div className="flex shrink-0 flex-wrap gap-4">
               <a
                 href={props.cta.href ?? "#contact"}
-                className="inline-flex rounded-full bg-accent px-8 py-3 font-semibold text-white"
+                className="inline-flex rounded-[var(--radius)] bg-accent px-8 py-3 font-semibold text-white"
               >
                 {props.cta.label}
               </a>
               {props.secondaryCta ? (
                 <a
                   href={props.secondaryCta.href ?? "/contact"}
-                  className="inline-flex rounded-full border border-border px-8 py-3 font-semibold text-text"
+                  className="inline-flex rounded-[var(--radius)] border border-border px-8 py-3 font-semibold text-text"
                 >
                   {props.secondaryCta.label}
                 </a>
@@ -767,9 +868,9 @@ export function TeamGrid(props: {
           {props.members.map((m, i) => (
             <StaggerItem key={i}>
               {m.image?.src ? (
-                <img src={m.image.src} alt={m.name} className="aspect-square w-full rounded-sm object-cover" />
+                <img src={m.image.src} alt={m.name} className="aspect-square w-full rounded-[var(--radius-lg)] object-cover" />
               ) : (
-                <div className="aspect-square w-full rounded-sm bg-accent/10" />
+                <div className="aspect-square w-full rounded-[var(--radius-lg)] bg-accent/10" />
               )}
               <h3 className="mt-4 font-display text-lg">{m.name}</h3>
               <p className="text-sm text-accent">{m.role}</p>
@@ -801,9 +902,9 @@ export function GalleryMasonry(props: {
           {props.images.map((img, i) => (
             <StaggerItem key={i} className="mb-4 break-inside-avoid">
               {img.src ? (
-                <Media src={img.src!} alt={img.alt ?? img.caption ?? "Gallery image"} className="w-full rounded-sm object-cover" />
+                <Media src={img.src!} alt={img.alt ?? img.caption ?? "Gallery image"} className="w-full rounded-[var(--radius-lg)] object-cover" />
               ) : (
-                <div className="aspect-[3/4] w-full rounded-sm bg-accent/10" />
+                <div className="aspect-[3/4] w-full rounded-[var(--radius-lg)] bg-accent/10" />
               )}
               {img.caption ? <p className="mt-2 text-sm text-muted">{img.caption}</p> : null}
             </StaggerItem>

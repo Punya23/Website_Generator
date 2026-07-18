@@ -51,21 +51,27 @@ export const ChromeFooterSpecSchema = z.object({
   ctaLabel: z.string(),
   ctaHref: z.string(),
   showMood: z.boolean(),
+  surface: z.enum(["none", "subtle", "elevated", "bordered"]).optional(),
+  divider: z.enum(["none", "line", "fade", "angle"]).optional(),
 });
 
 export const ChromeSpecSchema = z.object({
   footer: ChromeFooterSpecSchema,
-  nav: ChromeNavSpecSchema,
+  /** @deprecated Nav scroll behavior lives on SiteMotionPlan.chrome.nav — sole runtime owner. */
+  nav: ChromeNavSpecSchema.optional(),
   announcement: z
     .object({
       message: z.string(),
       href: z.string().optional(),
+      /** Solid accent strip, subtle surface, or plain. */
+      bandFill: z.enum(["plain", "subtle", "accent"]).optional(),
     })
     .optional(),
   stickyMobileCta: z
     .object({
       label: z.string(),
       href: z.string(),
+      panel: z.enum(["flat", "bordered", "elevated", "glass"]).optional(),
     })
     .optional(),
   newsletter: z
@@ -86,13 +92,23 @@ export const ChromeSpecSchema = z.object({
 
 export type ChromeSpec = z.infer<typeof ChromeSpecSchema>;
 
+export const MotionTimingSchema = z.object({
+  durationMs: z.number().min(300).max(1000).optional(),
+  staggerMs: z.number().min(40).max(150).optional(),
+  ease: z.enum(["out-expo", "out-quart", "linear"]).optional(),
+});
+
 export const SiteMotionPlanSchema = z.object({
   globalPreset: MotionPresetSchema,
+  /** respect = honor OS reduced-motion; minimal = always static. */
   reducedMotion: z.enum(["respect", "minimal"]),
-  navScrollEnhance: z.boolean(),
+  /** @deprecated Derived from chrome.nav — kept for backward-compatible plans. */
+  navScrollEnhance: z.boolean().optional(),
+  timing: MotionTimingSchema.optional(),
   sections: z.record(z.string(), SectionMotionConfigSchema),
   chrome: z.object({
     footer: SectionMotionConfigSchema,
+    /** Sole runtime owner of nav scroll compact/shadow behavior. */
     nav: ChromeNavSpecSchema,
   }),
 });
@@ -132,10 +148,12 @@ export const TypographyScaleSchema = z.object({
   mono: z.string().optional(),
 });
 
+/** Closed surface vocabulary — components consume these, never free-form strings. */
+export const SurfaceModeSchema = z.enum(["none", "subtle", "elevated", "bordered"]);
 export const SurfaceModesSchema = z.object({
-  default: z.string().optional(),
-  elevated: z.string().optional(),
-  none: z.string().optional(),
+  default: SurfaceModeSchema.optional(),
+  elevated: SurfaceModeSchema.optional(),
+  none: SurfaceModeSchema.optional(),
 });
 
 export const BlueprintSectionSchema = z.object({
@@ -197,6 +215,10 @@ export const NavShapeSchema = z.enum([
 ]);
 export const GradientMoodSchema = z.enum(["subtle", "vivid", "monochrome"]);
 export const AccentRoleSchema = z.enum(["sparing", "hero", "editorial"]);
+export type AccentRole = z.infer<typeof AccentRoleSchema>;
+
+export const VisualFxSchema = z.enum(["clean", "editorial", "spotlight", "glass"]);
+export type VisualFx = z.infer<typeof VisualFxSchema>;
 
 export const PalettePartialSchema = z.object({
   vertical: z.preprocess((v) => coerceToString(v) ?? "", z.string()),
@@ -469,6 +491,9 @@ export const SiteContextSchema = z.object({
   motionPlan: SiteMotionPlanSchema.optional(),
   chromeSpec: ChromeSpecSchema.optional(),
   layoutPlan: SiteLayoutPlanSchema.optional(),
+  /** Site-wide FX treatment — resolved once, stamped onto sections via visual contract. */
+  siteFx: VisualFxSchema.optional(),
+
   verticalProfile: z
     .object({
       profileId: z.enum([

@@ -51,7 +51,8 @@ describe("chrome director agent", () => {
     const spec = await directChromeSpec(mockCtx(), blueprints);
     expect(spec.footer.ctaLabel).toBeTruthy();
     expect(spec.footer.layout).toBe("two-column");
-    expect(spec.nav.compactOnScroll).toBe(false);
+    // Nav scroll behavior lives on the motion plan — ChromeSpec.nav is optional/deprecated
+    expect(spec.nav).toBeUndefined();
 
     const qa = runChromeQA(spec);
     expect(qa.passed).toBe(true);

@@ -228,7 +228,11 @@ describe("react codegen", () => {
             id: "home_hero",
             templateId: "hero_editorial",
             intent: "Hero",
-            props: { headline: "Linea Studio", cta: { label: "Book", href: "/contact" } },
+            props: {
+              headline: "Linea Studio",
+              image: { src: "https://images.pexels.com/photos/1.jpeg", alt: "Linea Studio interior" },
+              cta: { label: "Book", href: "/contact" },
+            },
           },
         ],
       },
@@ -239,6 +243,89 @@ describe("react codegen", () => {
     expect(layout).toContain("const motionPlan = ");
     expect(layout).toContain('"globalPreset":"stagger"');
     expect(layout).not.toContain("as SiteMotionPlanData");
+  });
+
+  it("does not render a sticky mobile CTA unless the chrome spec explicitly asks for one", async () => {
+    const brief = {
+      businessName: "Linea Studio",
+      tagline: "Architecture",
+      elevatorPitch: "Passive House studio",
+      expandedBrief: "Architecture studio.",
+      targetAudience: "Homeowners",
+      services: ["Design"],
+      differentiators: ["Efficiency"],
+      tone: "Refined",
+      primaryCta: "Book consultation",
+    };
+    const sitePlan = mockPlan(brief);
+    const ctx = initSiteContext("Architecture", brief, sitePlan, {
+      vertical: "architecture",
+      mood: "editorial",
+      fontHeading: "Inter",
+      fontBody: "Inter",
+      colors: {
+        bg: "#fafafa",
+        surface: "#fff",
+        text: "#111",
+        muted: "#666",
+        accent: "#c45c26",
+        accentSoft: "#fff7ed",
+        gradientFrom: "#c45c26",
+        gradientTo: "#e85d04",
+        navBg: "#fff",
+      },
+    });
+    ctx.reactPages = {
+      home: {
+        slug: "home",
+        title: "Home",
+        sections: [
+          {
+            id: "home_hero",
+            templateId: "hero_editorial",
+            intent: "Hero",
+            props: {
+              headline: "Linea Studio",
+              image: { src: "https://images.pexels.com/photos/1.jpeg", alt: "Linea Studio interior" },
+              cta: { label: "Book", href: "/contact" },
+            },
+          },
+        ],
+      },
+    };
+
+    const { projectPath: withoutStickyPath } = await generateReactProject(
+      ctx,
+      ctx.reactPages,
+      OUT + "-no-sticky"
+    );
+    const layoutWithout = await fs.readFile(path.join(withoutStickyPath, "app", "layout.tsx"), "utf8");
+    expect(layoutWithout).not.toContain("StickyMobileCta");
+
+    ctx.chromeSpec = {
+      footer: {
+        layout: "centered",
+        tagline: "Tag",
+        ctaLabel: "Book",
+        ctaHref: "/contact",
+        showMood: false,
+        linkGroups: [],
+      },
+      nav: { compactOnScroll: false, shadowOnScroll: true },
+      immersive: { smoothScroll: false, grainOverlay: false },
+      stickyMobileCta: { label: "Book now", href: "/contact" },
+    };
+    const { projectPath: withStickyPath } = await generateReactProject(
+      ctx,
+      ctx.reactPages,
+      OUT + "-with-sticky"
+    );
+    const layoutWith = await fs.readFile(path.join(withStickyPath, "app", "layout.tsx"), "utf8");
+    expect(layoutWith).toContain("StickyMobileCta");
+    expect(layoutWith).toContain("Book now");
+
+    await fs.rm(OUT + "-no-sticky", { recursive: true, force: true });
+    await fs.rm(OUT + "-with-sticky", { recursive: true, force: true });
   });
 
   it("writes custom hero component file and imports it in page.tsx", async () => {
@@ -285,7 +372,11 @@ describe("react codegen", () => {
             id: "home_hero",
             templateId: "hero_editorial",
             intent: "Hero",
-            props: { headline: "Bespoke Hero", cta: { label: "Go", href: "/contact" } },
+            props: {
+              headline: "Bespoke Hero",
+              image: { src: "https://images.pexels.com/photos/1.jpeg", alt: "Bespoke fashion" },
+              cta: { label: "Go", href: "/contact" },
+            },
             customCodegen: {
               componentName: "CustomHomeHero",
               fileName: "CustomHomeHero.tsx",

@@ -61,8 +61,13 @@ function propsForCodegen(templateId: string, raw: Record<string, unknown>): Reco
   const template = getTemplate(templateId);
   if (!template) return sanitizePropsForCodegen(normalized);
   const parsed = template.propsSchema.safeParse(normalized);
-  const out = parsed.success ? (parsed.data as Record<string, unknown>) : normalized;
-  return sanitizePropsForCodegen(out);
+  if (!parsed.success) {
+    const detail = parsed.error.issues
+      .map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`)
+      .join("; ");
+    throw new Error(`Invalid props for template "${templateId}": ${detail}`);
+  }
+  return sanitizePropsForCodegen(parsed.data as Record<string, unknown>);
 }
 
 function writePageTsx(page: ReactPage): string {
@@ -129,17 +134,36 @@ function radiusValue(scale: SiteTheme["radiusScale"]): string {
   }
 }
 
+/** Radius for large surfaces (cards, panels, media). Shares the same corner "personality" as
+ *  `--radius` (buttons/chips) but never collapses a rectangular card/photo into a stadium shape
+ *  the way a literal 9999px would at radiusScale "pill". */
+function radiusLgValue(scale: SiteTheme["radiusScale"]): string {
+  switch (scale) {
+    case "sharp":
+      return "0.5rem";
+    case "soft":
+      return "0.875rem";
+    case "pill":
+      return "2rem";
+    case "rounded":
+    default:
+      return "1.25rem";
+  }
+}
+
 function shadowValue(depth: SiteTheme["shadowDepth"]): string {
+  // Multi-layer, low-opacity shadows read as real physical depth; a single flat blur is a template
+  // tell (research: premium depth stacks 3-4 layers — tight contact + mid diffusion + wide ambient).
   switch (depth) {
     case "flat":
       return "none";
     case "elevated":
-      return "0 12px 40px rgba(0, 0, 0, 0.12)";
+      return "0 1px 2px rgba(0,0,0,0.05), 0 6px 16px rgba(0,0,0,0.08), 0 20px 40px -12px rgba(0,0,0,0.14)";
     case "dramatic":
-      return "0 24px 64px rgba(0, 0, 0, 0.22)";
+      return "0 2px 4px rgba(0,0,0,0.06), 0 10px 24px rgba(0,0,0,0.12), 0 30px 60px -16px rgba(0,0,0,0.22)";
     case "soft":
     default:
-      return "0 4px 24px rgba(0, 0, 0, 0.06)";
+      return "0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06), 0 16px 32px -12px rgba(0,0,0,0.1)";
   }
 }
 
@@ -167,6 +191,7 @@ export function themeCssVars(theme: SiteTheme): string {
   --max-content: ${theme.layout?.maxWidth ?? "1200px"};
   --section-gap: ${gap};
   --radius: ${radiusValue(theme.radiusScale)};
+  --radius-lg: ${radiusLgValue(theme.radiusScale)};
   --shadow: ${shadowValue(theme.shadowDepth)};
   --font-display: '${theme.fontHeading}', Georgia, serif;
   --font-body: '${theme.fontBody}', system-ui, sans-serif;
@@ -221,10 +246,9 @@ function layoutTsx(ctx: SiteContext, pages: ReactPage[]): string {
   );
   const immersive = chrome.immersive ?? { smoothScroll: false, grainOverlay: false };
   const announcement = chrome.announcement;
-  const stickyCta = chrome.stickyMobileCta ?? {
-    label: chrome.footer.ctaLabel,
-    href: chrome.footer.ctaHref,
-  };
+  // `undefined` here is a deliberate LLM decision ("this brand doesn't need a sticky mobile CTA"),
+  // not a gap to paper over with a fallback — respect it instead of always rendering one.
+  const stickyCta = chrome.stickyMobileCta;
   const newsletter = chrome.newsletter;
 
   const linkGroups = (chrome.footer.linkGroups ?? []).map((g) => ({
@@ -241,6 +265,9 @@ function layoutTsx(ctx: SiteContext, pages: ReactPage[]): string {
 
   const smoothScroll = immersive.smoothScroll === true;
   const grainOverlay = immersive.grainOverlay === true;
+  const accentRole = ctx.designSystem.accentRole ?? "sparing";
+  const surfaceDefault =
+    ctx.designSystem.surfaces?.default ?? (accentRole === "editorial" ? "subtle" : "bordered");
 
   return `import type { Metadata } from "next";
 import "./globals.css";
@@ -250,13 +277,13 @@ import { MotionProvider } from "@/components/MotionProvider";
 ${fonts.imports}
 ${smoothScroll ? 'import { SmoothScroll } from "@/components/SmoothScroll";' : ""}
 ${announcement ? 'import { AnnouncementBar } from "@/components/AnnouncementBar";' : ""}
-import { StickyMobileCta } from "@/components/StickyMobileCta";
+${stickyCta ? 'import { StickyMobileCta } from "@/components/StickyMobileCta";' : ""}
 
 ${fonts.fontVars}
 
 export const metadata: Metadata = {
-  title: "${ctx.businessName.replace(/"/g, '\\"')}",
-  description: "${ctx.expandedBrief.elevatorPitch.slice(0, 140).replace(/"/g, '\\"')}",
+  title: ${JSON.stringify(ctx.businessName)},
+  description: ${JSON.stringify(ctx.expandedBrief.elevatorPitch.slice(0, 140))},
 };
 
 const navLinks = ${JSON.stringify(links, null, 2)};
@@ -266,25 +293,27 @@ const motionPlan = ${motionPlanJson === "null" ? "null" : motionPlanJson};
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const site = (
     <MotionProvider preset="${motionPreset}" plan={motionPlan}>
-      ${announcement ? `<AnnouncementBar message="${announcement.message.replace(/"/g, '\\"')}"${announcement.href ? ` href="${announcement.href.replace(/"/g, '\\"')}"` : ""} />` : ""}
-      <SiteNav businessName="${ctx.businessName.replace(/"/g, '\\"')}" links={navLinks} navShape="${ctx.designSystem.navShape ?? "full-width"}" />
+      ${announcement ? `<AnnouncementBar message={${JSON.stringify(announcement.message)}}${announcement.href ? ` href={${JSON.stringify(announcement.href)}}` : ""} bandFill="${announcement.bandFill ?? "accent"}" />` : ""}
+      <SiteNav businessName={${JSON.stringify(ctx.businessName)}} links={navLinks} navShape="${ctx.designSystem.navShape ?? "full-width"}" />
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[200] focus:rounded focus:bg-accent focus:px-4 focus:py-2 focus:text-white">
         Skip to content
       </a>
       <main id="main-content">{children}</main>
       <SiteFooter
-        businessName="${ctx.businessName.replace(/"/g, '\\"')}"
-        mood="${ctx.designSystem.mood.replace(/"/g, '\\"')}"
-        tagline="${(chrome.footer.tagline ?? ctx.expandedBrief.tagline).replace(/"/g, '\\"')}"
-        ctaLabel="${chrome.footer.ctaLabel.replace(/"/g, '\\"')}"
-        ctaHref="${chrome.footer.ctaHref.replace(/"/g, '\\"')}"
+        businessName={${JSON.stringify(ctx.businessName)}}
+        mood={${JSON.stringify(ctx.designSystem.mood)}}
+        tagline={${JSON.stringify(chrome.footer.tagline ?? ctx.expandedBrief.tagline)}}
+        ctaLabel={${JSON.stringify(chrome.footer.ctaLabel)}}
+        ctaHref={${JSON.stringify(chrome.footer.ctaHref)}}
         links={navLinks}
         layout="${chrome.footer.layout}"
         linkGroups={footerLinkGroups}
         showMood={${chrome.footer.showMood}}
+        ${chrome.footer.surface ? `surface="${chrome.footer.surface}"` : ""}
+        ${chrome.footer.divider ? `divider="${chrome.footer.divider}"` : ""}
         ${newsletter ? `newsletter={${JSON.stringify(newsletter)}}` : ""}
       />
-      <StickyMobileCta label="${stickyCta.label.replace(/"/g, '\\"')}" href="${stickyCta.href.replace(/"/g, '\\"')}" />
+      ${stickyCta ? `<StickyMobileCta label={${JSON.stringify(stickyCta.label)}} href={${JSON.stringify(stickyCta.href)}}${stickyCta.panel ? ` panel="${stickyCta.panel}"` : ""} />` : ""}
     </MotionProvider>
   );
 
@@ -294,6 +323,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className={\`font-body relative ${fonts.bodyClass}\`}
         data-page-tone="${ctx.designSystem.pageTone ?? "light"}"
         data-nav-treatment="${ctx.designSystem.navTreatment ?? "solid"}"
+        data-gradient-mood="${ctx.designSystem.gradientMood ?? "subtle"}"
+        data-accent-role="${accentRole}"
+        data-surface-default="${surfaceDefault}"
         data-motion-preset="${motionPreset}"
       >
         ${grainOverlay ? `<div className="grain-overlay pointer-events-none fixed inset-0 z-[100]" aria-hidden />` : ""}
@@ -317,8 +349,9 @@ function defaultChromeSpec(
       ctaHref: "/contact",
       showMood: false,
       linkGroups: [{ label: "Explore", slugs: links.map((l) => l.slug) }],
+      surface: "subtle",
+      divider: "line",
     },
-    nav: { compactOnScroll: false, shadowOnScroll: false },
     immersive: { smoothScroll: false, grainOverlay: false },
   };
 }

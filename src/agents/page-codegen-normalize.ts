@@ -195,14 +195,32 @@ function normalizeStatItems(raw: unknown): Array<{ value: string; label: string 
     .filter((x): x is { value: string; label: string } => Boolean(x));
 }
 
+/** Map loose LLM span words to the FeatureBento enum (normal|wide|tall|large). */
+function coerceSpan(val: unknown): string | undefined {
+  if (typeof val !== "string") return undefined;
+  const v = val.trim().toLowerCase();
+  if (v === "wide" || v === "tall" || v === "large" || v === "normal") return v;
+  if (["regular", "medium", "default", "small", "1x1", "single"].includes(v)) return "normal";
+  if (["big", "hero", "feature", "xl", "2x2"].includes(v)) return "large";
+  if (["full", "row", "2x1", "horizontal"].includes(v)) return "wide";
+  if (["column", "1x2", "vertical"].includes(v)) return "tall";
+  return "normal";
+}
+
 function normalizeFeatureItem(item: unknown): Record<string, unknown> {
   if (!item || typeof item !== "object") return { title: "", description: "" };
   const row = item as Record<string, unknown>;
-  return {
+  const out: Record<string, unknown> = {
     ...row,
     title: String(row.title ?? row.name ?? row.headline ?? "").trim(),
     description: String(row.description ?? row.body ?? row.subcopy ?? row.text ?? "").trim(),
   };
+  if (row.span !== undefined) {
+    const span = coerceSpan(row.span);
+    if (span) out.span = span;
+    else delete out.span;
+  }
+  return out;
 }
 
 function normalizeFaqItem(item: unknown): Record<string, unknown> {

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
   COMPONENT_MANIFEST,
   CONVERSION_COMPONENT_NAMES,
@@ -6,15 +7,18 @@ import {
 import { getTemplateByComponentName } from "../section-templates/registry.js";
 import { COPY_PROP_SCHEMAS } from "../section-templates/schemas.js";
 
-export interface PageCodegenSection {
-  component: string;
-  intent: string;
-  props: Record<string, unknown>;
-}
+export const PageCodegenPlanSchema = z.object({
+  sections: z.array(
+    z.object({
+      component: z.string(),
+      intent: z.string(),
+      props: z.record(z.unknown()),
+    })
+  ),
+});
 
-export interface PageCodegenPlan {
-  sections: PageCodegenSection[];
-}
+export type PageCodegenPlan = z.infer<typeof PageCodegenPlanSchema>;
+export type PageCodegenSection = PageCodegenPlan["sections"][number];
 
 export interface PageCodegenValidateOptions {
   requiredHero?: string;
@@ -170,17 +174,5 @@ export function validatePageCodegenPlan(
 }
 
 export function parsePageCodegenPlan(raw: unknown): PageCodegenPlan {
-  const data = raw as { sections?: Array<{ component?: string; intent?: string; props?: unknown }> };
-  if (!data?.sections) {
-    throw new Error("Missing sections array");
-  }
-  return {
-    sections: data.sections.map((s, i) => ({
-      component: String(s.component ?? "").trim(),
-      intent: String(s.intent ?? `Section ${i}`).trim(),
-      props: (s.props && typeof s.props === "object" && !Array.isArray(s.props)
-        ? s.props
-        : {}) as Record<string, unknown>,
-    })),
-  };
+  return PageCodegenPlanSchema.parse(raw);
 }

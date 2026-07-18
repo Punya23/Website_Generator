@@ -68,19 +68,65 @@ ${fontInstance(hExport, body, "--font-body", "fontBody")}`
     : `${fontInstance(hExport, heading, "--font-display", "fontDisplay")}
 ${fontInstance(bExport, body, "--font-body", "fontBody")}`;
 
-  const gap = theme.sectionGapMode ?? "normal";
-  const heroSize =
-    gap === "airy" ? "clamp(3rem, 8vw, 5.5rem)" : gap === "tight" ? "clamp(2rem, 5vw, 3.5rem)" : "clamp(2.5rem, 6vw, 4.5rem)";
-  const sectionSize =
-    gap === "airy" ? "clamp(2rem, 4vw, 3.25rem)" : gap === "tight" ? "clamp(1.5rem, 3vw, 2.25rem)" : "clamp(1.75rem, 3.5vw, 2.75rem)";
-  const labelSize = gap === "airy" ? "0.8rem" : "0.75rem";
-
   return {
     imports,
     fontVars: instances,
     bodyClass: `\${fontDisplay.variable} \${fontBody.variable}`,
-    typeScaleCss: `  --text-hero: ${heroSize};
-  --text-section: ${sectionSize};
-  --text-label: ${labelSize};`,
+    typeScaleCss: typeScaleTokens(theme),
   };
+}
+
+/**
+ * A real modular type scale — the single strongest "premium" signal (research: Framer/Stripe use
+ * dramatic, consistent display↔body size contrast derived from one ratio). Previously the pipeline
+ * emitted --text-hero/section/label tokens that no component consumed and rendered every heading at
+ * one timid clamp, so nothing read as a focal point. Now h1≫h2>h3 with a dramatic top end, one
+ * scale per site chosen by density/mood, consumed by the .text-h1/.text-h2/.text-h3 utilities.
+ */
+function typeScaleTokens(theme: SiteTheme): string {
+  const gap = theme.sectionGapMode ?? "normal";
+  // Ratio tier: airy/editorial → dramatic (~1.5), tight → compact (~1.25), else the 1.333 workhorse.
+  const tier = gap === "airy" ? "dramatic" : gap === "tight" ? "compact" : "normal";
+
+  const scales = {
+    dramatic: {
+      h1: "clamp(3rem, 8vw, 5.75rem)",
+      h2: "clamp(2.125rem, 5vw, 3.5rem)",
+      h3: "clamp(1.5rem, 3vw, 2.125rem)",
+      display: "clamp(3.5rem, 9vw, 6.5rem)",
+      label: "0.8rem",
+    },
+    normal: {
+      h1: "clamp(2.75rem, 6vw, 4.5rem)",
+      h2: "clamp(1.875rem, 4vw, 2.75rem)",
+      h3: "clamp(1.375rem, 2.5vw, 1.75rem)",
+      display: "clamp(3rem, 7vw, 5.25rem)",
+      label: "0.75rem",
+    },
+    compact: {
+      h1: "clamp(2.25rem, 5vw, 3.5rem)",
+      h2: "clamp(1.625rem, 3.5vw, 2.25rem)",
+      h3: "clamp(1.25rem, 2vw, 1.5rem)",
+      display: "clamp(2.5rem, 6vw, 4rem)",
+      label: "0.7rem",
+    },
+  } as const;
+
+  const s = scales[tier];
+  return `  --text-body: clamp(1rem, 0.955rem + 0.22vw, 1.0625rem);
+  --text-display: ${s.display};
+  --text-h1: ${s.h1};
+  --text-h2: ${s.h2};
+  --text-h3: ${s.h3};
+  --text-label: ${s.label};
+  --lh-display: 1.03;
+  --lh-h1: 1.05;
+  --lh-h2: 1.12;
+  --lh-h3: 1.22;
+  --tracking-display: -0.035em;
+  --tracking-h2: -0.02em;
+  --tracking-h3: -0.01em;
+  /* Legacy aliases kept so any older reference still resolves */
+  --text-hero: ${s.h1};
+  --text-section: ${s.h2};`;
 }

@@ -289,7 +289,7 @@ export function mockNavForProfile(profile: VerticalDesignProfile): {
   pageTone: VerticalDesignProfile["pageTone"];
   navTreatment: VerticalDesignProfile["navTreatment"];
   navShape: VerticalDesignProfile["navShape"];
-  surfaces: { default: string; elevated: string; none: string };
+  surfaces: { default?: "none" | "subtle" | "elevated" | "bordered"; elevated?: "none" | "subtle" | "elevated" | "bordered"; none?: "none" | "subtle" | "elevated" | "bordered" };
   colors: {
     navBg: string;
     navText: string;
@@ -304,9 +304,9 @@ export function mockNavForProfile(profile: VerticalDesignProfile): {
     navTreatment: profile.navTreatment,
     navShape: profile.navShape,
     surfaces: {
-      default: dark ? "subtle elevation on cards" : "none",
-      elevated: "pricing and testimonial panels",
-      none: "typography-first editorial bands",
+      default: dark ? "subtle" : "none",
+      elevated: "elevated",
+      none: "none",
     },
     colors: dark
       ? {

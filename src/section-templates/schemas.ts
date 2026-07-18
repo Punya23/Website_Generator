@@ -1,11 +1,12 @@
 import { z } from "zod";
-import { LayoutVariantSchema } from "../types.js";
+import { LayoutVariantSchema, VisualFxSchema } from "../types.js";
 import {
   coerceToString,
   coerceToStringArray,
   normalizeCopyProps,
 } from "../llm/normalize-llm-output.js";
 import { repairTemplateProps } from "./repair-props.js";
+import { designLanguageFields } from "../design/design-language.js";
 
 const layoutFields = {
   layoutVariant: LayoutVariantSchema.optional(),
@@ -13,8 +14,8 @@ const layoutFields = {
   mediaPosition: z.enum(["background", "left", "right"]).optional(),
 };
 
-/** Site-wide FX stamp — injected by pipeline, not LLM. clean|editorial = no cursor blur. */
-export const VisualFxSchema = z.enum(["clean", "editorial", "spotlight", "glass"]);
+/** Site-wide FX — usually stamped by pipeline; LLM may also set per-section. */
+export { VisualFxSchema };
 const visualFxField = { visualFx: VisualFxSchema.optional() };
 
 /** LLMs sometimes return imageQuery as an array of keywords — coerce to one search string. */
@@ -91,6 +92,8 @@ export const IntroStatementPropsSchema = z.object({
 export const StatsMarqueePropsSchema = z.object({
   label: z.string().optional(),
   stats: z.array(statItem).min(2).max(6),
+  ...layoutFields,
+  ...designLanguageFields,
 });
 
 export const ServicesShowcasePropsSchema = z.object({
@@ -141,6 +144,8 @@ export const TestimonialFeaturedPropsSchema = z.object({
   quote: z.string(),
   author: z.string(),
   role: z.string().optional(),
+  ...layoutFields,
+  ...designLanguageFields,
 });
 
 export const PricingTiersPropsSchema = z.object({
@@ -160,12 +165,16 @@ export const PricingTiersPropsSchema = z.object({
     )
     .min(1)
     .max(4),
+  ...layoutFields,
+  ...designLanguageFields,
 });
 
 export const FaqAccordionPropsSchema = z.object({
   label: z.string().optional(),
   headline: z.string().optional(),
   items: z.array(z.object({ question: z.string(), answer: z.string() })).min(2).max(8),
+  ...layoutFields,
+  ...designLanguageFields,
 });
 
 export const CtaBandPropsSchema = z.object({
@@ -174,6 +183,7 @@ export const CtaBandPropsSchema = z.object({
   subcopy: z.string().optional(),
   cta: ctaField,
   ...layoutFields,
+  ...designLanguageFields,
 });
 
 export const TextMarqueePropsSchema = z.object({
@@ -188,6 +198,7 @@ export const FooterCtaPropsSchema = z.object({
   cta: ctaField,
   secondaryCta: ctaField.optional(),
   ...layoutFields,
+  ...designLanguageFields,
 });
 
 export const ContactSplitPropsSchema = z.object({
@@ -250,6 +261,8 @@ export const HeroVideoPropsSchema = z.object({
     .optional(),
   cta: ctaField.optional(),
   ...layoutFields,
+  ...designLanguageFields,
+  ...visualFxField,
 });
 
 export const TestimonialCarouselPropsSchema = z.object({
@@ -266,6 +279,8 @@ export const TestimonialCarouselPropsSchema = z.object({
     )
     .min(2)
     .max(8),
+  ...layoutFields,
+  ...designLanguageFields,
 });
 
 export const PortfolioCarouselPropsSchema = z.object({
@@ -281,6 +296,7 @@ export const PortfolioCarouselPropsSchema = z.object({
     )
     .min(3)
     .max(10),
+  ...designLanguageFields,
 });
 
 export const BeforeAfterPropsSchema = z.object({
@@ -289,6 +305,7 @@ export const BeforeAfterPropsSchema = z.object({
   before: imageField,
   after: imageField,
   caption: z.string().optional(),
+  ...designLanguageFields,
 });
 
 export const PricingTogglePropsSchema = z.object({
@@ -310,12 +327,16 @@ export const PricingTogglePropsSchema = z.object({
     )
     .min(1)
     .max(4),
+  ...layoutFields,
+  ...designLanguageFields,
 });
 
 export const StatsAnimatedPropsSchema = z.object({
   label: z.string().optional(),
   headline: z.string().optional(),
   stats: z.array(statItem).min(2).max(6),
+  ...layoutFields,
+  ...designLanguageFields,
 });
 
 export const NewsletterBandPropsSchema = z.object({
@@ -323,6 +344,8 @@ export const NewsletterBandPropsSchema = z.object({
   subcopy: z.string().optional(),
   placeholder: z.string().optional(),
   buttonLabel: z.string().optional(),
+  ...layoutFields,
+  ...designLanguageFields,
 });
 
 export const HeroSpotlightPropsSchema = z.object({
@@ -332,6 +355,7 @@ export const HeroSpotlightPropsSchema = z.object({
   image: imageField,
   cta: ctaField.optional(),
   ...layoutFields,
+  ...designLanguageFields,
   ...visualFxField,
 });
 
@@ -351,6 +375,7 @@ export const ScrollShowcasePropsSchema = z.object({
     .optional(),
   image: imageField.optional(),
   cta: ctaField.optional(),
+  ...designLanguageFields,
   ...visualFxField,
 });
 
@@ -367,6 +392,7 @@ export const HorizontalGalleryPropsSchema = z.object({
     )
     .min(3)
     .max(10),
+  ...designLanguageFields,
 });
 
 export const TEMPLATE_PROP_SCHEMAS = {
@@ -417,7 +443,7 @@ export const COPY_PROP_SCHEMAS = {
           span: z.enum(["normal", "wide", "tall", "large"]).optional(),
         })
       )
-      .min(2)
+      .min(3)
       .max(6),
   }),
   portfolio_strip: z.object({
@@ -514,6 +540,12 @@ export const COPY_PROP_SCHEMAS = {
       .max(5)
       .optional(),
     cta: ctaField.optional(),
+    visualFx: VisualFxSchema.optional(),
+    surface: designLanguageFields.surface,
+    bandFill: designLanguageFields.bandFill,
+    panel: designLanguageFields.panel,
+    divider: designLanguageFields.divider,
+    mediaOverlay: designLanguageFields.mediaOverlay,
   }),
   horizontal_gallery: z.object({
     label: z.string().optional(),

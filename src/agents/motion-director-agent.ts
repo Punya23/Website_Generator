@@ -207,7 +207,7 @@ function sanitizeLlmMotionPlan(
   const plan = normalizeMotionPlan({
     globalPreset: String(obj.globalPreset ?? fallback.globalPreset),
     reducedMotion: obj.reducedMotion === "minimal" ? "minimal" : "respect",
-    navScrollEnhance: obj.navScrollEnhance !== false,
+    navScrollEnhance: obj.navScrollEnhance === true,
     sections,
     chrome: {
       footer: {

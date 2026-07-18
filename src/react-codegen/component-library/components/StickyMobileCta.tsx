@@ -1,8 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { panelClass, type Panel } from "./primitives";
 
-export function StickyMobileCta({ label, href }: { label: string; href: string }) {
+export function StickyMobileCta({
+  label,
+  href,
+  panel,
+}: {
+  label: string;
+  href: string;
+  panel?: Panel;
+}) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -15,10 +24,10 @@ export function StickyMobileCta({ label, href }: { label: string; href: string }
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-bg/95 p-3 backdrop-blur-md md:hidden">
+    <div className={`fixed bottom-0 left-0 right-0 z-50 md:hidden ${panelClass(panel)}`}>
       <a
         href={href}
-        className="flex w-full items-center justify-center rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-lg"
+        className="flex w-full items-center justify-center rounded-[var(--radius)] bg-accent px-6 py-3 text-sm font-semibold text-white shadow-[var(--shadow)]"
       >
         {label}
       </a>

@@ -19,7 +19,7 @@ const immersive = readFileSync(
 describe("section layout variants", () => {
   it("HeroSpotlight branches on layoutVariant", () => {
     expect(premium).toContain('variant === "centered-stack"');
-    expect(premium).toContain('variant === "full-bleed-left"');
+    expect(premium).toContain("SplitHeroLayout");
     expect(premium).toContain("mediaPosition");
   });
 

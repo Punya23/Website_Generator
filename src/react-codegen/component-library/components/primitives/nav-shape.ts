@@ -33,21 +33,21 @@ export function navShapeStyle(shape: NavShape | undefined): NavShapeStyle {
       return {
         headerClass: "px-3 pt-3 sm:px-5 sm:pt-5",
         railClass: "flex items-center justify-between",
-        surfaceClass: "nav-surface mx-auto w-full max-w-5xl rounded-full px-5 py-2.5 shadow-sm",
+        surfaceClass: "nav-surface mx-auto w-full max-w-5xl rounded-full px-5 py-2.5 shadow-[var(--shadow)]",
         split: false,
       };
     case "floating-panel":
       return {
         headerClass: "px-3 pt-3 sm:px-5 sm:pt-5",
         railClass: "flex items-center justify-between",
-        surfaceClass: "nav-surface mx-auto w-full max-w-6xl rounded-2xl px-6 py-3.5 shadow-sm",
+        surfaceClass: "nav-surface mx-auto w-full max-w-6xl rounded-[var(--radius-lg)] px-6 py-3.5 shadow-[var(--shadow)]",
         split: false,
       };
     case "split-inline":
       return {
         headerClass: "px-3 pt-3 sm:px-5 sm:pt-5",
         railClass: "mx-auto flex w-full max-w-6xl items-center justify-between gap-3",
-        surfaceClass: "nav-surface rounded-full px-5 py-2.5 shadow-sm",
+        surfaceClass: "nav-surface rounded-full px-5 py-2.5 shadow-[var(--shadow)]",
         split: true,
       };
     case "full-width":

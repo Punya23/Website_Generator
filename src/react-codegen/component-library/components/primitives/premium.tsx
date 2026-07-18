@@ -69,8 +69,8 @@ export function GlassPanel({
 }) {
   const surface =
     variant === "solid"
-      ? "rounded-[var(--radius)] border border-border bg-surface p-6 shadow-[var(--shadow)]"
-      : "rounded-[var(--radius)] border border-white/10 bg-white/5 p-6 shadow-[var(--shadow)] backdrop-blur-md";
+      ? "rounded-[var(--radius-lg)] border border-border bg-surface p-6 shadow-[var(--shadow)]"
+      : "rounded-[var(--radius-lg)] border border-white/10 bg-white/5 p-6 shadow-[var(--shadow)] backdrop-blur-md";
   return (
     <div id={id} className={`${surface} ${className}`}>
       {children}

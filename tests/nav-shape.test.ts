@@ -33,10 +33,10 @@ describe("navShapeStyle", () => {
     expect(style.headerClass).not.toBe("");
   });
 
-  it("gives floating-panel a soft rounded-2xl surface", () => {
+  it("gives floating-panel a soft, theme-driven radius surface", () => {
     const style = navShapeStyle("floating-panel");
     expect(style.split).toBe(false);
-    expect(style.surfaceClass).toContain("rounded-2xl");
+    expect(style.surfaceClass).toContain("rounded-[var(--radius-lg)]");
   });
 
   it("marks split-inline as split so logo and links render as two surfaces", () => {
@@ -53,5 +53,12 @@ describe("navShapeStyle", () => {
     const shapes = ["full-width", "floating-capsule", "floating-panel", "split-inline"] as const;
     const surfaces = new Set(shapes.map((s) => navShapeStyle(s).surfaceClass));
     expect(surfaces.size).toBe(4);
+  });
+
+  it("floating shapes use the theme shadow token, not a hardcoded shadow-sm", () => {
+    for (const shape of ["floating-capsule", "floating-panel", "split-inline"] as const) {
+      expect(navShapeStyle(shape).surfaceClass).toContain("shadow-[var(--shadow)]");
+      expect(navShapeStyle(shape).surfaceClass).not.toContain("shadow-sm");
+    }
   });
 });

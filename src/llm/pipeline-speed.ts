@@ -94,11 +94,10 @@ export function useBespokeSectionCodegen(): boolean {
   return false;
 }
 
-/** LLM-first page composition — one call per page picks components + writes props. */
+/** LLM-first page composition — one call per page picks components + writes props.
+ *  Always on for the React path (legacy architect/section-fill pipeline removed). */
 export function usePageCodegenPipeline(): boolean {
-  if (process.env.PIPELINE_PAGE_CODEGEN === "0") return false;
-  if (process.env.PIPELINE_PAGE_CODEGEN === "1") return true;
-  return isQualityPipeline();
+  return true;
 }
 
 export function visionQaEnabled(): boolean {

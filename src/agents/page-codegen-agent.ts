@@ -43,6 +43,26 @@ RULES:
 - For images use { "alt": "descriptive alt" } only — never src URLs
 - intent: max 12 words describing the section's job on this page
 
+LAYOUT VARIATION — many components (heroes, FaqAccordion, CtaBand, FooterCta) accept an optional
+"layoutVariant" prop. If you omit it, the component silently falls back to ONE fixed default every
+time, which is exactly the sameness you must avoid. Set it deliberately per section:
+- layoutVariant: "default" | "full-bleed-left" | "centered-stack" | "split-offset" | "band-compact" | "band-wide"
+  e.g. a hero can be "full-bleed-left" (image fills one side) or "centered-stack" (typography-only,
+  no image) or "split-offset" (offset split); FaqAccordion can be "centered-stack" (simple divided
+  list), "split-offset"/"band-wide" (two-column boxed cards), or "full-bleed-left"/"band-compact"
+  (numbered editorial list); CtaBand/FooterCta can be "centered-stack" or a wide/asymmetric band.
+- density: "airy" | "normal" | "compact" — vary section breathing room across the page
+- mediaPosition: "left" | "right" | "background" — for hero/split sections with an image
+Do not use the same layoutVariant on every section of a page — mix them so the page has real rhythm.
+
+DESIGN LANGUAGE — choose deliberately for THIS brand:
+- CtaBand bandFill: "gradient" | "plain" | "subtle" | "mesh" | "accent"
+- PricingToggle bandFill: "plain" (avoid "mesh" unless the brand wants it); panel: "bordered" | "elevated" | "glass"
+- HeroVideo mediaOverlay: "scrim-bottom" | "none" | "scrim-full"; layoutVariant: "centered-stack" | "full-bleed-left"
+- TestimonialCarousel panel: "bordered" | "flat" | "glass"
+- StatsMarquee bandFill: "subtle" | "plain"; divider: "line" | "none"
+These examples are guidance, not defaults — vary them for THIS brand.
+
 Output valid JSON only:
 {
   "sections": [
@@ -142,7 +162,6 @@ export async function generatePageSections(
   try {
     let lastValidationError: string | undefined;
     let plan: PageCodegenPlan | null = null;
-    let lastCandidate: PageCodegenPlan | null = null;
     const validateOptions: PageCodegenValidateOptions = {
       requiredHero: composition?.pages[page.slug]?.heroComponent,
       avoidComponents: composition?.pages[page.slug]?.avoidComponents,
@@ -163,8 +182,16 @@ export async function generatePageSections(
         (raw) => parseLlmJson(raw)
       );
 
-      const candidate = preparePageCodegenPlan(parsePageCodegenPlan(parsed), page.slug);
-      lastCandidate = candidate;
+      let candidate: PageCodegenPlan;
+      try {
+        candidate = preparePageCodegenPlan(parsePageCodegenPlan(parsed), page.slug);
+      } catch (error) {
+        lastValidationError = `plan schema invalid: ${error instanceof Error ? error.message : String(error)}`;
+        pipelineLog(
+          `[pipeline] Page codegen validation failed (${page.slug}, attempt ${attempt + 1}/3): ${lastValidationError}`
+        );
+        continue;
+      }
       const validationError = validatePageCodegenPlan(candidate, page.slug, validateOptions);
       if (validationError) {
         lastValidationError = validationError;
@@ -175,20 +202,6 @@ export async function generatePageSections(
       }
       plan = candidate;
       break;
-    }
-
-    if (!plan && lastCandidate) {
-      const salvaged = preparePageCodegenPlan(lastCandidate, page.slug);
-      const salvageError = validatePageCodegenPlan(salvaged, page.slug, {
-        ...validateOptions,
-        requiredHero: undefined,
-      });
-      if (!salvageError) {
-        pipelineLog(
-          `[pipeline] Page codegen salvage (${page.slug}): accepted repaired plan after retries`
-        );
-        plan = salvaged;
-      }
     }
 
     if (!plan) {

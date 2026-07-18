@@ -6,7 +6,8 @@ describe("structural design tokens (radius / shadow)", () => {
   it("defaults to today's radius/shadow values when unset", () => {
     const css = themeCssVars(GENERIC_THEME);
     expect(css).toContain("--radius: 0.75rem;");
-    expect(css).toContain("--shadow: 0 4px 24px rgba(0, 0, 0, 0.06);");
+    // Multi-layer soft shadow (premium depth stacks several low-opacity layers, not one flat blur).
+    expect(css).toContain("--shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06), 0 16px 32px -12px rgba(0,0,0,0.1);");
   });
 
   it("maps each radiusScale to a distinct value", () => {
@@ -21,9 +22,18 @@ describe("structural design tokens (radius / shadow)", () => {
 
   it("maps each shadowDepth to a distinct value", () => {
     const flat = themeCssVars({ ...GENERIC_THEME, shadowDepth: "flat" });
+    const soft = themeCssVars({ ...GENERIC_THEME, shadowDepth: "soft" });
+    const elevated = themeCssVars({ ...GENERIC_THEME, shadowDepth: "elevated" });
     const dramatic = themeCssVars({ ...GENERIC_THEME, shadowDepth: "dramatic" });
 
     expect(flat).toContain("--shadow: none;");
-    expect(dramatic).toContain("--shadow: 0 24px 64px rgba(0, 0, 0, 0.22);");
+    // Each non-flat depth is a distinct multi-layer stack.
+    for (const css of [soft, elevated, dramatic]) {
+      const match = css.match(/--shadow: (.+);/);
+      expect(match).not.toBeNull();
+      expect(match![1]!.split("),").length).toBeGreaterThanOrEqual(3);
+    }
+    expect(soft).not.toBe(elevated);
+    expect(elevated).not.toBe(dramatic);
   });
 });

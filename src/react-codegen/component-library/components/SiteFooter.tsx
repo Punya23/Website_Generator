@@ -1,7 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Reveal, Stagger, StaggerItem } from "./primitives";
+import {
+  Reveal,
+  Stagger,
+  StaggerItem,
+  dividerClass,
+  surfaceClass,
+  type Divider,
+  type Surface,
+} from "./primitives";
 import { useChromeFooterMotion } from "./MotionProvider";
 
 type FooterLayout = "two-column" | "centered" | "cta-heavy";
@@ -19,6 +27,8 @@ export function SiteFooter({
   linkGroups,
   showMood = true,
   newsletter,
+  surface,
+  divider,
 }: {
   businessName: string;
   mood: string;
@@ -29,6 +39,8 @@ export function SiteFooter({
   layout?: FooterLayout;
   linkGroups?: LinkGroup[];
   showMood?: boolean;
+  surface?: Surface;
+  divider?: Divider;
   newsletter?: {
     headline: string;
     subcopy?: string;
@@ -88,7 +100,7 @@ export function SiteFooter({
   );
 
   return (
-    <footer className="site-footer border-t border-border bg-surface/50">
+    <footer className={`site-footer ${surfaceClass(surface)} ${dividerClass(divider)}`}>
       {newsletter ? (
         <div className="border-b border-border bg-surface/80 py-12">
           <div className="content-rail text-center">
@@ -98,12 +110,12 @@ export function SiteFooter({
               <input
                 type="email"
                 placeholder={newsletter.placeholder ?? "you@example.com"}
-                className="flex-1 rounded-full border border-border bg-bg px-4 py-2.5 text-sm outline-none focus:border-accent"
+                className="flex-1 rounded-[var(--radius)] border border-border bg-bg px-4 py-2.5 text-sm outline-none focus:border-accent"
                 aria-label="Email"
               />
               <button
                 type="submit"
-                className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white"
+                className="rounded-[var(--radius)] bg-accent px-5 py-2.5 text-sm font-semibold text-white"
               >
                 {newsletter.buttonLabel ?? "Subscribe"}
               </button>
@@ -118,15 +130,30 @@ export function SiteFooter({
             <div className={`mt-10 ${layout === "centered" || layout === "cta-heavy" ? "text-center" : ""}`}>
               <a
                 href={ctaHref ?? "/contact"}
-                className="inline-flex rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                className="inline-flex rounded-[var(--radius)] bg-accent px-6 py-3 text-sm font-semibold text-white shadow-[var(--shadow)] transition hover:-translate-y-0.5"
               >
                 {ctaLabel}
               </a>
             </div>
           ) : null}
-          <p className={`mt-12 text-xs text-muted ${layout === "centered" ? "text-center" : "md:text-left text-center"}`}>
-            © {new Date().getFullYear()} {businessName}
-          </p>
+          {/* Richer bottom bar: copyright + a repeated inline nav so the footer has a real second
+              row instead of a lone copyright line (the "sparse footer" QA flag). */}
+          <div className="mt-14 flex flex-col gap-4 border-t border-border pt-6 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              © {new Date().getFullYear()} {businessName}. All rights reserved.
+            </p>
+            <nav className="flex flex-wrap gap-x-6 gap-y-2">
+              {links.map((link) => (
+                <Link
+                  key={link.slug}
+                  href={link.slug === "home" ? "/" : `/${link.slug}`}
+                  className="transition hover:text-accent"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
         </Reveal>
       </div>
     </footer>

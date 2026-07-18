@@ -147,7 +147,7 @@ function NavLink({
       whileHover={isMobileLink ? undefined : { scale: 1.06 }}
       whileTap={isMobileLink ? undefined : { scale: 0.95 }}
       transition={{ type: "spring", stiffness: 420, damping: 22 }}
-      className={`rounded-full px-3 py-1.5 text-sm transition ${className} ${
+      className={`rounded-[var(--radius)] px-3 py-1.5 text-sm transition ${className} ${
         active && !isMobileLink
           ? "bg-nav-active text-nav-active-text shadow-sm"
           : active

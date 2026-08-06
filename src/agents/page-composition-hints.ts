@@ -41,6 +41,38 @@ function weightedHeroPool(): string[] {
   return pool.length > 0 ? pool : [...HERO_COMPONENTS];
 }
 
+/** Structural DNA per core page kind so About/Services/Contact never converge on the same
+ *  "hero + grid + grid + CTA" template regardless of which components the LLM picks — the
+ *  "every page looks the same" complaint. Keyed by page kind, not slug, so a business's own
+ *  vocabulary (e.g. "menu" instead of "services") still gets the right personality via
+ *  matchPagePersonality below. Optional pages fall through with no forced personality. */
+const PAGE_PERSONALITY: Record<string, { notes: string; avoidComponents: string[] }> = {
+  home: {
+    notes:
+      "Home is the flagship — richest section variety, boldest hero, full site-fx budget. Cover proof, offering overview, and one conversion push.",
+    avoidComponents: [],
+  },
+  about: {
+    notes:
+      "About reads as editorial narrative, not a sales grid — text-forward and quieter than Home. Favor story/mission copy, a single strong image or timeline, one values or team section. Do not stack more than one card-grid section.",
+    avoidComponents: ["PortfolioStrip", "GalleryMasonry", "PricingToggle", "PricingTiers"],
+  },
+  services: {
+    notes:
+      "Services is the detail page — denser and more structured than About: comparison-friendly grids, process steps, pricing where relevant. Favor clarity over narrative prose.",
+    avoidComponents: [],
+  },
+  contact: {
+    notes:
+      "Contact is a utility page — the calmest, least decorated page on the site. One clear path to reach out: contact block, hours/location, optional FAQ. No bento, portfolio, team, or pricing grids.",
+    avoidComponents: ["FeatureBento", "PortfolioStrip", "TeamGrid", "GalleryMasonry", "PricingToggle", "PricingTiers"],
+  },
+};
+
+function matchPagePersonality(slug: string) {
+  return PAGE_PERSONALITY[slug];
+}
+
 /** Components that read as repetitive when reused across pages — capped to one page per site. */
 const RARE_COMPONENT_ASSIGNMENTS: Array<{ name: string; candidateSlugs: string[] }> = [
   { name: "FaqAccordion", candidateSlugs: ["contact", "services", "about"] },
@@ -48,6 +80,13 @@ const RARE_COMPONENT_ASSIGNMENTS: Array<{ name: string; candidateSlugs: string[]
   { name: "IntroStatement", candidateSlugs: ["about", "portfolio", "home", "services"] },
   { name: "TextMarquee", candidateSlugs: ["home", "portfolio", "about"] },
   { name: "NewsletterBand", candidateSlugs: ["home", "about"] },
+  // Real runs showed these landing on every single page (home, about, services, contact all
+  // picking StatsAnimated + TestimonialFeatured) — vision QA independently flagged the repeated
+  // stats band as "templated... found on many websites" on 3 pages of the same site. Cap like the
+  // other repetitive components above instead of leaving them as an uncapped default choice.
+  { name: "StatsAnimated", candidateSlugs: ["home", "about", "services", "contact"] },
+  { name: "TestimonialFeatured", candidateSlugs: ["home", "about", "services", "contact"] },
+  { name: "TestimonialCarousel", candidateSlugs: ["home", "services", "portfolio"] },
 ];
 
 /** Every non-hero, non-conversion template — the real pool the LLM should be encouraged to use,
@@ -138,7 +177,10 @@ export function buildSiteCompositionPlan(
         : pickFrom(seed, `hero-${page.slug}`, heroes);
     usedHeroes.add(hero);
 
+    const personality = matchPagePersonality(page.slug);
+
     const notes = [
+      personality?.notes ?? "",
       page.contentFocus?.length
         ? `Content focus: ${page.contentFocus.join(", ")}`
         : "",
@@ -161,8 +203,10 @@ export function buildSiteCompositionPlan(
 
     pages[page.slug] = {
       heroComponent: hero,
-      avoidComponents: ["NewsletterBand"],
-      encourageComponents,
+      avoidComponents: ["NewsletterBand", ...(personality?.avoidComponents ?? [])],
+      encourageComponents: encourageComponents.filter(
+        (c) => !personality?.avoidComponents.includes(c)
+      ),
       notes,
     };
   }

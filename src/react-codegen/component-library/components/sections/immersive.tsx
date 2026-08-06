@@ -17,7 +17,6 @@ import {
   StaggerItem,
   bandFillClass,
   cardGridClassForCount,
-  mediaOverlayClass,
   panelClass,
   surfaceClass,
   type BandFill,
@@ -113,6 +112,23 @@ function AnimatedStat({ value, label }: { value: string; label: string }) {
   );
 }
 
+/** HeroVideo never bottom-anchors its text — full-bleed-left flows from the top (`pt-32`),
+ *  centered-stack vertically centers it — but the shared mediaOverlayClass()'s "scrim-bottom" is a
+ *  bottom-up gradient (opaque at the bottom, transparent at the top), so it darkens the one region
+ *  this component's text never occupies and leaves the actual text region almost fully see-through.
+ *  Invisible while the poster image was empty (see media-curator-agent.ts fix); once a real photo
+ *  renders behind the text, this is a deterministic, always-reproducible contrast failure — caught
+ *  by vision QA, which the layout-fix auto-repair loop cannot fix (it only cycles layoutVariant and
+ *  density, never mediaOverlay). Fixed at the one call site that needs it rather than changing the
+ *  shared utility, since nothing else in the library consumes MediaOverlay/mediaOverlayClass. */
+function heroVideoOverlayClass(overlay: MediaOverlay | undefined): string {
+  const resolved = overlay ?? "scrim-bottom";
+  if (resolved === "none") return "";
+  // Plain CSS classes (globals.css), not Tailwind gradient utilities — see globals.css comment.
+  if (resolved === "scrim-full") return "hero-scrim-full";
+  return "hero-scrim-top";
+}
+
 export function HeroVideo(props: {
   id?: string;
   label?: string;
@@ -157,7 +173,7 @@ export function HeroVideo(props: {
           <div className={`h-full w-full ${bandFillClass(props.bandFill ?? "subtle")}`} />
         )}
         {props.mediaOverlay === "none" ? null : (
-          <div className={mediaOverlayClass(props.mediaOverlay, "scrim-bottom")} />
+          <div className={heroVideoOverlayClass(props.mediaOverlay)} />
         )}
       </motion.div>
       <Container className={`relative z-10 pb-16 pt-32 ${contentAlign}`}>

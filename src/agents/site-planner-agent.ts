@@ -180,7 +180,26 @@ function mockPlan(brief: ExpandedBrief): SitePlan {
   });
 }
 
+/** LLMs occasionally return the plan as an array — either [{pages:…}] or a bare list of page
+ *  objects — instead of the {pages:[…]} object the schema expects. Coerce both shapes rather than
+ *  letting the whole generation die on a Zod "expected object, received array". */
+function coerceArrayWrappedPlan(raw: unknown, brief: ExpandedBrief): unknown {
+  if (!Array.isArray(raw)) return raw;
+  const wrapped = raw.find(
+    (x) => x && typeof x === "object" && !Array.isArray(x) && "pages" in (x as object)
+  );
+  if (wrapped) return wrapped;
+  const pageLike = raw.filter((x) => x && typeof x === "object" && !Array.isArray(x));
+  if (pageLike.length > 0) {
+    recordFallback("site_planner");
+    pipelineLog("[pipeline] Site plan returned as a bare page array — wrapping with default plan shape");
+    return { ...mockPlan(brief), pages: pageLike };
+  }
+  return raw;
+}
+
 function normalizePlannerJson(raw: unknown, brief: ExpandedBrief): unknown {
+  raw = coerceArrayWrappedPlan(raw, brief);
   if (!raw || typeof raw !== "object") return raw;
   const plan = raw as Record<string, unknown>;
   if (!Array.isArray(plan.pages)) return raw;

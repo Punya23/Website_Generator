@@ -1,4 +1,13 @@
-import type { PageBlueprint, QAResult, ReactPage, SectionInstance, SiteContext } from "../types.js";
+import type {
+  PageBlueprint,
+  QAResult,
+  ReactPage,
+  SectionInstance,
+  SectionLayoutSpec,
+  SiteContext,
+  SiteLayoutPlan,
+} from "../types.js";
+import { LayoutVariantSchema } from "../types.js";
 import { composePageSections } from "../agents/page-composer-agent.js";
 import { generateReactProject, buildReactProject } from "../react-codegen/assemble-project.js";
 import { startReactPreviewServer, stopReactPreviewServer } from "../react-codegen/react-preview-server.js";
@@ -278,6 +287,37 @@ async function finishReactPipeline(
   };
 }
 
+const DENSITY_VALUES = new Set(["airy", "normal", "compact"]);
+const MEDIA_POSITION_VALUES = new Set(["background", "left", "right"]);
+
+/** Mirror each section's own layoutVariant/density/mediaPosition props into a full SiteLayoutPlan —
+ *  see the call site for why an empty plan silently broke both layout QA and the vision-retry
+ *  layout-fix agent. Unrecognized/omitted values fall back to the same "default" the components
+ *  themselves fall back to, so this is a lossless snapshot of what actually renders. */
+function buildLayoutPlanFromInstances(
+  pageRows: Array<{ instances: SectionInstance[] }>
+): SiteLayoutPlan {
+  const sections: Record<string, SectionLayoutSpec> = {};
+  for (const row of pageRows) {
+    for (const inst of row.instances) {
+      const props = inst.props ?? {};
+      const variantCandidate = LayoutVariantSchema.safeParse(props.layoutVariant);
+      const density = DENSITY_VALUES.has(String(props.density))
+        ? (props.density as SectionLayoutSpec["density"])
+        : undefined;
+      const mediaPosition = MEDIA_POSITION_VALUES.has(String(props.mediaPosition))
+        ? (props.mediaPosition as SectionLayoutSpec["mediaPosition"])
+        : undefined;
+      sections[inst.id] = {
+        variant: variantCandidate.success ? variantCandidate.data : "default",
+        density,
+        mediaPosition,
+      };
+    }
+  }
+  return { sections };
+}
+
 /**
  * Single production React path: page-codegen only.
  * Design council → visual contract → composition → typed acceptance → chrome/motion → assemble → accept.
@@ -332,7 +372,10 @@ export async function runReactPipeline(
   const blueprints = pageRows.map((r) => r.blueprint);
 
   const blueprintQa = runBlueprintQA(blueprints, ctx);
-  if (!blueprintQa.passed) {
+  // Log on ANY issue, not just hard failures — soft notes (e.g. PAGE_STRUCTURE_TOO_SIMILAR) were
+  // silently swallowed here because `passed` only reflects hard issues, hiding the exact signal
+  // that would have caught the "every page looks the same" regression during a real run.
+  if (blueprintQa.issues.length > 0) {
     pipelineLog(
       `[pipeline] Blueprint QA notes: ${blueprintQa.issues.map((i) => i.message).join("; ")}`
     );
@@ -340,7 +383,17 @@ export async function runReactPipeline(
 
   const chromeSpec0 = minimalChromeSpec(ctx, blueprints);
   const motionPlan = minimalMotionPlan(ctx, blueprints, chromeSpec0);
-  const layoutPlan = { sections: {} };
+  // Seed the layout plan from what page codegen actually wrote into each section's own
+  // layoutVariant/density/mediaPosition props, instead of leaving it `{}`. An always-empty plan
+  // meant runLayoutQA compared every section against nothing and hard-failed 100% of sections on
+  // every single run (MISSING_LAYOUT_SPEC × N) — pure noise, never a real signal. It also broke the
+  // vision-retry layout-fix agent silently: applyLayoutFixes() reads `plan.sections[id] ?? {variant:
+  // "default"}` as the section's "current" state, so with an empty plan every fix computed its
+  // before/after from a fake "default" starting point regardless of the LLM's real choice, AND
+  // mergeLayoutIntoProps() spread that fabricated spec's undefined mediaPosition back over the
+  // section's real props — silently clearing a deliberate left/right image position on any
+  // unrelated layout fix (e.g. a density tweak). Seeding real values fixes QA signal + fix accuracy.
+  const layoutPlan = buildLayoutPlanFromInstances(pageRows);
   ctx.chromeSpec = chromeSpec0;
   ctx.motionPlan = motionPlan;
   ctx.layoutPlan = layoutPlan;

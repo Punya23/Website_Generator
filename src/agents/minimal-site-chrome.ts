@@ -4,6 +4,8 @@
 import type { ChromeSpec, PageBlueprint, SiteContext, SiteMotionPlan } from "../types.js";
 import { defaultSectionMotion } from "./contracts/index.js";
 import { pickFrom } from "../design/variation.js";
+import { briefTaxonomyText } from "../skins/picker.js";
+import { classifyTaxonomy, type SiteArchetype, type SkinCategory } from "../skins/taxonomy.js";
 
 const FOOTER_LAYOUTS: ChromeSpec["footer"]["layout"][] = ["two-column", "centered", "cta-heavy"];
 const FOOTER_SURFACES: NonNullable<ChromeSpec["footer"]["surface"]>[] = ["none", "subtle", "bordered"];
@@ -18,10 +20,10 @@ export function minimalChromeSpec(ctx: SiteContext, blueprints: PageBlueprint[])
     footer: {
       layout: footerLayout,
       tagline: ctx.expandedBrief.tagline,
-      // Split the nav into real columns (Explore / Company) instead of one thin "Pages" list — the
-      // single-column footer is the "minimal/sparse footer" QA flag. A dedicated contact column
-      // gives the footer a second anchor even on small sites.
-      linkGroups: buildFooterLinkGroups(slugs),
+      // Split the nav into real columns instead of one thin "Pages" list — the single-column
+      // footer is the "minimal/sparse footer" QA flag. A dedicated contact column gives the
+      // footer a second anchor even on small sites.
+      linkGroups: buildFooterLinkGroups(slugs, ctx, seed),
       ctaLabel: ctx.expandedBrief.primaryCta,
       ctaHref: "/contact",
       showMood: footerLayout === "two-column",
@@ -35,19 +37,50 @@ export function minimalChromeSpec(ctx: SiteContext, blueprints: PageBlueprint[])
   };
 }
 
-function buildFooterLinkGroups(slugs: string[]): Array<{ label: string; slugs: string[] }> {
+/**
+ * Group labels by taxonomy category + archetype, picked deterministically per site — not one
+ * fixed "Explore" / "Get in touch" pair on every single generated site regardless of business.
+ * Deliberately zero-LLM: the taxonomy classifier is already free, and this is chrome copy, not a
+ * skin-fill slot, so it never touches the copy-fill budget.
+ */
+const EXPLORE_LABELS: Record<SkinCategory, string[]> = {
+  "local-service": ["Explore", "Site", "Around Here"],
+  hospitality: ["Menu", "Explore", "On the Menu"],
+  professional: ["Practice", "Explore", "Firm"],
+  creative: ["Work", "Explore", "Studio"],
+};
+
+const ARCHETYPE_EXPLORE_OVERRIDE: Partial<Record<SiteArchetype, string[]>> = {
+  portfolio: ["Work", "Projects", "Portfolio"],
+  storefront: ["Shop", "Menu", "Explore"],
+  booking: ["Services", "Book", "Explore"],
+  saas: ["Product", "Explore", "Platform"],
+};
+
+const CONTACT_LABELS: string[] = ["Get in touch", "Say hello", "Contact", "Reach out"];
+
+function buildFooterLinkGroups(
+  slugs: string[],
+  ctx: SiteContext,
+  seed: number | string
+): Array<{ label: string; slugs: string[] }> {
+  const match = classifyTaxonomy(briefTaxonomyText(ctx.expandedBrief));
+  const explorePool = ARCHETYPE_EXPLORE_OVERRIDE[match.archetype] ?? EXPLORE_LABELS[match.category];
+  const exploreLabel = pickFrom(seed, "footer-explore-label", explorePool);
+  const contactLabel = pickFrom(seed, "footer-contact-label", CONTACT_LABELS);
+
   const main = slugs.filter((s) => s !== "contact");
   const hasContact = slugs.includes("contact");
   const groups: Array<{ label: string; slugs: string[] }> = [];
 
   if (main.length >= 4) {
     const half = Math.ceil(main.length / 2);
-    groups.push({ label: "Explore", slugs: main.slice(0, half) });
+    groups.push({ label: exploreLabel, slugs: main.slice(0, half) });
     groups.push({ label: "Company", slugs: main.slice(half) });
   } else {
-    groups.push({ label: "Explore", slugs: main });
+    groups.push({ label: exploreLabel, slugs: main });
   }
-  if (hasContact) groups.push({ label: "Get in touch", slugs: ["contact"] });
+  if (hasContact) groups.push({ label: contactLabel, slugs: ["contact"] });
   return groups;
 }
 

@@ -18,3 +18,5 @@ data/admin-ingest-candidates.ndjson
 data/approved-skins.json
 data/thumbs/
 .cursor/
+.claude/settings.local.json
+.claude/scheduled_tasks.lock

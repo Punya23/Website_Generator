@@ -36,15 +36,19 @@ describe("pipeline-speed", () => {
     expect(skipDirectorRetries()).toBe(false);
   });
 
-  it("page codegen is always on (legacy architect path removed)", async () => {
-    const { usePageCodegenPipeline } = await import("../src/llm/pipeline-speed.js");
+  it("page codegen is opt-in; skin fill is the default", async () => {
+    const { usePageCodegenPipeline, useSkinFillPipeline } = await import("../src/llm/pipeline-speed.js");
     delete process.env.PIPELINE_PAGE_CODEGEN;
+    delete process.env.PIPELINE_SKIN_FILL;
     delete process.env.PIPELINE_FAST;
     delete process.env.PIPELINE_QUALITY;
-    expect(usePageCodegenPipeline()).toBe(true);
-    process.env.PIPELINE_PAGE_CODEGEN = "0";
-    expect(usePageCodegenPipeline()).toBe(true);
+    expect(usePageCodegenPipeline()).toBe(false);
+    expect(useSkinFillPipeline()).toBe(true);
     process.env.PIPELINE_PAGE_CODEGEN = "1";
     expect(usePageCodegenPipeline()).toBe(true);
+    expect(useSkinFillPipeline()).toBe(false);
+    delete process.env.PIPELINE_PAGE_CODEGEN;
+    process.env.PIPELINE_SKIN_FILL = "0";
+    expect(useSkinFillPipeline()).toBe(false);
   });
 });

@@ -50,16 +50,44 @@ function hasResolvedMedia(value: unknown): boolean {
   if (!value || typeof value !== "object") return false;
   if (Array.isArray(value)) return value.some((item) => hasResolvedMedia(item));
   const obj = value as Record<string, unknown>;
-  if (typeof obj.src === "string" && obj.src.startsWith("https://")) return true;
+  if (typeof obj.src === "string" && (obj.src.startsWith("https://") || obj.src.startsWith("/media/"))) {
+    return true;
+  }
   return Object.values(obj).some((v) => hasResolvedMedia(v));
 }
 
-function propsForCodegen(templateId: string, raw: Record<string, unknown>): Record<string, unknown> {
+function prefixMediaSrc(src: string, basePath: string): string {
+  if (!basePath) return src;
+  if (src.startsWith("/media/")) return `${basePath}${src}`;
+  return src;
+}
+
+function rewriteUserMediaSrc(value: unknown, basePath: string): unknown {
+  if (!basePath) return value;
+  if (typeof value === "string") return prefixMediaSrc(value, basePath);
+  if (!value || typeof value !== "object") return value;
+  if (Array.isArray(value)) return value.map((item) => rewriteUserMediaSrc(item, basePath));
+  const out: Record<string, unknown> = {};
+  for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+    out[key] = key === "src" && typeof nested === "string"
+      ? prefixMediaSrc(nested, basePath)
+      : rewriteUserMediaSrc(nested, basePath);
+  }
+  return out;
+}
+
+function propsForCodegen(
+  templateId: string,
+  raw: Record<string, unknown>,
+  basePath = ""
+): Record<string, unknown> {
   const normalized = hasResolvedMedia(raw)
     ? raw
     : normalizePageCodegenProps(templateId, raw);
   const template = getTemplate(templateId);
-  if (!template) return sanitizePropsForCodegen(normalized);
+  if (!template) {
+    return rewriteUserMediaSrc(sanitizePropsForCodegen(normalized), basePath) as Record<string, unknown>;
+  }
   const parsed = template.propsSchema.safeParse(normalized);
   if (!parsed.success) {
     const detail = parsed.error.issues
@@ -67,10 +95,13 @@ function propsForCodegen(templateId: string, raw: Record<string, unknown>): Reco
       .join("; ");
     throw new Error(`Invalid props for template "${templateId}": ${detail}`);
   }
-  return sanitizePropsForCodegen(parsed.data as Record<string, unknown>);
+  return rewriteUserMediaSrc(
+    sanitizePropsForCodegen(parsed.data as Record<string, unknown>),
+    basePath
+  ) as Record<string, unknown>;
 }
 
-function writePageTsx(page: ReactPage): string {
+function writePageTsx(page: ReactPage, basePath = ""): string {
   const stdImports = new Set<string>();
   const customImportLines: string[] = [];
 
@@ -99,7 +130,7 @@ function writePageTsx(page: ReactPage): string {
         s.customCodegen?.componentName ??
         getTemplate(s.templateId)?.componentName ??
         "IntroStatement";
-      const props = propsForCodegen(s.templateId, s.props);
+      const props = propsForCodegen(s.templateId, s.props, basePath);
       if (s.customCodegen) {
         const merged = { ...props, id: s.id };
         return `      <${name} {...${JSON.stringify(merged)}} />`;
@@ -233,7 +264,7 @@ export default config;
 `;
 }
 
-function layoutTsx(ctx: SiteContext, pages: ReactPage[]): string {
+function layoutTsx(ctx: SiteContext, pages: ReactPage[], basePath = ""): string {
   const links = pages.map((p) => ({
     slug: p.slug,
     label: p.navLabel ?? p.title,
@@ -268,6 +299,9 @@ function layoutTsx(ctx: SiteContext, pages: ReactPage[]): string {
   const accentRole = ctx.designSystem.accentRole ?? "sparing";
   const surfaceDefault =
     ctx.designSystem.surfaces?.default ?? (accentRole === "editorial" ? "subtle" : "bordered");
+  const logoSrcAttr = ctx.logoSrc
+    ? ` logoSrc={${JSON.stringify(prefixMediaSrc(ctx.logoSrc, basePath))}}`
+    : "";
 
   return `import type { Metadata } from "next";
 import "./globals.css";
@@ -294,7 +328,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const site = (
     <MotionProvider preset="${motionPreset}" plan={motionPlan}>
       ${announcement ? `<AnnouncementBar message={${JSON.stringify(announcement.message)}}${announcement.href ? ` href={${JSON.stringify(announcement.href)}}` : ""} bandFill="${announcement.bandFill ?? "accent"}" />` : ""}
-      <SiteNav businessName={${JSON.stringify(ctx.businessName)}} links={navLinks} navShape="${ctx.designSystem.navShape ?? "full-width"}" />
+      <SiteNav businessName={${JSON.stringify(ctx.businessName)}} links={navLinks} navShape="${ctx.designSystem.navShape ?? "full-width"}"${logoSrcAttr} />
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[200] focus:rounded focus:bg-accent focus:px-4 focus:py-2 focus:text-white">
         Skip to content
       </a>
@@ -373,6 +407,8 @@ async function copyDir(src: string, dest: string): Promise<void> {
 export interface CodegenOptions {
   /** When set (e.g. `/preview`), static export assets and links work under a subpath. */
   basePath?: string;
+  /** Rewrite files in an existing project and keep node_modules. */
+  keepInstall?: boolean;
 }
 
 export interface CodegenResult {
@@ -387,10 +423,21 @@ export async function generateReactProject(
   options: CodegenOptions = {}
 ): Promise<CodegenResult> {
   const projectPath = path.resolve(outputDir);
-  await fs.rm(projectPath, { recursive: true, force: true });
+  if (!options.keepInstall) {
+    await fs.rm(projectPath, { recursive: true, force: true });
+  }
   await fs.mkdir(projectPath, { recursive: true });
 
   await copyDir(COMPONENT_LIBRARY, projectPath);
+
+  const userFiles = ctx.userMediaFiles ?? [];
+  if (userFiles.length > 0) {
+    const mediaDir = path.join(projectPath, "public", "media");
+    await fs.mkdir(mediaDir, { recursive: true });
+    for (const file of userFiles) {
+      await fs.copyFile(file.absolutePath, path.join(mediaDir, file.filename));
+    }
+  }
 
   const pages = Object.values(reactPages);
   const themeOverride = themeCssVars(ctx.designSystem);
@@ -418,6 +465,7 @@ export async function generateReactProject(
           react: "^18.3.0",
           "react-dom": "^18.3.0",
           "framer-motion": "^11.0.0",
+          motion: "^12.23.12",
           lenis: "^1.1.0",
           "embla-carousel-react": "^8.5.0",
           ...platformSwcDependency(),
@@ -495,7 +543,7 @@ export default nextConfig;
     "utf8"
   );
 
-  await fs.writeFile(path.join(projectPath, "app", "layout.tsx"), layoutTsx(ctx, pages), "utf8");
+  await fs.writeFile(path.join(projectPath, "app", "layout.tsx"), layoutTsx(ctx, pages, basePath), "utf8");
 
   for (const page of pages) {
     for (const section of page.sections) {
@@ -518,8 +566,30 @@ export default nextConfig;
         : path.join(projectPath, "app", page.slug);
     await fs.mkdir(dir, { recursive: true });
     const file = page.slug === "home" ? "page.tsx" : "page.tsx";
-    await fs.writeFile(path.join(dir, file), writePageTsx(page), "utf8");
+    await fs.writeFile(path.join(dir, file), writePageTsx(page, basePath), "utf8");
   }
+
+  const thankYouDir = path.join(projectPath, "app", "thank-you");
+  await fs.mkdir(thankYouDir, { recursive: true });
+  await fs.writeFile(
+    path.join(thankYouDir, "page.tsx"),
+    `export default function ThankYouPage() {
+  return (
+    <section className="py-section">
+      <div className="mx-auto max-w-2xl px-6 text-center">
+        <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted">Received</p>
+        <h1 className="mt-4 font-display text-h1 text-text">Message sent</h1>
+        <p className="mt-4 text-muted">Thanks — we will get back to you shortly.</p>
+        <a href="/" className="mt-8 inline-flex rounded-[var(--radius)] bg-accent px-6 py-3 font-semibold text-white">
+          Back home
+        </a>
+      </div>
+    </section>
+  );
+}
+`,
+    "utf8"
+  );
 
   await fs.mkdir(path.join(projectPath, "lib"), { recursive: true });
   await fs.writeFile(

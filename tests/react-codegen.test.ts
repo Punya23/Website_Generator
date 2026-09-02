@@ -87,6 +87,7 @@ describe("react codegen", () => {
 
     expect(await fs.stat(path.join(projectPath, "package.json"))).toBeTruthy();
     expect(await fs.stat(path.join(projectPath, "app", "page.tsx"))).toBeTruthy();
+    expect(await fs.stat(path.join(projectPath, "app", "thank-you", "page.tsx"))).toBeTruthy();
     expect(await fs.stat(path.join(projectPath, "components", "sections", "index.tsx"))).toBeTruthy();
 
     const homePage = await fs.readFile(path.join(projectPath, "app", "page.tsx"), "utf8");
@@ -95,6 +96,13 @@ describe("react codegen", () => {
     expect(homePage).toContain("split-offset");
     expect(homePage).not.toContain("imageQuery");
     expect(homePage).not.toContain('{"id"');
+
+    const sections = await fs.readFile(
+      path.join(projectPath, "components", "sections", "index.tsx"),
+      "utf8"
+    );
+    expect(sections).toContain("data-form-provider");
+    expect(sections).toContain("export function QuoteCalculator");
   });
 
   it("normalizes LLM-shaped props when writing page tsx", async () => {
@@ -530,6 +538,84 @@ export default function CustomHomeHero(props: { headline?: string }) {
     const outPath = await buildReactProject(projectPath);
     const index = await fs.readFile(path.join(outPath, "index.html"), "utf8");
     expect(index).toContain("Noir Salon");
+  }, 120_000);
+
+  it("builds hero_metro scroll reveal into a working static export", async () => {
+    const brief = {
+      businessName: "Metro Studio",
+      tagline: "Every still leads to the next",
+      elevatorPitch: "Design studio",
+      expandedBrief: "A design studio.",
+      targetAudience: "Founders",
+      services: ["Brand", "Product", "Motion"],
+      differentiators: ["Craft"],
+      tone: "Confident",
+      primaryCta: "Book a call",
+    };
+    const sitePlan = mockPlan(brief);
+    const ctx = initSiteContext("Studio", brief, sitePlan, {
+      vertical: "studio",
+      mood: "editorial",
+      fontHeading: "Inter",
+      fontBody: "Inter",
+      colors: {
+        bg: "#07080c",
+        surface: "#111319",
+        text: "#f4f4f5",
+        muted: "#9a9aa2",
+        accent: "#e85d04",
+        accentSoft: "#2a1f14",
+        gradientFrom: "#e85d04",
+        gradientTo: "#f48c06",
+        navBg: "#0a0b10",
+        navText: "#f4f4f5",
+        navMuted: "#9a9aa2",
+        navActiveBg: "#e85d04",
+        navActiveText: "#fff",
+      },
+    });
+
+    ctx.reactPages = {
+      home: {
+        slug: "home",
+        title: "Home",
+        sections: [
+          {
+            id: "home_hero",
+            templateId: "hero_metro",
+            intent: "Hero",
+            props: {
+              label: "Look ahead",
+              headline: "Metro Studio",
+              subcopy: "Every still leads to the next.",
+              comingUpLabel: "Coming up",
+              images: [
+                { caption: "Brand", image: { src: "https://images.pexels.com/photos/1.jpeg", alt: "Brand" } },
+                { caption: "Product", image: { src: "https://images.pexels.com/photos/2.jpeg", alt: "Product" } },
+                { caption: "Motion", image: { src: "https://images.pexels.com/photos/3.jpeg", alt: "Motion" } },
+              ],
+              cta: { label: "Book a call", href: "/contact" },
+            },
+          },
+        ],
+      },
+    };
+
+    const { projectPath } = await generateReactProject(ctx, ctx.reactPages, OUT + "-metro");
+    const homePage = await fs.readFile(path.join(projectPath, "app", "page.tsx"), "utf8");
+    expect(homePage).toContain("HeroMetro");
+    expect(homePage).toContain("Metro Studio");
+
+    const { buildReactProject } = await import("../src/react-codegen/assemble-project.js");
+    const outPath = await buildReactProject(projectPath);
+    const index = await fs.readFile(path.join(outPath, "index.html"), "utf8");
+    expect(index).toContain("Metro Studio");
+    expect(index).toContain("SCROLL TO REVEAL");
+    expect(index).toContain("Coming up");
+    expect(index).toMatch(/01.*?\/.*?03/);
+    expect(index).toContain("calc(100dvh");
+
+    await fs.rm(OUT + "-metro", { recursive: true, force: true });
   }, 120_000);
 
   it("builds Next.js project for localhost preview (no basePath)", async () => {

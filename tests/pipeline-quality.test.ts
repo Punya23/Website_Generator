@@ -43,7 +43,7 @@ describe("pipeline quality mode", () => {
   it("is the zero-flag default (opt out via PIPELINE_FAST=1 or PIPELINE_QUALITY=0)", () => {
     expect(isQualityPipeline()).toBe(true);
     expect(useBespokeSectionCodegen()).toBe(false);
-    expect(usePageCodegenPipeline()).toBe(true);
+    expect(usePageCodegenPipeline()).toBe(false);
 
     process.env.PIPELINE_FAST = "1";
     expect(isQualityPipeline()).toBe(false);
@@ -51,6 +51,8 @@ describe("pipeline quality mode", () => {
 
     process.env.PIPELINE_QUALITY = "0";
     expect(isQualityPipeline()).toBe(false);
+    expect(usePageCodegenPipeline()).toBe(false);
+    process.env.PIPELINE_PAGE_CODEGEN = "1";
     expect(usePageCodegenPipeline()).toBe(true);
   });
 

@@ -220,6 +220,105 @@ export const ContactSplitPropsSchema = z.object({
     )
     .optional(),
   submitLabel: z.string().optional(),
+  formProvider: z.enum(["web3forms", "formsubmit"]).optional(),
+  formAccessKey: z.string().optional(),
+  formEmail: z.string().optional(),
+  formAction: z.string().optional(),
+  redirectPath: z.string().optional(),
+});
+
+export const QuoteCalculatorPropsSchema = z.object({
+  label: z.string().optional(),
+  headline: zStr,
+  subcopy: zStrOpt,
+  unitLabel: z.enum(["hours", "guests", "rooms", "sessions"]).optional(),
+  minQuantity: z.number().min(1).max(100).optional(),
+  maxQuantity: z.number().min(1).max(500).optional(),
+  defaultQuantity: z.number().min(1).max(100).optional(),
+  packages: z
+    .array(
+      z.object({
+        name: z.string(),
+        pricePerUnit: z.union([z.number(), z.string()]),
+        description: z.string().optional(),
+      })
+    )
+    .min(1)
+    .max(6),
+  ctaLabel: z.string().optional(),
+  contactHref: z.string().optional(),
+  ...layoutFields,
+  ...designLanguageFields,
+});
+
+export const HeroStatementPropsSchema = z.object({
+  label: zStrOpt,
+  headline: zStr,
+  subcopy: zStrOpt,
+  body: zStrOpt,
+  cta: ctaField.optional(),
+  ...layoutFields,
+});
+
+export const StorySplitPropsSchema = z.object({
+  label: z.string().optional(),
+  headline: zStr,
+  paragraphs: z.preprocess(
+    (v) => coerceToStringArray(v) ?? [],
+    z.array(z.string()).min(1).max(4)
+  ),
+  pullQuote: zStrOpt,
+  image: imageField,
+  cta: ctaField.optional(),
+  ...layoutFields,
+});
+
+export const OfferIndexPropsSchema = z.object({
+  label: z.string().optional(),
+  headline: z.string().optional(),
+  items: z
+    .array(
+      z.object({
+        title: z.string(),
+        description: z.string(),
+      })
+    )
+    .min(3)
+    .max(8),
+  ...layoutFields,
+  ...designLanguageFields,
+});
+
+export const HoursLocationPropsSchema = z.object({
+  label: z.string().optional(),
+  headline: z.string().optional(),
+  address: zStrOpt,
+  phone: zStrOpt,
+  email: zStrOpt,
+  note: zStrOpt,
+  schedule: z
+    .array(z.object({ day: z.string(), time: z.string() }))
+    .min(3)
+    .max(8),
+  ...layoutFields,
+  ...designLanguageFields,
+});
+
+export const MenuBoardPropsSchema = z.object({
+  label: z.string().optional(),
+  headline: z.string().optional(),
+  items: z
+    .array(
+      z.object({
+        name: z.string(),
+        price: z.string(),
+        description: z.string().optional(),
+      })
+    )
+    .min(3)
+    .max(12),
+  ...layoutFields,
+  ...designLanguageFields,
 });
 
 export const LogoMarqueePropsSchema = z.object({
@@ -260,6 +359,37 @@ export const HeroVideoPropsSchema = z.object({
     })
     .optional(),
   cta: ctaField.optional(),
+  ...layoutFields,
+  ...designLanguageFields,
+  ...visualFxField,
+});
+
+export const HeroMetroPropsSchema = z.object({
+  label: zStrOpt,
+  headline: zStr,
+  subcopy: zStrOpt,
+  scrollHint: zStrOpt,
+  comingUpLabel: zStrOpt,
+  images: z
+    .array(
+      z.object({
+        caption: zStrOpt,
+        image: imageField.optional(),
+      })
+    )
+    .min(3)
+    .max(5)
+    .optional(),
+  video: z
+    .object({
+      src: z.string().optional(),
+      poster: imageField.optional(),
+    })
+    .optional(),
+  cta: ctaField.optional(),
+  /** @deprecated no longer used — the reveal is scroll-linked, never body-locked */
+  lockPage: z.boolean().optional(),
+  scrubDistance: z.number().optional(),
   ...layoutFields,
   ...designLanguageFields,
   ...visualFxField,
@@ -410,10 +540,12 @@ export const TEMPLATE_PROP_SCHEMAS = {
   text_marquee: TextMarqueePropsSchema,
   footer_cta: FooterCtaPropsSchema,
   contact_split: ContactSplitPropsSchema,
+  quote_calculator: QuoteCalculatorPropsSchema,
   logo_marquee: LogoMarqueePropsSchema,
   team_grid: TeamGridPropsSchema,
   gallery_masonry: GalleryMasonryPropsSchema,
   hero_video: HeroVideoPropsSchema,
+  hero_metro: HeroMetroPropsSchema,
   testimonial_carousel: TestimonialCarouselPropsSchema,
   portfolio_carousel: PortfolioCarouselPropsSchema,
   before_after: BeforeAfterPropsSchema,
@@ -423,6 +555,11 @@ export const TEMPLATE_PROP_SCHEMAS = {
   hero_spotlight: HeroSpotlightPropsSchema,
   scroll_showcase: ScrollShowcasePropsSchema,
   horizontal_gallery: HorizontalGalleryPropsSchema,
+  hero_statement: HeroStatementPropsSchema,
+  story_split: StorySplitPropsSchema,
+  offer_index: OfferIndexPropsSchema,
+  hours_location: HoursLocationPropsSchema,
+  menu_board: MenuBoardPropsSchema,
 } as const;
 
 /** Copy-only props — no required image/media fields (media curator fills those). */
@@ -467,6 +604,7 @@ export const COPY_PROP_SCHEMAS = {
   text_marquee: TextMarqueePropsSchema,
   footer_cta: FooterCtaPropsSchema,
   contact_split: ContactSplitPropsSchema,
+  quote_calculator: QuoteCalculatorPropsSchema,
   logo_marquee: LogoMarqueePropsSchema,
   team_grid: z.object({
     label: z.string().optional(),
@@ -488,6 +626,18 @@ export const COPY_PROP_SCHEMAS = {
   }),
   hero_video: HeroVideoPropsSchema.omit({ video: true }).extend({
     video: z.object({ poster: imageField.optional() }).optional(),
+  }),
+  hero_metro: HeroMetroPropsSchema.omit({ images: true, video: true, lockPage: true, scrubDistance: true }).extend({
+    images: z
+      .array(
+        z.object({
+          caption: zStrOpt,
+          image: z.object({ imageQuery: zStrOpt, alt: z.string().optional() }).optional(),
+        })
+      )
+      .min(3)
+      .max(5)
+      .optional(),
   }),
   testimonial_carousel: z.object({
     label: z.string().optional(),
@@ -560,6 +710,11 @@ export const COPY_PROP_SCHEMAS = {
       .min(3)
       .max(10),
   }),
+  hero_statement: HeroStatementPropsSchema,
+  story_split: StorySplitPropsSchema.omit({ image: true }),
+  offer_index: OfferIndexPropsSchema,
+  hours_location: HoursLocationPropsSchema,
+  menu_board: MenuBoardPropsSchema,
 } as const satisfies Record<keyof typeof TEMPLATE_PROP_SCHEMAS, z.ZodTypeAny>;
 
 export function validateCopyProps(templateId: string, props: unknown): Record<string, unknown> {

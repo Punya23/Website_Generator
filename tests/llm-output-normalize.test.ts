@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
+  coerceEnumValue,
+  coerceToNumber,
   coerceToString,
   coerceToStringArray,
   normalizeCopyProps,
@@ -85,6 +87,58 @@ describe("normalize LLM output", () => {
       author: "Jane",
     });
     expect(out.quote).toBe("Great service");
+  });
+});
+
+describe("coerceEnumValue", () => {
+  const SPEEDS = ["slow", "normal", "fast"] as const;
+  const UNITS = ["hours", "guests", "rooms", "sessions"] as const;
+
+  it("passes through an exact match", () => {
+    expect(coerceEnumValue("fast", SPEEDS)).toBe("fast");
+  });
+
+  it("is case-insensitive", () => {
+    expect(coerceEnumValue("Fast", SPEEDS)).toBe("fast");
+    expect(coerceEnumValue("SESSIONS", UNITS)).toBe("sessions");
+  });
+
+  it("tolerates singular/plural mismatches", () => {
+    expect(coerceEnumValue("Session", UNITS)).toBe("sessions");
+    expect(coerceEnumValue("guest", UNITS)).toBe("guests");
+  });
+
+  it("applies explicit synonyms the model commonly substitutes", () => {
+    expect(coerceEnumValue("medium", SPEEDS, { medium: "normal" })).toBe("normal");
+    expect(coerceEnumValue("Moderate", SPEEDS, { moderate: "normal" })).toBe("normal");
+  });
+
+  it("returns undefined instead of guessing when nothing matches", () => {
+    expect(coerceEnumValue("blazing", SPEEDS)).toBeUndefined();
+    expect(coerceEnumValue(undefined, SPEEDS)).toBeUndefined();
+  });
+});
+
+describe("coerceToNumber", () => {
+  it("passes through finite numbers", () => {
+    expect(coerceToNumber(5)).toBe(5);
+  });
+
+  it("parses numeric strings", () => {
+    expect(coerceToNumber("5")).toBe(5);
+    expect(coerceToNumber(" 20 ")).toBe(20);
+  });
+
+  it("strips common currency/percent formatting", () => {
+    expect(coerceToNumber("$1,200")).toBe(1200);
+    expect(coerceToNumber("50%")).toBe(50);
+  });
+
+  it("returns undefined for non-numeric input", () => {
+    expect(coerceToNumber("five")).toBeUndefined();
+    expect(coerceToNumber(true)).toBeUndefined();
+    expect(coerceToNumber(undefined)).toBeUndefined();
+    expect(coerceToNumber(Number.POSITIVE_INFINITY)).toBeUndefined();
   });
 });
 

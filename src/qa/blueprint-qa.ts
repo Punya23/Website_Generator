@@ -16,6 +16,7 @@ const MOTION_HEAVY = new Set([
   "text_marquee",
   "stats_marquee",
   "hero_video",
+  "hero_metro",
 ]);
 
 export function runBlueprintQA(
@@ -183,13 +184,13 @@ export function runBlueprintQA(
 
     if (profile === "luxury-dark" && bp.slug === "home") {
       const hasSpotlight = bp.sections.some((s) =>
-        ["hero_spotlight", "hero_video"].includes(s.templateId)
+        ["hero_spotlight", "hero_video", "hero_metro"].includes(s.templateId)
       );
       if (!hasSpotlight) {
         issues.push({
           severity: "soft",
           code: "LUXURY_MISSING_SPOTLIGHT",
-          message: "Luxury home should open with hero_spotlight or hero_video",
+          message: "Luxury home should open with hero_spotlight, hero_video, or hero_metro",
         });
       }
     }

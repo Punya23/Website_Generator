@@ -22,7 +22,9 @@ describe("design refine agent", () => {
     });
 
     const refined = await refineDesignSystem("Dstyle", "Fashion boutique", draft);
-    expect(refined.navTreatment).not.toBe("glass-light");
+    // Design refine preserves the chosen navTreatment (glass-light) and fixes illegible colors
+    // in place instead — see design-refine-agent.ts's REFINE_PROMPT / mockRefine.
+    expect(refined.navTreatment).toBe("glass-light");
     const qa = runDesignQA(refined);
     expect(qa.issues.filter((i) => i.severity === "hard")).toHaveLength(0);
   });

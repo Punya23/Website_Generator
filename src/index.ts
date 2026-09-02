@@ -1,5 +1,14 @@
 export { generateSite, summarizeGeneration, waitForVisionPolish } from "./orchestrator/orchestrator.js";
 export { getOutputMode, runReactPipeline } from "./orchestrator/react-pipeline.js";
+export {
+  SITE_SKINS,
+  getSkin,
+  pickSkinFromCatalog,
+  pickSiteSkin,
+  classifySkinCategory,
+} from "./skins/index.js";
+export { fillSiteSkin, validateFilledCopy, mockFillSkinCopy } from "./agents/skin-fill-agent.js";
+export { resolveContactFormConfig, stampContactFormProps } from "./forms/contact-form.js";
 export { directPageBlueprints } from "./agents/creative-director-agent.js";
 export { fillSectionProps } from "./agents/section-props-agent.js";
 export { composePageSections } from "./agents/page-composer-agent.js";
@@ -40,6 +49,8 @@ export { resolveMotionPreset, MOTION_PRESETS } from "./motion/presets.js";
 export { generateCmsCollections } from "./cms/generate.js";
 export { exportProjectJson, exportReactProject, exportWebflowJson } from "./export/formats.js";
 export { rerenderFromContext, applyThemePatch, reorderSections } from "./editor/rerender.js";
+export { applyRevision, parseRevisionPatch } from "./editor/apply-revision.js";
+export { planRevision, detectHardRefuse } from "./agents/revise-site-agent.js";
 export { composeLayout, mockComposition } from "./agents/composition-agent.js";
 export { expandBrief, briefToContext } from "./agents/expand-brief-agent.js";
 export { planSite } from "./agents/site-planner-agent.js";

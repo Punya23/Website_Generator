@@ -5,6 +5,7 @@ import { llm } from "../llm/client.js";
 import { allowMocks, requireLlm, handleLlmFailure } from "../util/llm-required.js";
 import { recordFallback } from "../util/fallback-tracker.js";
 import { parseLlmJson } from "../llm/parse-json.js";
+import { chatJsonWithRetry } from "../llm/json-agent.js";
 import { pipelineLog } from "../util/pipeline-log.js";
 import {
   freezeSnapshot,
@@ -126,9 +127,11 @@ export async function directChromeSpec(
         .map((p) => `- ${p.slug}: ${p.navLabel ?? p.title} (${p.goal})`)
         .join("\n");
 
-      const raw = await llm.chat(
+      const spec = await chatJsonWithRetry(
+        "chrome_director",
         CHROME_PROMPT,
-        `Business: ${snapshot.businessName}
+        (parseError) =>
+          `Business: ${snapshot.businessName}
 Tagline: ${snapshot.brief.tagline}
 Primary CTA: ${snapshot.brief.primaryCta}
 Mood: ${snapshot.designSystem.mood}
@@ -138,12 +141,10 @@ Page tone: ${ctx.designSystem.pageTone ?? "light"}
 Grain overlay default: ${ctx.verticalProfile?.grainOverlay ? "true" : "false"}
 
 Pages:
-${pages}`,
-        { jsonMode: true, temperature: 0.5, tokenRole: "design" }
-      );
-
-      const spec = mergeChromeProfileDefaults(
-        validateAgentOutput(CHROME_CONTRACT, parseLlmJson(raw))
+${pages}` +
+          (parseError ? `\n\nYour previous response was not valid JSON (${parseError}). Return ONLY a single valid JSON object, no prose, no markdown fences.` : ""),
+        { temperature: 0.5, tokenRole: "design" },
+        (raw) => mergeChromeProfileDefaults(validateAgentOutput(CHROME_CONTRACT, parseLlmJson(raw)))
       );
       pipelineLog(`[pipeline] Chrome director: footer ${spec.footer.layout}`);
       return spec;

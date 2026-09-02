@@ -1,9 +1,41 @@
 import {
+  coerceEnumValue,
+  coerceToNumber,
   coerceToString,
   coerceToStringArray,
   normalizeCopyProps,
   padArrayToMin,
 } from "../llm/normalize-llm-output.js";
+
+const CONTACT_FIELD_TYPES = ["text", "email", "tel", "textarea", "select"] as const;
+const CONTACT_FIELD_TYPE_SYNONYMS: Record<string, string> = {
+  date: "text",
+  number: "text",
+  phone: "tel",
+  telephone: "tel",
+  "phone number": "tel",
+  message: "textarea",
+  "text area": "textarea",
+  dropdown: "select",
+  choice: "select",
+  checkbox: "select",
+};
+
+function contactFieldLabel(row: Record<string, unknown>, index: number): string {
+  const type = coerceToString(row.type)?.toLowerCase();
+  const fallbackByType: Record<string, string> = {
+    email: "Email",
+    tel: "Phone",
+    textarea: "Message",
+    select: "Topic",
+  };
+  return (
+    coerceToString(row.name) ??
+    coerceToString(row.placeholder) ??
+    (type ? fallbackByType[type] : undefined) ??
+    `Field ${index + 1}`
+  );
+}
 
 function statFallback(index: number): { value: string; label: string } {
   const defaults = [
@@ -130,6 +162,18 @@ export function repairTemplateProps(
         phrases = fallback ? [fallback, "Quality", "Craft"] : ["Quality", "Craft", "Care"];
       }
       out.phrases = padArrayToMin(phrases.slice(0, 8), 2, (i) => `Phrase ${i + 1}`);
+      if (out.speed !== undefined) {
+        const speed = coerceEnumValue(out.speed, ["slow", "normal", "fast"], {
+          medium: "normal",
+          moderate: "normal",
+          med: "normal",
+          default: "normal",
+          quick: "fast",
+          rapid: "fast",
+        });
+        if (speed) out.speed = speed;
+        else delete out.speed;
+      }
       break;
     }
 
@@ -204,7 +248,8 @@ export function repairTemplateProps(
     case "hero_editorial":
     case "hero_split_cinematic":
     case "hero_spotlight":
-    case "hero_video": {
+    case "hero_video":
+    case "hero_statement": {
       if (!coerceToString(out.headline)) {
         out.headline =
           coerceToString(out.title) ??
@@ -212,6 +257,128 @@ export function repairTemplateProps(
           coerceToString(out.heading) ??
           "Welcome";
       }
+      break;
+    }
+
+    case "hero_metro": {
+      if (!coerceToString(out.headline)) {
+        out.headline =
+          coerceToString(out.title) ??
+          coerceToString(out.label) ??
+          coerceToString(out.heading) ??
+          "Welcome";
+      }
+      const headline = coerceToString(out.headline) ?? "Welcome";
+      const poster =
+        out.video && typeof out.video === "object" && !Array.isArray(out.video)
+          ? ((out.video as Record<string, unknown>).poster as Record<string, unknown> | undefined)
+          : undefined;
+      const rawImages = Array.isArray(out.images) ? out.images : [];
+      const images = rawImages
+        .filter((row) => row && typeof row === "object" && !Array.isArray(row))
+        .map((row, i) => {
+          const item = row as Record<string, unknown>;
+          const nested =
+            item.image && typeof item.image === "object" && !Array.isArray(item.image)
+              ? (item.image as Record<string, unknown>)
+              : item.src || item.imageQuery
+                ? item
+                : poster ?? { imageQuery: headline };
+          return {
+            caption: coerceToString(item.caption) ?? coerceToString(nested.alt) ?? `Still ${i + 1}`,
+            image: nested,
+          };
+        });
+      if (images.length === 0 && poster) {
+        images.push({ caption: headline, image: poster });
+      }
+      out.images = padArrayToMin(images, 3, (i) => ({
+        caption: `Still ${i + 1}`,
+        image: { imageQuery: `${headline} cinematic ${i + 1}` },
+      })).slice(0, 5);
+      delete out.lockPage;
+      delete out.video;
+      break;
+    }
+
+    case "story_split": {
+      if (!coerceToString(out.headline)) {
+        out.headline =
+          coerceToString(out.title) ??
+          coerceToString(out.label) ??
+          "Our story";
+      }
+      let paragraphs = coerceToStringArray(out.paragraphs);
+      if (!paragraphs?.length) {
+        const fallback =
+          coerceToString(out.body) ??
+          coerceToString(out.subcopy) ??
+          coerceToString(out.headline);
+        paragraphs = fallback ? [fallback] : ["We built this practice around the people we serve."];
+      }
+      out.paragraphs = paragraphs.slice(0, 4);
+      if (out.image === undefined || out.image === null) out.image = {};
+      delete out.body;
+      break;
+    }
+
+    case "offer_index": {
+      const rawItems = Array.isArray(out.items) ? out.items : [];
+      const items = rawItems
+        .filter((s) => s && typeof s === "object" && !Array.isArray(s))
+        .map((s, i) => {
+          const row = s as Record<string, unknown>;
+          return {
+            title: coerceToString(row.title) ?? coerceToString(row.name) ?? `Offering ${i + 1}`,
+            description:
+              coerceToString(row.description) ??
+              coerceToString(row.body) ??
+              "Describe a concrete benefit for this business.",
+          };
+        });
+      out.items = padArrayToMin(items, 3, (i) => ({
+        title: `Offering ${i + 1}`,
+        description: "Describe a concrete benefit for this business.",
+      }));
+      break;
+    }
+
+    case "hours_location": {
+      const raw = Array.isArray(out.schedule) ? out.schedule : [];
+      const schedule = raw
+        .filter((s) => s && typeof s === "object" && !Array.isArray(s))
+        .map((s, i) => {
+          const row = s as Record<string, unknown>;
+          return {
+            day: coerceToString(row.day) ?? `Day ${i + 1}`,
+            time: coerceToString(row.time) ?? "By appointment",
+          };
+        });
+      out.schedule = padArrayToMin(schedule, 3, (i) => {
+        const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        return { day: days[i] ?? `Day ${i + 1}`, time: "9:00 – 18:00" };
+      });
+      break;
+    }
+
+    case "menu_board": {
+      const rawItems = Array.isArray(out.items) ? out.items : [];
+      const items = rawItems
+        .filter((s) => s && typeof s === "object" && !Array.isArray(s))
+        .map((s, i) => {
+          const row = s as Record<string, unknown>;
+          return {
+            name: coerceToString(row.name) ?? coerceToString(row.title) ?? `Item ${i + 1}`,
+            price: coerceToString(row.price) ?? "Market",
+            ...(coerceToString(row.description)
+              ? { description: coerceToString(row.description) }
+              : {}),
+          };
+        });
+      out.items = padArrayToMin(items, 3, (i) => ({
+        name: `Item ${i + 1}`,
+        price: "Market",
+      }));
       break;
     }
 
@@ -292,6 +459,67 @@ export function repairTemplateProps(
       if (!coerceToString(out.headline)) {
         out.headline = coerceToString(out.title) ?? coerceToString(out.label) ?? "Get in touch";
       }
+      if (Array.isArray(out.formFields)) {
+        out.formFields = out.formFields
+          .filter((row): row is Record<string, unknown> => Boolean(row) && typeof row === "object" && !Array.isArray(row))
+          .map((row, i) => {
+            const type =
+              coerceEnumValue(row.type, CONTACT_FIELD_TYPES, CONTACT_FIELD_TYPE_SYNONYMS) ?? "text";
+            const repaired: Record<string, unknown> = {
+              ...row,
+              label: coerceToString(row.label) ?? contactFieldLabel(row, i),
+              type,
+            };
+            if (typeof row.required === "string") {
+              repaired.required = row.required.trim().toLowerCase() === "true";
+            }
+            if (type !== "select") delete repaired.options;
+            else if (!Array.isArray(row.options) || row.options.length === 0) {
+              delete repaired.options;
+            }
+            return repaired;
+          });
+      }
+      break;
+    }
+
+    case "quote_calculator": {
+      if (!coerceToString(out.headline)) {
+        out.headline = coerceToString(out.title) ?? "Estimate your project";
+      }
+      if (out.unitLabel !== undefined) {
+        const unit = coerceEnumValue(out.unitLabel, ["hours", "guests", "rooms", "sessions"], {
+          people: "guests",
+          persons: "guests",
+          attendees: "guests",
+          appointments: "sessions",
+          bookings: "sessions",
+          nights: "rooms",
+        });
+        if (unit) out.unitLabel = unit;
+        else delete out.unitLabel;
+      }
+      for (const key of ["minQuantity", "maxQuantity", "defaultQuantity"] as const) {
+        if (out[key] === undefined) continue;
+        const n = coerceToNumber(out[key]);
+        if (n !== undefined) out[key] = n;
+        else delete out[key];
+      }
+      const rawPackages = Array.isArray(out.packages) ? out.packages : [];
+      const packages = rawPackages
+        .filter((row) => row && typeof row === "object" && !Array.isArray(row))
+        .map((row, i) => {
+          const item = row as Record<string, unknown>;
+          return {
+            ...item,
+            name: coerceToString(item.name) ?? `Package ${i + 1}`,
+            pricePerUnit: item.pricePerUnit ?? 100,
+          };
+        });
+      out.packages = padArrayToMin(packages, 1, (i) => ({
+        name: `Package ${i + 1}`,
+        pricePerUnit: 100,
+      }));
       break;
     }
 

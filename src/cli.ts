@@ -6,6 +6,22 @@ import { startPlaygroundServer } from "./web/playground-server.js";
 import { extractBusinessName } from "./util/extract-name.js";
 import { ensurePlaywrightBrowsers } from "./util/ensure-playwright.js";
 import path from "path";
+import { emptyMediaSessionDir, loadUserMediaFromDisk } from "./media/user-media.js";
+
+async function loadCliUserMedia() {
+  const logoPath = process.env.LOGO_PATH?.trim() || process.env.LOGO?.trim();
+  const photosDir = process.env.PHOTOS_DIR?.trim();
+  if (!logoPath && !photosDir) return undefined;
+  const library = await loadUserMediaFromDisk({
+    logoPath,
+    photosDir,
+    destDir: emptyMediaSessionDir(),
+  });
+  console.log(
+    `User media: ${library.logo ? "logo" : "no logo"}, ${library.photos.length} photo(s) — remaining slots from Openverse`
+  );
+  return library;
+}
 
 async function main() {
   const [command, ...args] = process.argv.slice(2);
@@ -17,6 +33,7 @@ async function main() {
     }
     const { url, close } = await startPlaygroundServer();
     console.log(`Playground UI → ${url}`);
+    console.log(`Admin dashboard → ${url}/admin`);
     console.log("Pipeline logs stream in the browser terminal panel.");
     console.log("Press Ctrl+C to stop.\n");
     process.on("SIGINT", () => {
@@ -68,6 +85,8 @@ async function main() {
       businessName: name,
       businessBrief: brief,
       enableVisionPolish: process.env.SKIP_VISION !== "1",
+      consumerId: process.env.CONSUMER_ID?.trim() || undefined,
+      userMedia: await loadCliUserMedia(),
       onPreviewReady: async (partial) => {
         if (previewShown || !partial.htmlPages) return;
         previewShown = true;

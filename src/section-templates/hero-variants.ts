@@ -6,6 +6,8 @@ const HERO_TEMPLATES = [
   "hero_editorial",
   "hero_split_cinematic",
   "hero_video",
+  "hero_metro",
+  "hero_statement",
 ] as const;
 
 const HERO_LAYOUT_BY_TEMPLATE: Record<string, string[]> = {
@@ -13,6 +15,8 @@ const HERO_LAYOUT_BY_TEMPLATE: Record<string, string[]> = {
   hero_editorial: ["full-bleed-left", "split-offset", "centered-stack"],
   hero_split_cinematic: ["default", "split-offset"],
   hero_video: ["default", "full-bleed-left"],
+  hero_metro: ["centered-stack", "full-bleed-left"],
+  hero_statement: ["centered-stack", "full-bleed-left"],
 };
 
 export function pickHomeHeroTemplate(ctx: SiteContext): string {
@@ -28,7 +32,7 @@ export function pickHomeHeroTemplate(ctx: SiteContext): string {
 
   const dark = profile?.profileId === "luxury-dark" || profile?.profileId === "editorial-light";
   const pool = dark
-    ? ["hero_spotlight", "hero_video", "hero_editorial"]
+    ? ["hero_spotlight", "hero_metro", "hero_video", "hero_editorial"]
     : ["hero_split_cinematic", "hero_editorial", "hero_spotlight"];
   return pickFrom(seed, "home-hero", pool);
 }

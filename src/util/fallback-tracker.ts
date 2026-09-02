@@ -17,6 +17,7 @@ export type FallbackAgent =
   | "section_codegen"
   | "section_props"
   | "page_codegen"
+  | "skin_fill"
   | "site_look"
   | "build_repair";
 

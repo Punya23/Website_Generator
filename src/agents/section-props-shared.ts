@@ -149,6 +149,19 @@ export function mockPropsForTemplate(
           { label: "Message", type: "textarea" },
         ],
       };
+    case "quote_calculator":
+      return {
+        headline: "Estimate your project",
+        subcopy: brief.tagline,
+        unitLabel: "sessions",
+        packages: brief.services.slice(0, 3).map((name, i) => ({
+          name,
+          pricePerUnit: 80 + i * 40,
+          description: brief.differentiators[i] ?? `${name} for ${brief.targetAudience}`,
+        })),
+        ctaLabel: "Request this quote",
+        contactHref: "/contact",
+      };
     case "faq_accordion":
       return {
         headline: "FAQ",
@@ -197,6 +210,19 @@ export function mockPropsForTemplate(
         headline: brief.businessName,
         subcopy: brief.tagline,
         video: { poster: { imageQuery: `${brief.businessName} cinematic`, alt: brief.businessName } },
+        cta,
+      };
+    case "hero_metro":
+      return {
+        label: "Look ahead",
+        headline: brief.businessName,
+        subcopy: brief.tagline,
+        scrollHint: "SCROLL TO REVEAL",
+        comingUpLabel: "Coming up",
+        images: (brief.services.length ? brief.services : [brief.businessName, brief.tagline, "Studio"]).slice(0, 4).map((caption, i) => ({
+          caption,
+          image: { imageQuery: `${brief.businessName} ${caption} still ${i + 1}`, alt: caption },
+        })),
         cta,
       };
     case "testimonial_carousel":
@@ -292,6 +318,64 @@ export function mockPropsForTemplate(
           image: { imageQuery: s },
         })),
       };
+    case "hero_statement":
+      return {
+        label: "Welcome",
+        headline: brief.businessName,
+        subcopy: brief.tagline,
+        body: brief.elevatorPitch,
+        cta,
+      };
+    case "story_split":
+      return {
+        label: section.intent,
+        headline: section.intent || brief.tagline,
+        paragraphs: [brief.elevatorPitch, brief.expandedBrief].filter(Boolean).slice(0, 3),
+        pullQuote: brief.differentiators[0],
+        image: { imageQuery: `${brief.businessName} story`, alt: brief.businessName },
+        cta,
+      };
+    case "offer_index":
+      return {
+        headline: section.intent || "What we offer",
+        items: [
+          ...brief.services.slice(0, 4).map((title, i) => ({
+            title,
+            description: brief.differentiators[i] ?? `${title} for ${brief.targetAudience}.`,
+          })),
+          { title: "Follow-up care", description: `Support after the visit for ${brief.targetAudience}.` },
+          { title: "On-site visit", description: brief.elevatorPitch },
+        ].slice(0, Math.max(3, brief.services.length)),
+      };
+    case "hours_location":
+      return {
+        headline: section.intent || "Visit us",
+        address: `${brief.businessName} studio`,
+        phone: brief.primaryCta,
+        email: `hello@${brief.businessName.toLowerCase().replace(/[^a-z0-9]+/g, "") || "studio"}.com`,
+        note: brief.tagline,
+        schedule: [
+          { day: "Monday", time: "9:00 – 18:00" },
+          { day: "Tuesday", time: "9:00 – 18:00" },
+          { day: "Wednesday", time: "9:00 – 18:00" },
+          { day: "Thursday", time: "9:00 – 18:00" },
+          { day: "Friday", time: "9:00 – 17:00" },
+          { day: "Saturday", time: "10:00 – 14:00" },
+        ],
+      };
+    case "menu_board":
+      return {
+        headline: section.intent || "Menu",
+        items: [
+          ...brief.services.slice(0, 5).map((name, i) => ({
+            name,
+            price: `$${40 + i * 15}`,
+            description: brief.differentiators[i] ?? `${name} — made to order.`,
+          })),
+          { name: "House special", price: "$48", description: brief.tagline },
+          { name: "Seasonal add-on", price: "$18", description: brief.elevatorPitch },
+        ].slice(0, Math.max(3, brief.services.length)),
+      };
     default:
       return { headline: section.intent, body: brief.expandedBrief };
   }
@@ -308,6 +392,8 @@ const COPY_ARRAY_KEYS = [
   "tiers",
   "logos",
   "formFields",
+  "packages",
+  "schedule",
 ] as const;
 
 /** Merge partial LLM copy with mock defaults for missing required fields. */

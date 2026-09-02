@@ -37,7 +37,7 @@ const HOME_POOLS: Record<VerticalProfileId, SectionPick[][]> = {
       { templateId: "cta_band", intent: "Close" },
     ],
     [
-      { templateId: "hero_video", intent: "Cinematic reveal" },
+      { templateId: "hero_metro", intent: "Scroll-pinned stills coming up" },
       { templateId: "scroll_showcase", intent: "Craft narrative" },
       { templateId: "stats_animated", intent: "Social proof" },
       { templateId: "portfolio_carousel", intent: "Selected work" },

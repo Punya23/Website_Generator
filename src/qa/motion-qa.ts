@@ -6,7 +6,9 @@ const HERO_TEMPLATES = new Set([
   "hero_editorial",
   "hero_split_cinematic",
   "hero_video",
+  "hero_metro",
   "hero_spotlight",
+  "hero_statement",
 ]);
 
 export function runMotionQA(

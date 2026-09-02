@@ -13,11 +13,21 @@ export function groqFallbackModel(current: string): string | null {
 
 const INSUFFICIENT_CREDITS_RE =
   /requires more credits|insufficient credits|insufficient_quota|payment required|exceeded your current quota/i;
+const AUTH_ERROR_RE =
+  /user not found|invalid api key|incorrect api key|invalid_api_key|unauthorized|authentication/i;
+
+export function isAuthError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const status = "status" in err ? err.status : undefined;
+  if (status === 401) return true;
+  return AUTH_ERROR_RE.test(extractErrorMessage(err));
+}
 
 export function isInsufficientCreditsError(err: unknown): boolean {
   if (!err || typeof err !== "object") return false;
+  if (isAuthError(err)) return false;
   const status = "status" in err ? err.status : undefined;
-  if (status === 402 || status === 401) return true;
+  if (status === 402) return true;
   return INSUFFICIENT_CREDITS_RE.test(extractErrorMessage(err));
 }
 
@@ -38,6 +48,7 @@ export function parseAffordableMaxTokens(err: unknown): number | null {
 
 /** Do not retry billing/auth errors — each attempt may still charge or waste time. */
 export function isNonRetryableLLMError(err: unknown): boolean {
+  if (isAuthError(err)) return true;
   if (!isInsufficientCreditsError(err)) return false;
   return !isOpenRouterMaxTokensCapError(err);
 }

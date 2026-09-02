@@ -5,6 +5,7 @@ import {
   groqFallbackModel,
   isOverCapacityError,
   isConnectionError,
+  isAuthError,
   isNonRetryableLLMError,
   isOpenRouterMaxTokensCapError,
   isTransientLLMError,
@@ -81,30 +82,64 @@ const DEFAULT_MODELS: Record<LLMProvider, { chat: string; composition: string; v
   },
 };
 
-function resolveProvider(): LLMProvider | null {
+/** Free-first order. `LLM_PROVIDER` is moved to the front when that provider is configured. */
+export const FREE_FIRST_ORDER: LLMProvider[] = [
+  "groq",
+  "ollama",
+  "mistral",
+  "openrouter",
+  "openai",
+];
+
+export function isProviderConfigured(provider: LLMProvider): boolean {
+  switch (provider) {
+    case "groq":
+      return Boolean(process.env.GROQ_API_KEY?.trim());
+    case "mistral":
+      return Boolean(process.env.MISTRAL_API_KEY?.trim());
+    case "openrouter":
+      return Boolean(process.env.OPENROUTER_API_KEY?.trim());
+    case "openai":
+      return Boolean(process.env.OPENAI_API_KEY?.trim());
+    case "ollama": {
+      if (process.env.LLM_PROVIDER?.toLowerCase() === "ollama") return true;
+      if (process.env.OLLAMA_API_KEY?.trim()) return true;
+      return /ollama\.com/i.test(process.env.OLLAMA_BASE_URL ?? "");
+    }
+  }
+}
+
+export function resolveProviderChain(): LLMProvider[] {
+  const configured = FREE_FIRST_ORDER.filter(isProviderConfigured);
   const explicit = process.env.LLM_PROVIDER?.toLowerCase();
+  if (explicit && (FREE_FIRST_ORDER as string[]).includes(explicit)) {
+    const preferred = explicit as LLMProvider;
+    if (configured.includes(preferred)) {
+      return [preferred, ...configured.filter((p) => p !== preferred)];
+    }
+  }
+  return configured;
+}
 
-  if (explicit === "groq") {
-    return process.env.GROQ_API_KEY ? "groq" : null;
-  }
-  if (explicit === "openai") {
-    return process.env.OPENAI_API_KEY ? "openai" : null;
-  }
-  if (explicit === "mistral") {
-    return process.env.MISTRAL_API_KEY ? "mistral" : null;
-  }
-  if (explicit === "openrouter") {
-    return process.env.OPENROUTER_API_KEY ? "openrouter" : null;
-  }
-  if (explicit === "ollama") {
-    return "ollama";
-  }
+export function resolveProvider(): LLMProvider | null {
+  return resolveProviderChain()[0] ?? null;
+}
 
-  if (process.env.GROQ_API_KEY) return "groq";
-  if (process.env.MISTRAL_API_KEY) return "mistral";
-  if (process.env.OPENROUTER_API_KEY) return "openrouter";
-  if (process.env.OPENAI_API_KEY) return "openai";
-  return null;
+export function shouldFailoverToNextProvider(err: unknown): boolean {
+  return isNonRetryableLLMError(err);
+}
+
+export interface LLMStatus {
+  available: boolean;
+  provider: LLMProvider | null;
+  model: string | null;
+  fallbacks: LLMProvider[];
+  lastError: string | null;
+}
+
+export interface LLMClientInit {
+  chain?: LLMProvider[];
+  clients?: Map<LLMProvider, OpenAI>;
 }
 
 function createClient(provider: LLMProvider): OpenAI {
@@ -162,21 +197,63 @@ function resolveModel(provider: LLMProvider | null, model: string): string {
 }
 
 export class LLMClient {
-  readonly provider: LLMProvider | null;
+  provider: LLMProvider | null;
   private client: OpenAI | null;
   private models: (typeof DEFAULT_MODELS)[LLMProvider];
+  private readonly chain: LLMProvider[];
+  private readonly clients: Map<LLMProvider, OpenAI>;
+  private providerIndex = 0;
+  private lastError: string | null = null;
   private tokenUsage = { prompt: 0, completion: 0, total: 0 };
   private usageByModel = new Map<string, { prompt: number; completion: number }>();
   private costCapDowngrade = false;
 
-  constructor() {
-    this.provider = resolveProvider();
-    this.client = this.provider ? createClient(this.provider) : null;
-    this.models = this.provider ? DEFAULT_MODELS[this.provider] : DEFAULT_MODELS.groq;
+  constructor(init: LLMClientInit = {}) {
+    this.chain = init.chain ?? resolveProviderChain();
+    this.clients =
+      init.clients ??
+      new Map(this.chain.map((provider) => [provider, createClient(provider)]));
+    this.provider = null;
+    this.client = null;
+    this.models = DEFAULT_MODELS.groq;
+    this.activate(0);
   }
 
   get isAvailable(): boolean {
     return this.client !== null;
+  }
+
+  getStatus(): LLMStatus {
+    return {
+      available: this.isAvailable,
+      provider: this.provider,
+      model: this.provider ? this.getChatModel() : null,
+      fallbacks: [...this.chain],
+      lastError: this.lastError,
+    };
+  }
+
+  private activate(index: number): void {
+    this.providerIndex = index;
+    const provider = this.chain[index] ?? null;
+    this.provider = provider;
+    this.client = provider ? (this.clients.get(provider) ?? null) : null;
+    this.models = provider ? DEFAULT_MODELS[provider] : DEFAULT_MODELS.groq;
+  }
+
+  private advanceProvider(err: unknown): boolean {
+    const from = this.provider;
+    const next = this.providerIndex + 1;
+    if (!from || next >= this.chain.length) return false;
+    const to = this.chain[next]!;
+    this.lastError = extractErrorMessage(err);
+    console.warn(`[llm] falling back ${from} → ${to}`);
+    this.activate(next);
+    return true;
+  }
+
+  private failedOver(err: unknown): boolean {
+    return shouldFailoverToNextProvider(err) && this.advanceProvider(err);
   }
 
   /** OpenRouter and OpenAI reliably support response_format: json_schema across the models this
@@ -391,7 +468,7 @@ export class LLMClient {
   ): Promise<string> {
     if (!this.client) {
       throw new Error(
-        "No LLM configured — set LLM_PROVIDER=ollama, OPENROUTER_API_KEY, GROQ_API_KEY, MISTRAL_API_KEY, or OPENAI_API_KEY"
+        "No LLM configured — set GROQ_API_KEY, OLLAMA_API_KEY (or LLM_PROVIDER=ollama), MISTRAL_API_KEY, OPENROUTER_API_KEY, or OPENAI_API_KEY"
       );
     }
 
@@ -426,6 +503,10 @@ export class LLMClient {
         model,
         temperature: options.temperature ?? 0.7,
         max_tokens: maxTokens,
+        // Reasoning models (gpt-oss et al, common on Ollama Cloud) spend completion tokens on a
+        // hidden "thinking" pass before the visible JSON — low effort keeps that pass short so
+        // structured-output calls (which run 10-20x per site) don't truncate mid-object.
+        ...(this.provider === "ollama" ? { reasoning_effort: "low" as const } : {}),
         messages,
         response_format: useJsonSchema
           ? {
@@ -442,6 +523,7 @@ export class LLMClient {
       });
 
       this.recordUsage(model, response.usage);
+      this.lastError = null;
       const content = response.choices[0]?.message?.content ?? "";
       if (!content.trim()) {
         if (attempt < MAX_RETRIES) {
@@ -452,7 +534,11 @@ export class LLMClient {
           await sleep(waitMs);
           return this.chatWithRetry(system, user, options, attempt + 1, modelOverride, schemaFallback);
         }
-        throw new Error("Empty response from LLM");
+        const empty = new Error("Empty response from LLM");
+        if (this.advanceProvider(empty)) {
+          return this.chatWithRetry(system, user, this.withoutProviderModel(options), 0, undefined, schemaFallback);
+        }
+        throw empty;
       }
       return options.jsonMode || options.responseSchema ? normalizeLlmJsonContent(content) : content;
     } catch (err: unknown) {
@@ -479,8 +565,12 @@ export class LLMClient {
           );
         }
       }
+      if (this.failedOver(err)) {
+        return this.chatWithRetry(system, user, this.withoutProviderModel(options), 0, undefined, schemaFallback);
+      }
       if (isNonRetryableLLMError(err)) {
-        throw enhanceGroqModelError(err, model);
+        this.lastError = extractErrorMessage(err);
+        throw enhanceLlmError(err, model, this.provider);
       }
       if (isTransientLLMError(err) && attempt < MAX_RETRIES) {
         if (
@@ -509,8 +599,16 @@ export class LLMClient {
         await sleep(waitMs);
         return this.chatWithRetry(system, user, options, attempt + 1, modelOverride, schemaFallback);
       }
-      throw enhanceGroqModelError(err, model);
+      if (this.advanceProvider(err)) {
+        return this.chatWithRetry(system, user, this.withoutProviderModel(options), 0, undefined, schemaFallback);
+      }
+      this.lastError = extractErrorMessage(err);
+      throw enhanceLlmError(err, model, this.provider);
     }
+  }
+
+  private withoutProviderModel(options: LLMOptions): LLMOptions {
+    return { ...options, model: undefined };
   }
 
   async chatWithVision(
@@ -565,16 +663,25 @@ export class LLMClient {
       });
 
       this.recordUsage(visionModel, response.usage);
+      this.lastError = null;
       return normalizeLlmJsonContent(response.choices[0]?.message?.content ?? "");
     } catch (err: unknown) {
+      if (this.failedOver(err)) {
+        return this.chatWithVisionRetry(system, userText, imageBase64, this.withoutProviderModel(options), 0);
+      }
       if (isNonRetryableLLMError(err)) {
-        throw enhanceGroqModelError(err, visionModel);
+        this.lastError = extractErrorMessage(err);
+        throw enhanceLlmError(err, visionModel, this.provider);
       }
       if (isTransientLLMError(err) && attempt < MAX_RETRIES) {
         const waitMs = parseRetryAfterMs(err, attempt);
         await sleep(waitMs);
         return this.chatWithVisionRetry(system, userText, imageBase64, options, attempt + 1);
       }
+      if (this.advanceProvider(err)) {
+        return this.chatWithVisionRetry(system, userText, imageBase64, this.withoutProviderModel(options), 0);
+      }
+      this.lastError = extractErrorMessage(err);
       throw err instanceof Error ? err : new Error(String(err));
     }
   }
@@ -636,10 +743,22 @@ export class LLMClient {
       });
 
       this.recordUsage(visionModel, response.usage);
+      this.lastError = null;
       return normalizeLlmJsonContent(response.choices[0]?.message?.content ?? "");
     } catch (err: unknown) {
+      if (this.failedOver(err)) {
+        return this.chatWithVisionDualRetry(
+          system,
+          userText,
+          desktopBase64,
+          mobileBase64,
+          this.withoutProviderModel(options),
+          0
+        );
+      }
       if (isNonRetryableLLMError(err)) {
-        throw enhanceGroqModelError(err, visionModel);
+        this.lastError = extractErrorMessage(err);
+        throw enhanceLlmError(err, visionModel, this.provider);
       }
       if (isTransientLLMError(err) && attempt < MAX_RETRIES) {
         const waitMs = parseRetryAfterMs(err, attempt);
@@ -653,6 +772,17 @@ export class LLMClient {
           attempt + 1
         );
       }
+      if (this.advanceProvider(err)) {
+        return this.chatWithVisionDualRetry(
+          system,
+          userText,
+          desktopBase64,
+          mobileBase64,
+          this.withoutProviderModel(options),
+          0
+        );
+      }
+      this.lastError = extractErrorMessage(err);
       throw err instanceof Error ? err : new Error(String(err));
     }
   }
@@ -660,9 +790,32 @@ export class LLMClient {
 
 export const llm = new LLMClient();
 
-export { resolveProvider, DEFAULT_MODELS, resolveGroqModel };
+export { DEFAULT_MODELS, resolveGroqModel };
 
-function enhanceGroqModelError(err: unknown, model: string): Error {
+const PROVIDER_KEY_HELP: Record<LLMProvider, { envVar: string; url: string }> = {
+  openrouter: { envVar: "OPENROUTER_API_KEY", url: "https://openrouter.ai/keys" },
+  groq: { envVar: "GROQ_API_KEY", url: "https://console.groq.com/keys" },
+  mistral: { envVar: "MISTRAL_API_KEY", url: "https://console.mistral.ai/api-keys" },
+  openai: { envVar: "OPENAI_API_KEY", url: "https://platform.openai.com/api-keys" },
+  ollama: {
+    envVar: process.env.OLLAMA_API_KEY ? "OLLAMA_API_KEY" : "OLLAMA_BASE_URL",
+    url: process.env.OLLAMA_BASE_URL?.includes("ollama.com")
+      ? "https://ollama.com/settings/keys"
+      : "http://127.0.0.1:11434",
+  },
+};
+
+function enhanceLlmError(err: unknown, model: string, provider: LLMProvider | null): Error {
+  if (isAuthError(err)) {
+    const help = provider ? PROVIDER_KEY_HELP[provider] : null;
+    const source = help?.envVar ?? "your LLM API key";
+    const where = help?.url ? ` Create a new key at ${help.url}, put it in .env, and restart the playground.` : "";
+    const message = extractErrorMessage(err).replace(/\.*$/, "");
+    return new Error(
+      `${provider ?? "LLM"} rejected ${source} (${message}).${where}`,
+      { cause: err }
+    );
+  }
   if (
     err &&
     typeof err === "object" &&

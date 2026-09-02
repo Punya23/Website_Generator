@@ -6,7 +6,9 @@ const HERO_TEMPLATES = new Set([
   "hero_editorial",
   "hero_split_cinematic",
   "hero_video",
+  "hero_metro",
   "hero_spotlight",
+  "hero_statement",
 ]);
 
 const HERO_LAYOUT_VARIANTS = ["full-bleed-left", "split-offset", "centered-stack"] as const;
@@ -100,6 +102,29 @@ export function defaultLayoutForTemplate(
       mediaPosition:
         variationSeed !== undefined
           ? pickFrom(variationSeed, "hero_split", [...positions])
+          : "right",
+    };
+  }
+  if (templateId === "hero_metro") {
+    return {
+      variant: "centered-stack",
+      density: "airy",
+    };
+  }
+  if (templateId === "hero_statement") {
+    return {
+      variant: isEditorial ? "full-bleed-left" : "centered-stack",
+      density: isEditorial ? "airy" : "normal",
+    };
+  }
+  if (templateId === "story_split") {
+    const positions = ["left", "right"] as const;
+    return {
+      variant: "default",
+      density: "normal",
+      mediaPosition:
+        variationSeed !== undefined
+          ? pickFrom(variationSeed, "story_split", [...positions])
           : "right",
     };
   }

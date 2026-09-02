@@ -71,7 +71,7 @@ async function pexelsUrl(query: string, seed: string): Promise<string | null> {
     });
     if (!res.ok) return null;
     const data = (await res.json()) as {
-      photos?: Array<{ src?: { large2x?: string; large?: string; landscape?: string } }>;
+      photos?: Array<{ src?: { large2x?: string; large?: string; medium?: string; landscape?: string } }>;
     };
     const photos = data.photos ?? [];
     if (photos.length === 0) return null;

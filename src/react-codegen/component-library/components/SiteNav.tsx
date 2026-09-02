@@ -13,10 +13,12 @@ export function SiteNav({
   businessName,
   links,
   navShape,
+  logoSrc,
 }: {
   businessName: string;
   links: Array<{ slug: string; label: string }>;
   navShape?: NavShape;
+  logoSrc?: string;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -64,8 +66,11 @@ export function SiteNav({
   );
 
   const logo = (
-    <Link href="/" className="font-display text-lg font-bold text-nav-text">
-      {businessName}
+    <Link href="/" className="flex items-center gap-2 font-display text-lg font-bold text-nav-text">
+      {logoSrc ? (
+        <img src={logoSrc} alt={businessName} className="h-8 w-auto max-w-[9rem] object-contain" />
+      ) : null}
+      <span>{businessName}</span>
     </Link>
   );
 

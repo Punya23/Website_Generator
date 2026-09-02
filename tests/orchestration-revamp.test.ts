@@ -24,10 +24,11 @@ describe("page-codegen has no salvage path", () => {
   });
 });
 
-describe("legacy pipeline removed", () => {
-  it("react-pipeline no longer branches on usePageCodegenPipeline", () => {
+describe("react pipeline paths", () => {
+  it("defaults to skin fill and keeps page-codegen behind a flag", () => {
     const src = readFileSync(join(root, "src/orchestrator/react-pipeline.ts"), "utf8");
-    expect(src).toContain("sole React path");
+    expect(src).toContain("useSkinFillPipeline");
+    expect(src).toContain("fillSiteSkin");
     expect(src).not.toContain("directPageBlueprints");
     expect(src).not.toContain("fillSectionProps");
   });

@@ -1,3 +1,5 @@
+import type { UserMediaLibrary } from "./user-media.js";
+
 export interface MediaRegistryEntry {
   url: string;
   query: string;
@@ -8,6 +10,7 @@ export interface MediaRegistryEntry {
 
 export class MediaRegistry {
   private entries: MediaRegistryEntry[] = [];
+  userMedia?: UserMediaLibrary;
 
   get usedUrls(): Set<string> {
     return new Set(this.entries.map((e) => e.url));
@@ -15,6 +18,10 @@ export class MediaRegistry {
 
   isDuplicate(url: string): boolean {
     return this.usedUrls.has(url);
+  }
+
+  takeUserPhoto(): string | undefined {
+    return this.userMedia?.takePhoto()?.publicSrc;
   }
 
   register(entry: MediaRegistryEntry): void {

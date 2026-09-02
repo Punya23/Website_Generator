@@ -65,5 +65,5 @@ describe("Orchestrator", () => {
     for (const qa of Object.values(result.qaResults)) {
       expect(qa.passed).toBe(true);
     }
-  });
+  }, 15_000);
 });

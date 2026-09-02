@@ -6,51 +6,92 @@
   <title>Website Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,450;9..144,560&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <div class="page">
-    <header class="topbar">
+  <div class="app">
+    <header class="chrome">
       <div class="brand">
         <span class="brand-mark" aria-hidden="true"></span>
         <span class="brand-name">Website Generator</span>
       </div>
+      <ol class="steps" id="pipeline-steps" aria-label="Generation steps">
+        <li data-step="brief">Brief</li>
+        <li data-step="plan">Structure</li>
+        <li data-step="design">Design</li>
+        <li data-step="content">Copy</li>
+        <li data-step="media">Images</li>
+        <li data-step="build">Build</li>
+        <li data-step="ready">Ready</li>
+      </ol>
+      <div class="chrome-right">
+        <span class="status-chip" id="status-chip">Idle</span>
+        <a href="/admin" class="nav-link">Admin</a>
+      </div>
     </header>
 
-    <main class="main">
-      <section class="hero">
-        <p class="eyebrow">AI · React · minutes</p>
-        <h1 class="hero-title">Describe your business.<br />Receive a complete site.</h1>
-        <p class="hero-sub">A sentence or two is sufficient. Copy, structure, and design are composed for you.</p>
+    <div class="studio">
+      <aside class="composer">
+        <p class="eyebrow">New site</p>
+        <h1>Two sentences. A complete frontend.</h1>
+        <p class="lede">Contact form and calculator included. Paste a brief, add a logo if you have one, then generate.</p>
 
-        <div class="prompt-card">
-          <label class="sr-only" for="brief">Your business</label>
-          <textarea
-            id="brief"
-            rows="5"
-            placeholder="Kalpvruksh Finserv — financial aggregator for mutual funds, loans, and insurance in Mumbai"
-          ></textarea>
-          <button type="button" class="generate" id="generate">
-            <span class="btn-label">Generate</span>
-            <span class="btn-spinner" hidden></span>
-          </button>
-        </div>
+        <label class="sr-only" for="brief">Your business</label>
+        <textarea
+          id="brief"
+          rows="6"
+          placeholder="Kalpvruksh Finserv — financial aggregator for mutual funds, loans, and insurance in Mumbai"
+        ></textarea>
+        <p class="hint">⌘ / Ctrl + Enter to generate</p>
 
         <div class="examples-wrap">
-          <span class="examples-label">Examples</span>
+          <span class="field-label">Start from an example</span>
           <div class="hero-examples" id="examples" aria-label="Example prompts"></div>
         </div>
 
+        <div class="recent-wrap" id="recent-wrap" hidden>
+          <span class="field-label">Recent briefs</span>
+          <div class="recent-list" id="recent-briefs"></div>
+        </div>
+
+        <div class="media-uploads">
+          <div class="drop" id="logo-drop">
+            <input type="file" id="logo-file" accept="image/png,image/jpeg,image/webp,image/gif" />
+            <span class="drop-title">Logo <span class="optional">optional</span></span>
+            <span class="drop-hint">PNG or JPG, used in the nav</span>
+            <div class="thumbs" id="logo-thumbs"></div>
+          </div>
+          <div class="drop" id="photo-drop">
+            <input type="file" id="photo-files" accept="image/png,image/jpeg,image/webp,image/gif" multiple />
+            <span class="drop-title">Photos <span class="optional">up to 8</span></span>
+            <span class="drop-hint">Your shots first; stock fills the rest</span>
+            <div class="thumbs" id="photo-thumbs"></div>
+          </div>
+          <p class="media-hint" id="media-status">Your files go on the site first. Empty slots use Openverse (CC0).</p>
+        </div>
+
+        <button type="button" class="generate" id="generate">
+          <span class="btn-label">Generate site</span>
+          <span class="btn-spinner" hidden></span>
+        </button>
+
+        <div id="revise-panel" class="revise-panel" hidden>
+          <span class="field-label">Revise this site</span>
+          <p class="hint">Describe a change — warmer colors, shorter hero, add FAQ. We patch the existing layout; we do not rebuild from scratch.</p>
+          <div id="revise-thread" class="revise-thread" aria-live="polite"></div>
+          <textarea id="revise-input" rows="3" placeholder="Warmer colors, shorter hero, add a FAQ on home…"></textarea>
+          <button type="button" class="btn-secondary" id="revise-btn">Apply revision</button>
+        </div>
+
         <details class="seed-panel" id="seed-panel">
-          <summary class="seed-summary">Repeat the same design later</summary>
+          <summary class="seed-summary">Customer &amp; style lock</summary>
           <div class="seed-body">
             <p class="seed-explainer">
-              Leave empty for a new composition each time — layout, palette, and sections will vary.
+              Same customer id never reuses a skin until the catalog is exhausted. A style code reproduces the same composition.
             </p>
-            <p class="seed-explainer">
-              Enter a number to lock the visual direction. The same brief with the same number reproduces the same result.
-            </p>
+            <label class="seed-field-label" for="consumer-id">Customer id <span class="optional">optional</span></label>
+            <input type="text" id="consumer-id" placeholder="Saved in this browser" autocomplete="off" />
             <label class="seed-field-label" for="variation-seed">Style code <span class="optional">optional</span></label>
             <div class="seed-row">
               <input
@@ -61,60 +102,84 @@
                 autocomplete="off"
               />
               <button type="button" class="seed-last" id="use-last-seed" hidden title="Use code from last run">Last run</button>
+              <button type="button" class="seed-last" id="copy-seed" hidden>Copy</button>
             </div>
           </div>
         </details>
-      </section>
+      </aside>
 
-      <section class="pipeline" aria-label="Build progress">
-        <div class="pipeline-head">
-          <span class="pipeline-label">Pipeline</span>
-          <button type="button" class="text-btn" id="clear-log">Clear</button>
-        </div>
-        <pre class="terminal" id="terminal" aria-live="polite"><span class="terminal-idle">Awaiting your brief.</span></pre>
-      </section>
-
-      <section class="preview" id="preview-panel" hidden>
-        <div class="preview-head">
-          <span id="preview-title">Preview</span>
-          <div class="preview-actions">
+      <section class="workspace">
+        <div class="workspace-toolbar">
+          <div class="tabs" role="tablist">
+            <button type="button" class="tab active" data-workspace="preview">Preview</button>
+            <button type="button" class="tab" data-workspace="editor">Theme &amp; sections</button>
+            <button type="button" class="tab" data-workspace="log">Activity</button>
+          </div>
+          <div class="toolbar-actions">
+            <div class="page-tabs" id="page-tabs" hidden></div>
+            <div class="device-toggle" role="group" aria-label="Preview width">
+              <button type="button" class="device active" data-device="desktop" title="Desktop">Desktop</button>
+              <button type="button" class="device" data-device="tablet" title="Tablet">Tablet</button>
+              <button type="button" class="device" data-device="mobile" title="Mobile">Mobile</button>
+            </div>
+            <span id="preview-title" class="preview-name">Preview</span>
             <a class="text-btn" id="open-tab" href="#" target="_blank" rel="noopener">Open</a>
             <a class="text-btn" id="export-json" href="/api/export?format=project" download="site-context.json">JSON</a>
             <a class="text-btn" id="export-react" href="/api/export?format=react" download="site.tsx">React</a>
+            <button type="button" class="text-btn" id="publish-btn" hidden>Publish</button>
           </div>
         </div>
-        <iframe id="preview" title="Generated website preview" sandbox="allow-same-origin allow-scripts"></iframe>
-      </section>
 
-      <section class="editor" id="editor-panel" hidden>
-        <div class="editor-head">
-          <span class="pipeline-label">Editor</span>
-        </div>
-        <div class="editor-grid">
-          <div class="editor-theme">
-            <h3>Theme</h3>
-            <label>Accent <input type="color" id="theme-accent" /></label>
-            <label>Background <input type="color" id="theme-bg" /></label>
-            <label>Heading font <input type="text" id="theme-heading-font" /></label>
-            <label>Motion
-              <select id="theme-motion">
-                <option value="fade-up">Fade up</option>
-                <option value="stagger">Stagger</option>
-                <option value="scale-in">Scale in</option>
-                <option value="slide-left">Slide left</option>
-                <option value="parallax-hero">Parallax</option>
-                <option value="none">None</option>
-              </select>
-            </label>
-            <button type="button" class="text-btn" id="apply-theme">Apply</button>
-          </div>
-          <div class="editor-sections">
-            <h3>Sections <span id="editor-page-label"></span></h3>
-            <ul id="section-list" class="section-list"></ul>
-          </div>
+        <div class="workspace-body">
+          <section class="preview pane" id="preview-panel">
+            <div class="empty-preview" id="empty-preview">
+              <p class="empty-title">No site yet</p>
+              <p class="empty-copy">Describe the business on the left. Generation usually takes a few minutes. The live preview appears here.</p>
+            </div>
+            <div class="stage-frame" id="stage-frame" data-device="desktop" hidden>
+              <iframe id="preview" title="Generated website preview" sandbox="allow-same-origin allow-scripts"></iframe>
+            </div>
+          </section>
+
+          <section class="editor pane" id="editor-panel" hidden>
+            <div class="editor-head">
+              <span class="pipeline-label">Editor</span>
+            </div>
+            <div class="editor-grid">
+              <div class="editor-theme">
+                <h3>Theme</h3>
+                <label>Accent <input type="color" id="theme-accent" /></label>
+                <label>Background <input type="color" id="theme-bg" /></label>
+                <label>Heading font <input type="text" id="theme-heading-font" /></label>
+                <label>Motion
+                  <select id="theme-motion">
+                    <option value="fade-up">Fade up</option>
+                    <option value="stagger">Stagger</option>
+                    <option value="scale-in">Scale in</option>
+                    <option value="slide-left">Slide left</option>
+                    <option value="parallax-hero">Parallax</option>
+                    <option value="none">None</option>
+                  </select>
+                </label>
+                <button type="button" class="btn-secondary" id="apply-theme">Apply theme</button>
+              </div>
+              <div class="editor-sections">
+                <h3>Sections <span id="editor-page-label"></span></h3>
+                <ul id="section-list" class="section-list"></ul>
+              </div>
+            </div>
+          </section>
+
+          <section class="pipeline pane" id="log-panel" hidden aria-label="Build progress">
+            <div class="pipeline-head">
+              <span class="pipeline-label">Activity</span>
+              <button type="button" class="text-btn" id="clear-log">Clear</button>
+            </div>
+            <pre class="terminal" id="terminal" aria-live="polite"><span class="terminal-idle">Awaiting your brief.</span></pre>
+          </section>
         </div>
       </section>
-    </main>
+    </div>
   </div>
   <script src="/app.js" type="module"></script>
 </body>

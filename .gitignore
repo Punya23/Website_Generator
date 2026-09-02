@@ -5,3 +5,16 @@ output/
 *.log
 .playwright/
 .DS_Store
+node_modules/
+dist/
+output/
+.env
+*.log
+.playwright/
+.DS_Store
+data/consumer-skins.json
+data/admin-ingest.json
+data/admin-ingest-candidates.ndjson
+data/approved-skins.json
+data/thumbs/
+.cursor/

@@ -26,7 +26,7 @@ FORBIDDEN: Do not change templateId, copy, colors, fonts, or section order.
 Rules:
 - globalPreset: fade-up | stagger | scale-in | slide-left | parallax-hero | none
 - Vary entrance types across each page — never 4+ consecutive identical entrances
-- Hero templates (hero_editorial, hero_split_cinematic, hero_video, hero_spotlight): parallax true, entrance reveal or slide-left
+- Hero templates (hero_editorial, hero_split_cinematic, hero_video, hero_metro, hero_spotlight, hero_statement): parallax true, entrance reveal or slide-left
 - testimonial_carousel / portfolio_carousel / stats_animated: entrance stagger
 - stats_marquee / logo_marquee / text_marquee: entrance stagger, marquee true
 - cta_band: entrance scale-in

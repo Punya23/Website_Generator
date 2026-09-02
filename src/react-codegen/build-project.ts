@@ -10,6 +10,8 @@ const DEFAULT_TIMEOUT_MS = Number(process.env.REACT_BUILD_TIMEOUT_MS ?? 300_000)
 export interface BuildProjectOptions {
   timeoutMs?: number;
   retries?: number;
+  /** Skip npm install when node_modules/next is already present. */
+  skipInstall?: boolean;
 }
 
 export async function buildReactProject(
@@ -19,10 +21,16 @@ export async function buildReactProject(
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const maxAttempts = options.retries ?? 2;
 
-  // Always install in the target project directory. Copying node_modules from another
-  // generated site breaks Next builds: npm's .bin symlinks are absolute paths, so React/Next
-  // resolve from the wrong project and prerender fails with "useContext" null.
-  await runCommand("npm install --prefer-offline --no-audit --no-fund", projectPath, timeoutMs);
+  const nextInstalled = await fs
+    .access(path.join(projectPath, "node_modules", "next"))
+    .then(() => true)
+    .catch(() => false);
+  // Always install in the target project directory unless this is a revision rebuild
+  // that already has a working Next install. Copying node_modules from another
+  // generated site breaks Next builds: npm's .bin symlinks are absolute paths.
+  if (!options.skipInstall || !nextInstalled) {
+    await runCommand("npm install --prefer-offline --no-audit --no-fund", projectPath, timeoutMs);
+  }
   await fs.rm(path.join(projectPath, ".next"), { recursive: true, force: true }).catch(() => undefined);
 
   let lastError: Error | null = null;

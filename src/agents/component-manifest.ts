@@ -25,6 +25,16 @@ const WHEN_TO_USE: Partial<Record<string, string>> = {
     "Split hero with headline + body copy and cinematic media. Strong default for services and B2B.",
   HeroVideo:
     "Video or poster hero for immersive brands with motion-forward storytelling.",
+  HeroMetro:
+    "Scroll-pinned stills that wipe up over each other. Use when the brief wants a coming-up image reveal, not a looping video.",
+  HeroStatement:
+    "Typography-only full-viewport hero — no image. Use for clinics, law, fitness, and other type-led brands.",
+  StorySplit:
+    "Alternating image and long-form story. Use on About and as home showcases that flip left/right.",
+  OfferIndex:
+    "Numbered editorial list of services — prefer over FeatureBento when the brand should not look like a card grid.",
+  HoursLocation: "Weekly hours, address, and phone. Use for local shops, clinics, cafes, and gyms.",
+  MenuBoard: "Name, price, and note rows for food, treatments, or retail packages.",
   IntroStatement:
     "Typography-only statement — use sparingly (once per page max) for editorial breathing room.",
   StatsMarquee: "Horizontal stat band — credibility numbers after the hero.",
@@ -42,6 +52,8 @@ const WHEN_TO_USE: Partial<Record<string, string>> = {
     "Subtle surface-toned closer — alternative to CtaBand; pick one closer per page, not both.",
   NewsletterBand: "In-page newsletter signup — only when email capture is core to the business.",
   ContactSplit: "Contact form + details split layout.",
+  QuoteCalculator:
+    "Client-side quote estimator for hours, guests, rooms, or sessions. Use on contact or services.",
   TextMarquee: "Scrolling phrase marquee for brand voice.",
   LogoMarquee: "Client/partner logo strip.",
   TeamGrid: "Team member grid with portraits.",
@@ -64,6 +76,8 @@ const EXAMPLE_PROPS: Partial<Record<string, string>> = {
   IntroStatement: '{ "headline": "...", "body": "..." }',
   ContactSplit:
     '{ "headline": "...", "email": "hello@studio.com", "phone": "555-0100", "formFields": [{ "label": "Message", "type": "textarea" }] }',
+  QuoteCalculator:
+    '{ "headline": "...", "unitLabel": "hours", "packages": [{ "name": "Standard visit", "pricePerUnit": 120 }] }',
   PortfolioCarousel:
     '{ "headline": "...", "slides": [{ "title": "Project name", "category": "Residential", "image": { "alt": "..." } }] }',
   FaqAccordion:
@@ -74,6 +88,18 @@ const EXAMPLE_PROPS: Partial<Record<string, string>> = {
     '{ "headline": "...", "subcopy": "...", "cta": { "label": "...", "href": "/contact" }, "image": { "alt": "..." } }',
   HeroVideo:
     '{ "headline": "...", "subcopy": "...", "video": { "poster": { "alt": "..." } }, "cta": { "label": "...", "href": "/contact" } }',
+  HeroMetro:
+    '{ "headline": "...", "subcopy": "...", "comingUpLabel": "Coming up", "images": [{ "caption": "Still one", "image": { "alt": "..." } }, { "caption": "Still two", "image": { "alt": "..." } }, { "caption": "Still three", "image": { "alt": "..." } }], "cta": { "label": "...", "href": "/contact" } }',
+  HeroStatement:
+    '{ "label": "...", "headline": "...", "subcopy": "...", "cta": { "label": "...", "href": "/contact" } }',
+  StorySplit:
+    '{ "headline": "...", "paragraphs": ["First paragraph.", "Second paragraph."], "pullQuote": "...", "image": { "alt": "..." } }',
+  OfferIndex:
+    '{ "headline": "...", "items": [{ "title": "...", "description": "..." }, { "title": "...", "description": "..." }, { "title": "...", "description": "..." }] }',
+  HoursLocation:
+    '{ "headline": "...", "address": "...", "phone": "...", "schedule": [{ "day": "Monday", "time": "9:00 – 18:00" }] }',
+  MenuBoard:
+    '{ "headline": "...", "items": [{ "name": "...", "price": "$12", "description": "..." }] }',
   StatsMarquee:
     '{ "stats": [{ "value": "10+", "label": "Years experience" }, { "value": "500+", "label": "Projects delivered" }] }',
   StatsAnimated:
@@ -124,6 +150,8 @@ export const HERO_COMPONENT_NAMES = new Set([
   "HeroSplitCinematic",
   "HeroSpotlight",
   "HeroVideo",
+  "HeroMetro",
+  "HeroStatement",
 ]);
 
 export const CONVERSION_COMPONENT_NAMES = new Set(["CtaBand", "FooterCta", "NewsletterBand"]);

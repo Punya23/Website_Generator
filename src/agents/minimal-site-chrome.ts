@@ -70,6 +70,8 @@ function preferredEntrance(templateId: string): SiteMotionPlan["sections"][strin
   if (["gallery_masonry", "horizontal_gallery", "portfolio_carousel", "portfolio_strip"].includes(templateId))
     return "slide-left";
   if (["testimonial_featured", "testimonial_carousel"].includes(templateId)) return "reveal";
+  if (["offer_index", "menu_board"].includes(templateId)) return "stagger";
+  if (["story_split", "hours_location"].includes(templateId)) return "slide-left";
   return "reveal";
 }
 

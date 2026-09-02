@@ -8,6 +8,7 @@ import {
 } from "../theme/profile-coherence.js";
 import { allowMocks, requireLlm, handleLlmFailure } from "../util/llm-required.js";
 import { parseLlmJson } from "../llm/parse-json.js";
+import { chatJsonWithRetry } from "../llm/json-agent.js";
 import { recordFallback } from "../util/fallback-tracker.js";
 import { pipelineLog } from "../util/pipeline-log.js";
 
@@ -48,12 +49,16 @@ export async function refineDesignSystem(
       const profileBlock = verticalProfile
         ? `\nLocked vertical profile: ${verticalProfile.profileId} (pageTone: ${verticalProfile.pageTone}, nav: ${verticalProfile.navTreatment})`
         : "";
-      const raw = await llm.chat(
+      const refined = await chatJsonWithRetry(
+        "design_refine",
         REFINE_PROMPT,
-        `Business: ${businessName}\nBrief: ${businessBrief}${profileBlock}\n\nDraft theme:\n${JSON.stringify(theme, null, 2)}\n\nQA issues:\n${qa.issues.map((i) => i.message).join("; ") || "none"}`,
-        { jsonMode: true, temperature: 0.35, tokenRole: "refine" }
+        (parseError) =>
+          `Business: ${businessName}\nBrief: ${businessBrief}${profileBlock}\n\nDraft theme:\n${JSON.stringify(theme, null, 2)}\n\nQA issues:\n${qa.issues.map((i) => i.message).join("; ") || "none"}` +
+          (parseError ? `\n\nYour previous response was not valid JSON (${parseError}). Return ONLY a single valid JSON object, no prose, no markdown fences.` : ""),
+        { temperature: 0.35, tokenRole: "refine" },
+        (raw) => SiteThemeSchema.parse(parseLlmJson(raw))
       );
-      theme = ensureReadableTheme(SiteThemeSchema.parse(parseLlmJson(raw)));
+      theme = ensureReadableTheme(refined);
       if (verticalProfile) {
         theme = enforceProfileCoherence(theme, verticalProfile, businessName);
       }

@@ -63,15 +63,27 @@ export function reorderSections(
   pageSlug: string,
   sectionIds: string[]
 ): SiteContext {
-  const page = ctx.pages[pageSlug];
-  if (!page) throw new Error(`Page not found: ${pageSlug}`);
+  const reactPage = ctx.reactPages?.[pageSlug];
+  if (reactPage) {
+    const map = new Map(reactPage.sections.map((s) => [s.id, s]));
+    reactPage.sections = sectionIds.map((id) => {
+      const section = map.get(id);
+      if (!section) throw new Error(`Section not found: ${id}`);
+      return section;
+    });
+  }
 
-  const map = new Map(page.sections.map((s) => [s.id, s]));
-  page.sections = sectionIds.map((id) => {
-    const section = map.get(id);
-    if (!section) throw new Error(`Section not found: ${id}`);
-    return section;
-  });
+  const page = ctx.pages[pageSlug];
+  if (page) {
+    const map = new Map(page.sections.map((s) => [s.id, s]));
+    page.sections = sectionIds.map((id) => {
+      const section = map.get(id);
+      if (!section) throw new Error(`Section not found: ${id}`);
+      return section;
+    });
+  }
+
+  if (!reactPage && !page) throw new Error(`Page not found: ${pageSlug}`);
   return ctx;
 }
 

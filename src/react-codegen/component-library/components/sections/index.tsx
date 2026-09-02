@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Container,
   DisplayHeading,
@@ -26,6 +27,13 @@ import {
 import { Media } from "../primitives/Media";
 import { SectionIdProvider } from "../SectionContext";
 import { useSectionMarquee } from "../MotionProvider";
+
+const QUOTE_ESTIMATE_STORAGE_KEY = "wg-quote-estimate";
+
+function fieldName(label: string, index: number): string {
+  const slug = label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  return slug || `field_${index}`;
+}
 
 type ImageField = { src?: string; alt?: string };
 type CtaField = { label: string; href?: string };
@@ -644,7 +652,52 @@ export function ContactSplit(props: {
   hours?: string;
   formFields?: Array<{ label: string; type: string; required?: boolean; options?: string[] }>;
   submitLabel?: string;
+  formProvider?: "web3forms" | "formsubmit";
+  formAccessKey?: string;
+  formEmail?: string;
+  formAction?: string;
+  redirectPath?: string;
 }) {
+  const [quoteNote, setQuoteNote] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "error">("idle");
+  const action = props.formAction ?? "#";
+  const provider = props.formProvider ?? (props.formAccessKey ? "web3forms" : "formsubmit");
+  const redirectPath = props.redirectPath ?? "/thank-you";
+  const fields = props.formFields ?? [
+    { label: "Name", type: "text", required: true },
+    { label: "Email", type: "email", required: true },
+    { label: "Message", type: "textarea" },
+  ];
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(QUOTE_ESTIMATE_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { summary?: string };
+      if (parsed.summary) setQuoteNote(parsed.summary);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setStatus("sending");
+    try {
+      const endpoint =
+        provider === "web3forms"
+          ? "https://api.web3forms.com/submit"
+          : `https://formsubmit.co/ajax/${encodeURIComponent(props.formEmail ?? props.email ?? "")}`;
+      const res = await fetch(endpoint, { method: "POST", body: data });
+      if (!res.ok) throw new Error("Form backend rejected the request");
+      window.location.href = redirectPath;
+    } catch {
+      setStatus("error");
+    }
+  }
+
   return (
     <SectionShell id={props.id} templateId="contact_split" mode="contained" className="py-section">
       <Container>
@@ -665,24 +718,41 @@ export function ContactSplit(props: {
           }
           media={
             <Reveal delay={0.1}>
-              <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-              {(props.formFields ?? [
-                { label: "Name", type: "text", required: true },
-                { label: "Email", type: "email", required: true },
-                { label: "Message", type: "textarea" },
-              ]).map((field, i) => (
+              <form
+                className="space-y-4"
+                action={action}
+                method="POST"
+                data-form-provider={provider}
+                onSubmit={onSubmit}
+              >
+              {provider === "web3forms" && props.formAccessKey ? (
+                <input type="hidden" name="access_key" value={props.formAccessKey} />
+              ) : null}
+              <input type="hidden" name="subject" value={`Website enquiry`} />
+              {quoteNote ? <input type="hidden" name="quote_estimate" value={quoteNote} /> : null}
+              {fields.map((field, i) => (
                 <label key={i} className="block">
                   <span className="text-sm font-medium">{field.label}</span>
                   {field.type === "textarea" ? (
-                    <textarea className="mt-1 w-full rounded-[var(--radius)] border border-border bg-bg px-3 py-2" rows={4} />
+                    <textarea
+                      name={fieldName(field.label, i)}
+                      className="mt-1 w-full rounded-[var(--radius)] border border-border bg-bg px-3 py-2"
+                      rows={4}
+                      required={field.required}
+                    />
                   ) : field.type === "select" ? (
-                    <select className="mt-1 w-full rounded-[var(--radius)] border border-border bg-bg px-3 py-2">
+                    <select
+                      name={fieldName(field.label, i)}
+                      className="mt-1 w-full rounded-[var(--radius)] border border-border bg-bg px-3 py-2"
+                      required={field.required}
+                    >
                       {field.options?.map((o) => (
                         <option key={o}>{o}</option>
                       ))}
                     </select>
                   ) : (
                     <input
+                      name={fieldName(field.label, i)}
                       type={field.type}
                       required={field.required}
                       className="mt-1 w-full rounded-[var(--radius)] border border-border bg-bg px-3 py-2"
@@ -690,13 +760,120 @@ export function ContactSplit(props: {
                   )}
                 </label>
               ))}
-              <button type="submit" className="rounded-[var(--radius)] bg-accent px-6 py-3 font-semibold text-white">
-                {props.submitLabel ?? "Send"}
+              {quoteNote ? <p className="text-sm text-muted">Attached estimate: {quoteNote}</p> : null}
+              <button
+                type="submit"
+                disabled={status === "sending"}
+                className="rounded-[var(--radius)] bg-accent px-6 py-3 font-semibold text-white"
+              >
+                {status === "sending" ? "Sending…" : props.submitLabel ?? "Send"}
               </button>
+              {status === "error" ? (
+                <p className="text-sm text-muted">Could not send just now. Email {props.email ?? "us"} directly.</p>
+              ) : null}
             </form>
             </Reveal>
           }
         />
+      </Container>
+    </SectionShell>
+  );
+}
+
+function parsePrice(value: string | number): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const n = Number(String(value).replace(/[^0-9.]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+}
+
+export function QuoteCalculator(props: {
+  id?: string;
+  label?: string;
+  headline: string;
+  subcopy?: string;
+  unitLabel?: "hours" | "guests" | "rooms" | "sessions";
+  minQuantity?: number;
+  maxQuantity?: number;
+  defaultQuantity?: number;
+  packages: Array<{ name: string; pricePerUnit: number | string; description?: string }>;
+  ctaLabel?: string;
+  contactHref?: string;
+}) {
+  const packages = props.packages.length > 0 ? props.packages : [{ name: "Standard", pricePerUnit: 0 }];
+  const min = props.minQuantity ?? 1;
+  const max = Math.max(min, props.maxQuantity ?? 20);
+  const [packageIndex, setPackageIndex] = useState(0);
+  const [quantity, setQuantity] = useState(
+    Math.min(max, Math.max(min, props.defaultQuantity ?? min))
+  );
+  const selected = packages[Math.min(packageIndex, packages.length - 1)]!;
+  const unit = props.unitLabel ?? "sessions";
+  const total = useMemo(
+    () => parsePrice(selected.pricePerUnit) * quantity,
+    [selected.pricePerUnit, quantity]
+  );
+  const summary = `${quantity} ${unit} · ${selected.name} · $${total.toLocaleString()}`;
+
+  function requestQuote() {
+    try {
+      sessionStorage.setItem(
+        QUOTE_ESTIMATE_STORAGE_KEY,
+        JSON.stringify({ summary, amount: total, packageName: selected.name, quantity, unit })
+      );
+    } catch {
+      /* ignore */
+    }
+    window.location.href = props.contactHref ?? "/contact";
+  }
+
+  return (
+    <SectionShell id={props.id} templateId="quote_calculator" mode="contained" className="py-section">
+      <Container>
+        <Reveal>
+          {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
+          <DisplayHeading>{props.headline}</DisplayHeading>
+          {props.subcopy ? <p className="mt-4 max-w-2xl text-muted">{props.subcopy}</p> : null}
+        </Reveal>
+        <div className="mt-10 grid gap-8 md:grid-cols-[1.2fr_0.8fr]">
+          <div className="space-y-4">
+            {packages.map((pkg, i) => (
+              <button
+                key={pkg.name}
+                type="button"
+                onClick={() => setPackageIndex(i)}
+                className={`w-full rounded-[var(--radius-lg)] border px-5 py-4 text-left ${
+                  i === packageIndex ? "border-accent bg-surface" : "border-border bg-bg"
+                }`}
+              >
+                <p className="font-medium">{pkg.name}</p>
+                {pkg.description ? <p className="mt-1 text-sm text-muted">{pkg.description}</p> : null}
+                <p className="mt-2 text-sm text-muted">${parsePrice(pkg.pricePerUnit)} / {unit.replace(/s$/, "")}</p>
+              </button>
+            ))}
+          </div>
+          <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-6">
+            <label className="block text-sm font-medium">
+              {unit}
+              <input
+                type="number"
+                min={min}
+                max={max}
+                value={quantity}
+                onChange={(e) => setQuantity(Math.min(max, Math.max(min, Number(e.target.value) || min)))}
+                className="mt-2 w-full rounded-[var(--radius)] border border-border bg-bg px-3 py-2"
+              />
+            </label>
+            <p className="mt-6 font-display text-h3">${total.toLocaleString()}</p>
+            <p className="mt-1 text-sm text-muted">{summary}</p>
+            <button
+              type="button"
+              onClick={requestQuote}
+              className="mt-6 w-full rounded-[var(--radius)] bg-accent px-6 py-3 font-semibold text-white"
+            >
+              {props.ctaLabel ?? "Request this quote"}
+            </button>
+          </div>
+        </div>
       </Container>
     </SectionShell>
   );
@@ -915,6 +1092,205 @@ export function GalleryMasonry(props: {
   );
 }
 
+export function HeroStatement(props: {
+  id?: string;
+  label?: string;
+  headline: string;
+  subcopy?: string;
+  body?: string;
+  cta?: CtaField;
+  layoutVariant?: string;
+  density?: "airy" | "normal" | "compact";
+}) {
+  const minH = props.density === "compact" ? "min-h-[60vh]" : props.density === "airy" ? "min-h-[88vh]" : "min-h-[78vh]";
+  const centered = props.layoutVariant !== "full-bleed-left";
+  return (
+    <SectionShell id={props.id} templateId="hero_statement" mode="bleed" layoutVariant={props.layoutVariant} className={`${minH} bg-bg`}>
+      <Container className="py-section">
+        <SectionBody className={`flex ${minH} flex-col justify-center ${centered ? "items-center text-center" : "items-start text-left"}`}>
+          <HeroReveal>
+            {props.label ? <MonoTag>{props.label}</MonoTag> : null}
+            <DisplayHeading as="h1" className={`mt-4 max-w-4xl ${centered ? "mx-auto" : ""}`}>
+              {props.headline}
+            </DisplayHeading>
+            {props.subcopy ? (
+              <p className={`mt-6 text-xl leading-relaxed text-muted ${centered ? "mx-auto max-w-2xl" : "max-w-xl"}`}>
+                {props.subcopy}
+              </p>
+            ) : null}
+            {props.body ? (
+              <p className={`mt-4 text-muted ${centered ? "mx-auto max-w-xl" : "max-w-xl"}`}>{props.body}</p>
+            ) : null}
+            {props.cta ? (
+              <div className="mt-10">
+                <PrimaryButton href={props.cta.href ?? "/contact"}>{props.cta.label}</PrimaryButton>
+              </div>
+            ) : null}
+          </HeroReveal>
+        </SectionBody>
+      </Container>
+    </SectionShell>
+  );
+}
+
+export function StorySplit(props: {
+  id?: string;
+  label?: string;
+  headline: string;
+  paragraphs: string[];
+  pullQuote?: string;
+  image?: ImageField;
+  cta?: CtaField;
+  mediaPosition?: "background" | "left" | "right";
+  density?: "airy" | "normal" | "compact";
+}) {
+  const mediaRight = props.mediaPosition !== "left";
+  const pad = props.density === "compact" ? "py-10" : "py-section";
+  return (
+    <SectionShell id={props.id} templateId="story_split" mode="contained" className={pad}>
+      <Container>
+        <SplitHeroLayout
+          mediaRight={mediaRight}
+          copy={
+            <Reveal>
+              {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
+              <DisplayHeading>{props.headline}</DisplayHeading>
+              <div className="mt-6 space-y-4 text-lg leading-relaxed text-muted">
+                {props.paragraphs.map((p, i) => (
+                  <p key={i}>{p}</p>
+                ))}
+              </div>
+              {props.pullQuote ? (
+                <blockquote className="mt-8 border-l-2 border-accent pl-5 font-display text-2xl text-text">
+                  {props.pullQuote}
+                </blockquote>
+              ) : null}
+              {props.cta ? (
+                <div className="mt-8">
+                  <PrimaryButton href={props.cta.href ?? "/about"}>{props.cta.label}</PrimaryButton>
+                </div>
+              ) : null}
+            </Reveal>
+          }
+          media={
+            <div className="section-media aspect-[4/5] max-h-[min(70vh,640px)]">
+              {props.image?.src ? (
+                <Media
+                  src={props.image.src}
+                  alt={props.image.alt ?? props.headline}
+                  className="h-full w-full rounded-[var(--radius-lg)] object-cover shadow-[var(--shadow)]"
+                />
+              ) : (
+                <div className="h-full min-h-[280px] w-full rounded-[var(--radius-lg)] bg-accent/10" />
+              )}
+            </div>
+          }
+        />
+      </Container>
+    </SectionShell>
+  );
+}
+
+export function OfferIndex(props: {
+  id?: string;
+  label?: string;
+  headline?: string;
+  items: Array<{ title: string; description: string }>;
+}) {
+  return (
+    <SectionShell id={props.id} templateId="offer_index" mode="contained" className="py-section">
+      <Container>
+        <Reveal>
+          {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
+          {props.headline ? <DisplayHeading className="mb-10 max-w-3xl">{props.headline}</DisplayHeading> : null}
+        </Reveal>
+        <Stagger className="divide-y divide-border">
+          {props.items.map((item, i) => (
+            <StaggerItem key={i}>
+              <div className="grid gap-4 py-8 md:grid-cols-[5rem_1fr_2fr] md:items-baseline">
+                <p className="font-mono text-sm text-muted">{String(i + 1).padStart(2, "0")}</p>
+                <h3 className="font-display text-h3 text-text">{item.title}</h3>
+                <p className="text-muted">{item.description}</p>
+              </div>
+            </StaggerItem>
+          ))}
+        </Stagger>
+      </Container>
+    </SectionShell>
+  );
+}
+
+export function HoursLocation(props: {
+  id?: string;
+  label?: string;
+  headline?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  note?: string;
+  schedule: Array<{ day: string; time: string }>;
+}) {
+  return (
+    <SectionShell id={props.id} templateId="hours_location" mode="contained" className="py-section">
+      <Container>
+        <div className="grid gap-12 md:grid-cols-2">
+          <Reveal>
+            {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
+            {props.headline ? <DisplayHeading>{props.headline}</DisplayHeading> : null}
+            <div className="mt-8 space-y-3 text-lg text-muted">
+              {props.address ? <p>{props.address}</p> : null}
+              {props.phone ? <p>{props.phone}</p> : null}
+              {props.email ? <p>{props.email}</p> : null}
+              {props.note ? <p className="mt-6 text-sm">{props.note}</p> : null}
+            </div>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <dl className="divide-y divide-border">
+              {props.schedule.map((row) => (
+                <div key={row.day} className="flex items-baseline justify-between gap-6 py-3">
+                  <dt className="font-medium">{row.day}</dt>
+                  <dd className="font-mono text-sm text-muted">{row.time}</dd>
+                </div>
+              ))}
+            </dl>
+          </Reveal>
+        </div>
+      </Container>
+    </SectionShell>
+  );
+}
+
+export function MenuBoard(props: {
+  id?: string;
+  label?: string;
+  headline?: string;
+  items: Array<{ name: string; price: string; description?: string }>;
+}) {
+  return (
+    <SectionShell id={props.id} templateId="menu_board" mode="contained" className="py-section">
+      <Container>
+        <Reveal>
+          {props.label ? <SectionLabel>{props.label}</SectionLabel> : null}
+          {props.headline ? <DisplayHeading className="mb-10">{props.headline}</DisplayHeading> : null}
+        </Reveal>
+        <Stagger className="mx-auto max-w-3xl">
+          {props.items.map((item, i) => (
+            <StaggerItem key={i}>
+              <div className="border-b border-border py-5">
+                <div className="flex items-baseline justify-between gap-6">
+                  <h3 className="font-medium">{item.name}</h3>
+                  <span className="font-mono text-sm text-muted">{item.price}</span>
+                </div>
+                {item.description ? <p className="mt-2 text-sm text-muted">{item.description}</p> : null}
+              </div>
+            </StaggerItem>
+          ))}
+        </Stagger>
+      </Container>
+    </SectionShell>
+  );
+}
+
 export {
   HeroVideo,
   TestimonialCarousel,
@@ -924,5 +1300,7 @@ export {
   StatsAnimated,
   NewsletterBand,
 } from "./immersive";
+
+export { HeroMetro } from "./MetroHero";
 
 export { HeroSpotlight, ScrollShowcase, HorizontalGallery } from "./premium";

@@ -95,8 +95,16 @@ export function useBespokeSectionCodegen(): boolean {
 }
 
 /** LLM-first page composition — one call per page picks components + writes props.
- *  Always on for the React path (legacy architect/section-fill pipeline removed). */
+ *  Off by default. Skin-fill is the production path. Opt in with PIPELINE_PAGE_CODEGEN=1. */
 export function usePageCodegenPipeline(): boolean {
+  return process.env.PIPELINE_PAGE_CODEGEN === "1";
+}
+
+/** Authored whole-site skin + one copy-fill call. Default on; disable with PIPELINE_SKIN_FILL=0
+ *  (and optionally PIPELINE_PAGE_CODEGEN=1 to restore the old composer). */
+export function useSkinFillPipeline(): boolean {
+  if (process.env.PIPELINE_SKIN_FILL === "0") return false;
+  if (usePageCodegenPipeline()) return false;
   return true;
 }
 

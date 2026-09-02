@@ -10,6 +10,9 @@ function headlineFallback(templateId: string, brief: ExpandedBrief, intent: stri
   switch (templateId) {
     case "hero_editorial":
     case "hero_split_cinematic":
+    case "hero_statement":
+    case "hero_video":
+    case "hero_metro":
       return brief.businessName;
     case "intro_statement":
       return brief.tagline || firstSentence(brief.elevatorPitch);

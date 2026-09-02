@@ -28,6 +28,12 @@ export async function resolveUniqueImage(
   height: number,
   vertical?: string
 ): Promise<string> {
+  const uploaded = registry.takeUserPhoto();
+  if (uploaded) {
+    registry.register({ url: uploaded, query, blockId, sectionId, pageSlug });
+    return uploaded;
+  }
+
   let q = query;
   for (let attempt = 0; attempt < 4; attempt++) {
     const src = await stockImageUrl(q, `${cacheKey}-${attempt}`, vertical, width, height);

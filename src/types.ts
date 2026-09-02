@@ -520,6 +520,21 @@ export const SiteContextSchema = z.object({
     })
     .optional(),
   variationSeed: z.number().optional(),
+  consumerId: z.string().optional(),
+  skinId: z.string().optional(),
+  skinName: z.string().optional(),
+  logoSrc: z.string().optional(),
+  userMediaFiles: z
+    .array(
+      z.object({
+        kind: z.enum(["logo", "photo"]),
+        filename: z.string(),
+        absolutePath: z.string(),
+        publicSrc: z.string(),
+        mime: z.string().optional(),
+      })
+    )
+    .optional(),
 });
 
 export type SiteContext = z.infer<typeof SiteContextSchema>;
@@ -572,6 +587,8 @@ export interface GenerationResult {
   jobId?: string;
   variationSeed?: number;
   verticalProfileId?: string;
+  skinId?: string;
+  skinName?: string;
   siteSlug?: string;
   publishedUrl?: string;
   outBytes?: number;

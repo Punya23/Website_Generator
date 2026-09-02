@@ -18,6 +18,7 @@ import { applyFixes, applyContentPatches, applySectionScopedFixes } from "../age
 import { runVisionQa } from "../agents/vision-agent.js";
 import { MediaRegistry } from "../media/media-registry.js";
 import { clearImageCache, activeImageProviders } from "../media/image-providers.js";
+import type { UserMediaLibrary } from "../media/user-media.js";
 import {
   assemblePageFromSections,
   initSiteContext,
@@ -66,6 +67,8 @@ export interface GenerateSiteOptions {
   enableVisionPolish?: boolean;
   variationSeed?: number;
   jobId?: string;
+  consumerId?: string;
+  userMedia?: UserMediaLibrary;
 }
 
 export interface PagePipelineResult {
@@ -249,6 +252,7 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   });
   clearImageCache();
   pipelineLog(`[pipeline] Image providers: ${activeImageProviders().join(" → ")}`);
+  pipelineLog(`[pipeline] LLM: ${llm.provider ?? "none"}`);
 
   let buildSucceeded: boolean | undefined;
   let reactProjectPath: string | undefined;
@@ -335,6 +339,15 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     proofPatterns: verticalProfile.proofPatterns,
   };
   ctx.variationSeed = variationSeed;
+  ctx.consumerId = options.consumerId;
+  if (options.userMedia) {
+    const snap = options.userMedia.snapshot();
+    ctx.logoSrc = snap.logoSrc;
+    ctx.userMediaFiles = snap.files;
+    pipelineLog(
+      `[pipeline] User media: ${options.userMedia.logo ? "logo + " : ""}${options.userMedia.photos.length} photo(s); remaining slots from ${activeImageProviders().join(" → ")}`
+    );
+  }
   setPipelineContext({
     jobId: options.jobId,
     profileId: verticalProfile.profileId,
@@ -358,6 +371,7 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     }
   }
   const registry = new MediaRegistry();
+  registry.userMedia = options.userMedia;
   const enableVision = options.enableVisionPolish !== false;
 
   if (outputMode === "react") {
@@ -641,6 +655,8 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     jobId: options.jobId,
     variationSeed: ctx.variationSeed,
     verticalProfileId: ctx.verticalProfile?.profileId,
+    skinId: ctx.skinId,
+    skinName: ctx.skinName,
     siteSlug,
     publishedUrl,
     outBytes,
@@ -693,7 +709,8 @@ export function summarizeGeneration(result: GenerationResult): string {
     `Output: ${result.outputMode ?? "html"}`,
     `Strategy: ${result.site.sitePlan.compositionStrategy}`,
     `Design: ${result.site.theme.vertical} · ${result.site.theme.mood}`,
-  ];
+    result.skinId ? `Skin: ${result.skinName ?? result.skinId} (${result.skinId})` : "",
+  ].filter(Boolean);
 
   if (result.outputMode === "react") {
     lines.push(

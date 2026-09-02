@@ -23,9 +23,11 @@ describe("mergeDesignSystem", () => {
         gradientMood: "vivid",
         accentRole: "editorial",
         colors: {
-          bg: GENERIC_THEME.colors.bg,
-          surface: GENERIC_THEME.colors.surface,
-          text: GENERIC_THEME.colors.text,
+          // Explicit dark bg (independent of GENERIC_THEME, which is a light default) so this
+          // exercises syncPageToneWithBg's dark-luminance branch regardless of that default.
+          bg: "#0a0a0a",
+          surface: "#141414",
+          text: "#fafafa",
           muted: GENERIC_THEME.colors.muted,
           accent: GENERIC_THEME.colors.accent,
           accentSoft: GENERIC_THEME.colors.accentSoft,

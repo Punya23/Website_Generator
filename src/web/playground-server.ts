@@ -2,7 +2,10 @@ import express from "express";
 import path from "path";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
+import { generateReactProject, buildReactProject } from "../react-codegen/assemble-project.js";
 import { generateSite } from "../orchestrator/orchestrator.js";
+import { planRevision } from "../agents/revise-site-agent.js";
+import { applyRevision } from "../editor/apply-revision.js";
 import { writeSiteOutput } from "../server/preview-server.js";
 import { subscribePipelineLogs } from "../util/pipeline-log.js";
 import { extractBusinessName } from "../util/extract-name.js";
@@ -35,6 +38,31 @@ import { getSiteBySlug } from "../hosting/site-repository.js";
 import { isSupabaseConfigured } from "../hosting/supabase-client.js";
 import { publishSite } from "../hosting/publish-site.js";
 import { siteSlugFromName } from "../hosting/slug.js";
+import { mountAdmin } from "../admin/http.js";
+import {
+  emptyMediaSessionDir,
+  writeDecodedUploads,
+  type DecodedUpload,
+  type UserMediaLibrary,
+} from "../media/user-media.js";
+
+const mediaSessions = new Map<string, { library: UserMediaLibrary; createdAt: number }>();
+const MEDIA_SESSION_TTL_MS = 60 * 60 * 1000;
+
+function takeMediaSession(id: unknown): UserMediaLibrary | undefined {
+  if (typeof id !== "string" || !id.trim()) return undefined;
+  const row = mediaSessions.get(id.trim());
+  if (!row) return undefined;
+  mediaSessions.delete(id.trim());
+  return row.library;
+}
+
+function pruneMediaSessions(): void {
+  const cutoff = Date.now() - MEDIA_SESSION_TTL_MS;
+  for (const [id, row] of mediaSessions) {
+    if (row.createdAt < cutoff) mediaSessions.delete(id);
+  }
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, "public");
@@ -76,12 +104,42 @@ export interface PlaygroundServerOptions {
   port?: number;
 }
 
-async function persistPreview(): Promise<void> {
+async function persistPreview(): Promise<{ previewUrl: string; previewSource: string }> {
   const session = getEditorSession();
-  if (!session?.siteContext) return;
+  if (!session?.siteContext) {
+    throw new Error("No active site session — generate a site first");
+  }
+
+  const reactPages = session.siteContext.reactPages;
+  if (session.reactProjectPath && reactPages && Object.keys(reactPages).length > 0) {
+    const projectPath = session.reactProjectPath;
+    const nextInstalled = await fs
+      .access(path.join(projectPath, "node_modules", "next"))
+      .then(() => true)
+      .catch(() => false);
+    const { outPath } = await generateReactProject(session.siteContext, reactPages, projectPath, {
+      basePath: "/preview",
+      keepInstall: nextInstalled,
+    });
+    await buildReactProject(projectPath, { skipInstall: nextInstalled });
+    session.reactStaticOutPath = outPath;
+    session.buildSucceeded = true;
+    await persistReactPreview(outPath);
+    try {
+      const previewUrl = await startReactPreviewServer(projectPath);
+      session.previewSource = "live-server";
+      return { previewUrl, previewSource: "live-server" };
+    } catch {
+      session.previewSource = "next-static";
+      return { previewUrl: "/preview/", previewSource: "next-static" };
+    }
+  }
+
   const htmlPages = rerenderFromContext(session.siteContext);
   session.htmlPages = htmlPages;
   await persistHtmlPreview(htmlPages);
+  session.previewSource = "html-fallback";
+  return { previewUrl: "/preview/", previewSource: "html-fallback" };
 }
 
 export async function startPlaygroundServer(options: PlaygroundServerOptions = {}): Promise<{
@@ -97,8 +155,31 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
   return new Promise((resolve, reject) => {
     const app = express();
     app.use(express.json({ limit: "256kb" }));
+    mountAdmin(app);
     app.use(express.static(PUBLIC_DIR));
     mountPreviewRoutes(app);
+
+    app.post("/api/media", express.json({ limit: "12mb" }), async (req, res) => {
+      pruneMediaSessions();
+      try {
+        const logo = req.body?.logo as DecodedUpload | undefined;
+        const photos = Array.isArray(req.body?.photos) ? (req.body.photos as DecodedUpload[]) : [];
+        if (!logo?.data && photos.length === 0) {
+          res.status(400).json({ error: "Upload a logo or at least one photo" });
+          return;
+        }
+        const id = `m-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        const library = await writeDecodedUploads(emptyMediaSessionDir(id), logo, photos);
+        mediaSessions.set(id, { library, createdAt: Date.now() });
+        res.json({
+          mediaId: id,
+          logo: Boolean(library.logo),
+          photos: library.photos.length,
+        });
+      } catch (err) {
+        res.status(400).json({ error: err instanceof Error ? err.message : "Could not save images" });
+      }
+    });
 
     app.get("/api/session", (_req, res) => {
       const session = getEditorSession();
@@ -110,16 +191,27 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
         businessName: session.site.businessName,
         designSystem: session.siteContext.designSystem,
         outputMode: session.outputMode ?? "html",
-        pages: Object.entries(session.siteContext.pages).map(([slug, page]) => ({
-          slug,
-          title: page.title,
-          sections: page.sections.map((s) => ({
-            id: s.id,
-            intent: s.intent,
-            archetype: s.archetype,
-            blockCount: s.blocks.length,
-          })),
-        })),
+        pages: session.siteContext.reactPages
+          ? Object.entries(session.siteContext.reactPages).map(([slug, page]) => ({
+              slug,
+              title: page.title,
+              sections: page.sections.map((s) => ({
+                id: s.id,
+                intent: s.intent,
+                archetype: s.templateId,
+                blockCount: Object.keys(s.props).length,
+              })),
+            }))
+          : Object.entries(session.siteContext.pages).map(([slug, page]) => ({
+              slug,
+              title: page.title,
+              sections: page.sections.map((s) => ({
+                id: s.id,
+                intent: s.intent,
+                archetype: s.archetype,
+                blockCount: s.blocks.length,
+              })),
+            })),
         reactPages: session.siteContext.reactPages
           ? Object.entries(session.siteContext.reactPages).map(([slug, page]) => ({
               slug,
@@ -129,6 +221,72 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
           : [],
         cmsCollections: session.siteContext.cmsCollections ?? [],
       });
+    });
+
+    app.post("/api/revise", async (req, res) => {
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
+      res.setHeader("Connection", "keep-alive");
+      res.flushHeaders?.();
+      const send = (payload: Record<string, unknown>) => {
+        if (res.writableEnded) return;
+        try {
+          res.write(`data: ${JSON.stringify(payload)}\n\n`);
+        } catch {
+          /* client disconnected */
+        }
+      };
+      try {
+        const message = String(req.body?.message ?? "").trim();
+        if (!message) {
+          send({ type: "error", message: "Revision message is required" });
+          return;
+        }
+        const session = getEditorSession();
+        if (!session) {
+          send({ type: "error", message: "Generate a site first" });
+          return;
+        }
+        send({ type: "status", message: "planning" });
+        send({ type: "log", line: `Revising: ${message}` });
+        const patch = await planRevision(session.siteContext, message);
+        send({ type: "log", line: patch.summary });
+        if (patch.kind === "refuse") {
+          send({
+            type: "done",
+            refused: true,
+            kind: patch.kind,
+            summary: patch.summary,
+            reason: patch.reason,
+            previewUrl: "/preview/",
+          });
+          return;
+        }
+        send({ type: "status", message: "applying" });
+        updateEditorSession((current) => {
+          applyRevision(current.siteContext, patch);
+          current.site.theme = current.siteContext.designSystem;
+        });
+        send({ type: "status", message: "rebuilding" });
+        send({ type: "log", line: "Rebuilding preview…" });
+        const preview = await persistPreview();
+        const pages = getEditorSession()?.siteContext.reactPages
+          ? Object.keys(getEditorSession()!.siteContext.reactPages!)
+          : getEditorSession()?.site.pages.map((page) => page.slug) ?? [];
+        send({
+          type: "done",
+          refused: false,
+          kind: patch.kind,
+          summary: patch.summary,
+          previewUrl: preview.previewUrl,
+          previewSource: preview.previewSource,
+          pages,
+        });
+      } catch (err) {
+        send({ type: "error", message: err instanceof Error ? err.message : String(err) });
+      } finally {
+        res.end();
+      }
     });
 
     app.patch("/api/theme", async (req, res) => {
@@ -154,7 +312,8 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
         }
         updateEditorSession((session) => {
           reorderSections(session.siteContext, pageSlug, sectionIds);
-          const page = session.siteContext.pages[pageSlug]!;
+          const page = session.siteContext.pages[pageSlug];
+          if (!page) return;
           const assembled = assemblePageFromSections(page.sections);
           const pageIdx = session.site.pages.findIndex((p) => p.slug === pageSlug);
           if (pageIdx >= 0) {
@@ -327,6 +486,13 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
               ? Date.now()
               : undefined;
 
+        const consumerId =
+          typeof req.body?.consumerId === "string" && req.body.consumerId.trim()
+            ? req.body.consumerId.trim()
+            : undefined;
+
+        const userMedia = takeMediaSession(req.body?.mediaId);
+
         const result = await runExclusive(jobId, () =>
           generateSite({
             businessBrief: brief,
@@ -334,6 +500,8 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
             enableVisionPolish: llm.supportsVision && process.env.SKIP_VISION !== "1",
             variationSeed,
             jobId,
+            consumerId,
+            userMedia,
           })
         );
         generationResult = result;
@@ -390,6 +558,8 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
           qaSummary: result.qaSummary,
           variationSeed: result.variationSeed,
           verticalProfileId: result.verticalProfileId,
+          skinId: result.skinId,
+          skinName: result.skinName,
           siteSlug: result.siteSlug ?? siteSlugFromName(result.site.businessName),
           publishedUrl: result.publishedUrl,
           outBytes: result.outBytes,

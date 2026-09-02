@@ -13,6 +13,9 @@ describe("ollama provider", () => {
     delete process.env.OPENROUTER_API_KEY;
     delete process.env.OPENAI_API_KEY;
     delete process.env.MISTRAL_API_KEY;
+    delete process.env.OLLAMA_API_KEY;
+    delete process.env.OLLAMA_BASE_URL;
+    delete process.env.LLM_PROVIDER;
   });
 
   it("resolves when LLM_PROVIDER=ollama", () => {

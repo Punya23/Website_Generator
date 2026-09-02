@@ -11,6 +11,8 @@ describe("LLM client provider resolution", () => {
     delete process.env.OPENAI_API_KEY;
     delete process.env.LLM_PROVIDER;
     delete process.env.OPENROUTER_API_KEY;
+    delete process.env.OLLAMA_API_KEY;
+    delete process.env.OLLAMA_BASE_URL;
   });
 
   afterEach(() => {

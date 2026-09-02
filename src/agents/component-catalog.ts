@@ -38,6 +38,7 @@ Conversion:
 - CtaBand: { id?, label?, headline, subcopy?, cta?: { label, href? } }
 - FooterCta: { id?, label?, headline, subcopy?, cta? }
 - ContactSplit: { id?, label?, headline, subcopy?, formFields?, submitLabel?, contactInfo? }
+- QuoteCalculator: { id?, headline, subcopy?, unitLabel?, packages: [{ name, pricePerUnit, description? }], ctaLabel? }
 - NewsletterBand: { id?, headline, subcopy?, placeholder?, buttonLabel? }
 - TextMarquee: { id?, phrases: string[] }
 

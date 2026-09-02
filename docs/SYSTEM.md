@@ -32,9 +32,9 @@ In-depth reference for how this repository turns a short business brief into a m
 
 ## 1. Purpose and mental model
 
-**What it is:** A multi-agent website generator. Input is a free-text business brief (and optional variation seed). Output is a multi-page marketing site with shared nav/footer, design tokens, stock/curated images, and optional publish to storage/CDN.
+**What it is:** A multi-agent website generator. Input is a free-text business brief (and optional variation seed / customer id). Output is a multi-page marketing site with shared nav/footer, design tokens, stock/curated images, a working contact form, and optional publish to storage/CDN.
 
-**What it is not:** A general-purpose website builder with a free-form page editor as the primary path. Generation is constrained to a **fixed React section component library** whose props are Zod-validated. “Creativity” means choosing section types, writing copy, picking layouts within templates, and varying seed-driven design — not inventing arbitrary DOM.
+**What it is not:** A general-purpose website builder with a free-form page editor as the primary path. Generation is constrained to a **fixed React section component library** whose props are Zod-validated. Default production quality comes from **authored whole-site skins**: the model writes copy into a frozen layout instead of inventing a new section sequence every run.
 
 **Three separations:**
 
@@ -44,7 +44,7 @@ In-depth reference for how this repository turns a short business brief into a m
 | **Composition** | Which section components appear, in what order, with what roles |
 | **Design tokens** | Colors, fonts, nav treatment, motion presets, chrome (footer/nav extras) |
 
-**Default path today (quality + React):** after brief expansion, site plan, and design system, **one LLM call per page** chooses components and fills props (`page-codegen`). Images are resolved deterministically. A Next.js 14 static export is assembled and built. Structural + vision QA may trigger targeted retries. Result lands under `output/` and can be previewed in the playground or published.
+**Default path today (quality + React):** after brief expansion, site plan, and design system, pick an unused **site skin** for this customer, then **one LLM call fills all copy slots**. Images are resolved deterministically. A Next.js 14 static export is assembled and built. Structural + vision QA may trigger targeted retries. Result lands under `output/` and can be previewed in the playground or published. Opt into the old per-page composer with `PIPELINE_PAGE_CODEGEN=1`.
 
 ---
 
@@ -177,37 +177,56 @@ Primary definitions live in `src/types.ts`.
 
 ## 6. Two React generation paths
 
-Controlled by `usePageCodegenPipeline()` in `src/llm/pipeline-speed.ts`:
+Controlled by `useSkinFillPipeline()` / `usePageCodegenPipeline()` in `src/llm/pipeline-speed.ts`:
 
-| Condition | Page codegen |
-|-----------|----------------|
-| Quality pipeline (default) | **ON** |
-| `PIPELINE_PAGE_CODEGEN=1` | Force ON |
-| `PIPELINE_PAGE_CODEGEN=0` | Force OFF (legacy) |
-| Fast pipeline | OFF unless forced ON |
+| Condition | Path |
+|-----------|------|
+| Default | **Skin fill** — authored multi-page layout, one copy LLM call |
+| `PIPELINE_PAGE_CODEGEN=1` | Old per-page composer |
+| `PIPELINE_SKIN_FILL=0` | Falls back to page codegen |
 
 ```mermaid
 flowchart LR
-  subgraph pageCodegen [Page codegen - default quality]
-    Hints[Composition hints] --> PageLLM[One LLM call per page]
-    PageLLM --> Norm[Normalize + validate]
-    Norm --> Img[enrichPropsImages]
+  subgraph skinFill [Skin fill - default]
+    Pick[Pick unused skin] --> Fill[One LLM call fills all slots]
+    Fill --> Img[enrichPropsImages]
     Img --> Minimal[Minimal chrome/motion]
   end
-  subgraph legacy [Legacy path]
-    Arch[Architect / pool blueprints] --> Directors[Chrome + motion + layout directors]
-    Directors --> Fill[Per-section copy + media]
-    Fill --> OptionalBespoke[Optional bespoke TSX]
+  subgraph pageCodegen [Page codegen - opt-in]
+    Hints[Composition hints] --> PageLLM[One LLM call per page]
+    PageLLM --> Norm[Normalize + validate]
+    Norm --> Img2[enrichPropsImages]
   end
-  pageCodegen --> Finish[Assemble + build + QA]
-  legacy --> Finish
+  skinFill --> Finish[Assemble + build + QA]
+  pageCodegen --> Finish
 ```
+
+Skins live in `src/skins/`. Picker records used ids per `consumerId` in `data/consumer-skins.json`.
+
+### Skin taxonomy and selection
+
+Selection is deterministic — no LLM call. `src/skins/taxonomy.ts` owns a two-axis taxonomy:
+
+| Axis | Values |
+|------|--------|
+| Industry | 27 slugs (`health-clinic`, `cafe-bakery`, `legal`, `architecture`, …) each mapped to one of the four legacy `SkinCategory` buckets |
+| Archetype | `portfolio`, `storefront`, `booking`, `long-form`, `saas` |
+
+`classifyTaxonomy(text)` scores exact-word keyword hits (strong 3 / medium 2 / weak 1), takes the top industry with declared order as tie-break, and derives the archetype from the copy or from the winning industry's default. Matching is deliberately exact-word rather than stem/prefix so that boilerplate in a brief cannot outvote the sentence describing the business.
+
+`pickSkinFromCatalog` classifies the brief, narrows the category pool to the best `taxonomyAffinity` tier (industry hit > runner-up > category-only), applies the vertical profile's visual-family preference within that tier, then falls back to the existing unused / adjacent-category / any ladder. Skins carry optional `industries` and `archetype` fields; untagged authored skins still rank on category alone.
+
+### Ingested skins
+
+`src/admin/` discovers permissively licensed GitHub templates and stores composition recipes only — no HTML or CSS is vendored. See [`src/admin/README.md`](../src/admin/README.md) for the query plan, rate-limit pacing, append-only candidate log, layout-cluster dedupe, and the `provenance` license ledger stamped onto every approved skin.
+
+Candidates may be rendered once in chromium (`src/admin/theme-features.ts`) to measure visual family, nav shape, footer layout, density, and palette from computed styles. A conclusive measurement replaces the ingest mapping LLM call entirely. Renders are gated by `INGEST_SCREENSHOT` and never run before a permissive license is verified; the resulting thumbnails are internal review artifacts served only to the local admin.
 
 ---
 
-## 7. Page-codegen pipeline (default quality)
+## 7. Page-codegen pipeline (opt-in)
 
-**Intent:** Fewer LLM round-trips; one strong model (page role, typically Claude Sonnet via OpenRouter) composes each page’s section list + props in one JSON response. Site architect, per-section fill, and chrome/motion/layout directors are skipped.
+**Intent:** One strong model per page chooses section components and writes props. Kept behind `PIPELINE_PAGE_CODEGEN=1` for comparison. Default production path is skin fill (`src/agents/skin-fill-agent.ts`).
 
 ### Key files
 
@@ -261,7 +280,7 @@ Salvage: after failed retries, a repaired candidate may still be accepted (with 
 
 ## 8. Legacy architect + section-fill pipeline
 
-Used when `PIPELINE_PAGE_CODEGEN=0` (or fast mode without force).
+Used only by the HTML output path (`OUTPUT_MODE=html`). The React default is skin fill.
 
 ### Structure
 
@@ -605,11 +624,22 @@ See `.env.example` for the full list. Grouped essentials:
 
 - `OUTPUT_MODE=react|html`
 - `PIPELINE_FAST`, `PIPELINE_QUALITY`
-- `PIPELINE_PAGE_CODEGEN` (force/rollback page-codegen)
+- `PIPELINE_PAGE_CODEGEN` (opt into old per-page composer)
+- `PIPELINE_SKIN_FILL=0` (disable skin fill)
+- `CONSUMER_ID` (CLI customer id for no-repeat skins)
+- `WEB3FORMS_ACCESS_KEY` (optional contact-form backend)
 - `PIPELINE_UNIFIED_SECTION`, `PIPELINE_CREATIVE_LLM`, `PIPELINE_DIRECTOR_RETRIES`, `PIPELINE_DOUBLE_REFINE`
 - `SECTION_FILL_CONCURRENCY`
 - `BESPOKE_SECTION_CODEGEN` (+ bespoke concurrency/timeouts)
 - `PIPELINE_COST_CAP_USD`, `LLM_BUDGET_*`, `PIPELINE_JSON_LOG`
+
+### Ingest
+
+- `GITHUB_TOKEN`, `ADMIN_TOKEN`, `INGEST_USE_LLM`, `OLLAMA_INGEST_MODEL`
+- `INGEST_MAX_PER_RUN`, `INGEST_CONCURRENCY`, `INGEST_MIN_CONFIDENCE`, `INGEST_AUTO_APPROVE`
+- `INGEST_SEARCH_PAGES`, `INGEST_MAX_QUERIES`, `INGEST_SEARCH_DELAY_MS`, `INGEST_DRY_QUERIES`
+- `INGEST_SIGNATURE_CAP` (approved skins allowed per layout cluster)
+- `INGEST_SCREENSHOT=needed|always|never`, `INGEST_SCREENSHOT_CONCURRENCY`, `INGEST_SCREENSHOT_TIMEOUT_MS`, `INGEST_THUMBS_DIR`
 
 ### Vision / Playwright
 

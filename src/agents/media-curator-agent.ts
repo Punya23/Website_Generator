@@ -38,6 +38,7 @@ const TEMPLATE_IMAGE_FIELDS: Record<string, ImageFieldSpec[]> = {
   services_showcase: [{ field: "image", queryFrom: "headline" }],
   scroll_showcase: [{ field: "image", queryFrom: "headline" }],
   hero_video: [{ field: "video", nested: "poster", queryFrom: "headline" } as ImageFieldSpec & { nested: string }],
+  hero_metro: [{ array: "images", imageKey: "image", queryFrom: "caption", defaultQuery: "cinematic still" }],
   before_after: [
     { field: "before", defaultQuery: "before transformation" },
     { field: "after", defaultQuery: "after transformation" },
@@ -49,6 +50,7 @@ const TEMPLATE_IMAGE_FIELDS: Record<string, ImageFieldSpec[]> = {
   team_grid: [{ array: "members", imageKey: "image", queryFrom: "name", defaultQuery: "team portrait" }],
   horizontal_gallery: [{ array: "items", imageKey: "image", queryFrom: "title", defaultQuery: "gallery" }],
   gallery_masonry: [{ array: "images", imageKey: "image", defaultQuery: "gallery" }],
+  story_split: [{ field: "image", queryFrom: "headline" }],
 };
 
 function buildMediaUserPrompt(
@@ -256,7 +258,7 @@ async function enrichTemplateImages(
     const field = obj[key];
     if (!field || typeof field !== "object") return;
     const img = field as Record<string, unknown>;
-    if (img.src && String(img.src).startsWith("https://")) return;
+    if (img.src && (String(img.src).startsWith("https://") || String(img.src).startsWith("/media/"))) return;
     const q = String(img.imageQuery ?? img.alt ?? query).trim() || query;
     const cacheKey = `${sectionId}-${key}-${ctx.variationSeed ?? 0}`;
     const src = await resolveUniqueImage(
@@ -277,7 +279,7 @@ async function enrichTemplateImages(
     img: Record<string, unknown>,
     index: number
   ): Promise<Record<string, unknown>> {
-    if (img.src && String(img.src).startsWith("https://")) return img;
+    if (img.src && (String(img.src).startsWith("https://") || String(img.src).startsWith("/media/"))) return img;
     const label = String(img.alt ?? img.caption ?? `gallery ${index + 1}`);
     const src = await resolveUniqueImage(
       `${brief} ${business} ${label}`,

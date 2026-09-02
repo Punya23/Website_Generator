@@ -19,7 +19,7 @@ Choose which React section components to use for EACH page. You control template
 
 RULES:
 - Use ONLY templateIds from the catalog below
-- Home MUST start with a hero_* template (prefer hero_spotlight, hero_editorial, or hero_split_cinematic)
+- Home MUST start with a hero_* template (prefer hero_spotlight, hero_editorial, hero_split_cinematic, hero_metro, or hero_statement)
 - Home: 5–7 sections; inner pages: 3–5 sections
 - Include at least 3 PREMIUM templates on home (marked [premium] in catalog)
 - Mix section modes: bleed + editorial + band — avoid all-contained pages

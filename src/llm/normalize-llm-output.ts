@@ -29,6 +29,15 @@ export function coerceToString(val: unknown): string | undefined {
   return undefined;
 }
 
+export function coerceToNumber(val: unknown): number | undefined {
+  if (typeof val === "number") return Number.isFinite(val) ? val : undefined;
+  if (typeof val === "string") {
+    const n = Number(val.trim().replace(/[,$%]/g, ""));
+    return Number.isFinite(n) ? n : undefined;
+  }
+  return undefined;
+}
+
 export function coerceToStringArray(val: unknown): string[] | undefined {
   if (val === null || val === undefined) return undefined;
   if (Array.isArray(val)) {
@@ -39,6 +48,35 @@ export function coerceToStringArray(val: unknown): string[] | undefined {
   }
   const single = coerceToString(val);
   return single ? [single] : undefined;
+}
+
+/** Case/plural-tolerant enum coercion for LLM output — e.g. "Session"/"sessions " → "sessions",
+ *  "Medium" → "normal" via an explicit synonym. Smaller/local models get case, pluralization,
+ *  and near-synonym enum values wrong far more often than frontier models; this recovers the
+ *  intended value instead of failing schema validation over a cosmetic mismatch. Returns
+ *  undefined (not a guess) when nothing matches, so callers can fall back to dropping an
+ *  optional field or a template-specific default. */
+export function coerceEnumValue(
+  val: unknown,
+  allowed: readonly string[],
+  synonyms?: Record<string, string>
+): string | undefined {
+  const raw = coerceToString(val);
+  if (!raw) return undefined;
+  const norm = raw.trim().toLowerCase();
+
+  for (const option of allowed) {
+    if (option.toLowerCase() === norm) return option;
+  }
+  if (synonyms?.[norm]) return synonyms[norm];
+
+  const stripped = norm.endsWith("s") ? norm.slice(0, -1) : norm;
+  for (const option of allowed) {
+    const o = option.toLowerCase();
+    const oStripped = o.endsWith("s") ? o.slice(0, -1) : o;
+    if (oStripped === stripped) return option;
+  }
+  return undefined;
 }
 
 export function padArrayToMin<T>(

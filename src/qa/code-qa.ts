@@ -32,6 +32,12 @@ async function getBrowser(): Promise<Browser> {
   return sharedBrowser;
 }
 
+/** Shared with the ingest admin so a discovery run and a QA pass reuse one chromium process
+ *  instead of launching a second. Closed by `closeQABrowser()`. */
+export async function getSharedBrowser(): Promise<Browser> {
+  return getBrowser();
+}
+
 async function withQAMutex<T>(fn: () => Promise<T>): Promise<T> {
   const run = qaMutex.then(fn, fn);
   qaMutex = run.then(

@@ -4,6 +4,7 @@ import { llm } from "../llm/client.js";
 import { normalizeExpandedBrief } from "../llm/normalize-llm-output.js";
 import { allowMocks, requireLlm } from "../util/llm-required.js";
 import { parseLlmJson } from "../llm/parse-json.js";
+import { chatJsonWithRetry } from "../llm/json-agent.js";
 import { recordFallback } from "../util/fallback-tracker.js";
 
 const EXPAND_SYSTEM = `You are a senior brand strategist. The user gives a 1-2 line business description.
@@ -77,13 +78,14 @@ export async function expandBrief(
 
   if (llm.isAvailable) {
     try {
-      const raw = await llm.chat(
+      return await chatJsonWithRetry(
+        "expand_brief",
         EXPAND_SYSTEM,
-        `User input:\n${rawBrief}\n\n${businessName ? `Preferred business name: ${businessName}` : "Extract the business name from the input."}`,
-        { jsonMode: true, temperature: 0.7, tokenRole: "expand" }
-      );
-      return ExpandedBriefSchema.parse(
-        normalizeExpandedBrief(parseLlmJson<Record<string, unknown>>(raw))
+        (parseError) =>
+          `User input:\n${rawBrief}\n\n${businessName ? `Preferred business name: ${businessName}` : "Extract the business name from the input."}` +
+          (parseError ? `\n\nYour previous response was not valid JSON (${parseError}). Return ONLY a single valid JSON object, no prose, no markdown fences.` : ""),
+        { temperature: 0.7, tokenRole: "expand" },
+        (raw) => ExpandedBriefSchema.parse(normalizeExpandedBrief(parseLlmJson<Record<string, unknown>>(raw)))
       );
     } catch (err) {
       recordFallback("expand_brief");

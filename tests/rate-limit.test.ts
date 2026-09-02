@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   groqFallbackModel,
+  isAuthError,
   isInsufficientCreditsError,
   isNonRetryableLLMError,
   isOverCapacityError,
@@ -49,11 +50,20 @@ describe("rate limit helpers", () => {
     expect(groqFallbackModel("llama-3.1-8b-instant")).toBeNull();
   });
 
-  it("does not retry billing or auth errors", () => {
+  it("does not retry billing errors", () => {
     const err402 = Object.assign(new Error("requires more credits"), { status: 402 });
     expect(isInsufficientCreditsError(err402)).toBe(true);
+    expect(isAuthError(err402)).toBe(false);
     expect(isNonRetryableLLMError(err402)).toBe(true);
     expect(isTransientLLMError(err402)).toBe(false);
+  });
+
+  it("treats 401 User not found as auth, not credits", () => {
+    const err401 = Object.assign(new Error("401 User not found."), { status: 401 });
+    expect(isAuthError(err401)).toBe(true);
+    expect(isInsufficientCreditsError(err401)).toBe(false);
+    expect(isNonRetryableLLMError(err401)).toBe(true);
+    expect(isTransientLLMError(err401)).toBe(false);
   });
 
   it("retries OpenRouter max_tokens cap 402 with affordable hint", () => {

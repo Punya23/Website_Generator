@@ -146,4 +146,114 @@ describe("repairTemplateProps", () => {
       expect(repaired.cta).toEqual({ label: "Book now", href: "/contact" });
     });
   });
+
+  it("coerces StorySplit body into paragraphs", () => {
+    const repaired = repairTemplateProps("story_split", {
+      headline: "Why this crew",
+      body: "We show up the same day.",
+    });
+    expect(repaired.paragraphs).toEqual(["We show up the same day."]);
+    expect(repaired.body).toBeUndefined();
+  });
+
+  it("pads OfferIndex items to the schema minimum", () => {
+    const repaired = repairTemplateProps("offer_index", {
+      headline: "What we fix",
+      items: [{ title: "Leaks" }],
+    });
+    expect((repaired.items as unknown[]).length).toBe(3);
+  });
+
+  it("pads HoursLocation schedule to three days", () => {
+    const repaired = repairTemplateProps("hours_location", {
+      headline: "Visit",
+      schedule: [{ day: "Monday", time: "9–5" }],
+    });
+    expect((repaired.schedule as unknown[]).length).toBe(3);
+  });
+
+  describe("text_marquee speed", () => {
+    it("coerces a near-miss synonym to the closest allowed enum value", () => {
+      const repaired = repairTemplateProps("text_marquee", {
+        phrases: ["Quality", "Craft"],
+        speed: "medium",
+      });
+      expect(repaired.speed).toBe("normal");
+      expect(validateTemplateProps("text_marquee", repaired).speed).toBe("normal");
+    });
+
+    it("is case-insensitive", () => {
+      const repaired = repairTemplateProps("text_marquee", {
+        phrases: ["Quality", "Craft"],
+        speed: "Fast",
+      });
+      expect(repaired.speed).toBe("fast");
+    });
+
+    it("drops an unrecognized speed instead of failing validation", () => {
+      const repaired = repairTemplateProps("text_marquee", {
+        phrases: ["Quality", "Craft"],
+        speed: "blazing",
+      });
+      expect(repaired.speed).toBeUndefined();
+      expect(() => validateTemplateProps("text_marquee", repaired)).not.toThrow();
+    });
+  });
+
+  describe("quote_calculator", () => {
+    it("coerces a near-miss unitLabel (case + plural)", () => {
+      const repaired = repairTemplateProps("quote_calculator", {
+        headline: "Estimate",
+        unitLabel: "Session",
+        packages: [{ name: "Basic", pricePerUnit: 100 }],
+      });
+      expect(repaired.unitLabel).toBe("sessions");
+      expect(validateTemplateProps("quote_calculator", repaired).unitLabel).toBe("sessions");
+    });
+
+    it("coerces numeric-string quantity fields to numbers", () => {
+      const repaired = repairTemplateProps("quote_calculator", {
+        headline: "Estimate",
+        minQuantity: "five",
+        maxQuantity: "20",
+        defaultQuantity: "3",
+        packages: [{ name: "Basic", pricePerUnit: 100 }],
+      });
+      expect(repaired.minQuantity).toBeUndefined();
+      expect(repaired.maxQuantity).toBe(20);
+      expect(repaired.defaultQuantity).toBe(3);
+      expect(() => validateTemplateProps("quote_calculator", repaired)).not.toThrow();
+    });
+  });
+
+  describe("contact_split formFields", () => {
+    it("synthesizes a missing label and coerces an unsupported type to the closest fallback", () => {
+      const repaired = repairTemplateProps("contact_split", {
+        headline: "Get in touch",
+        formFields: [
+          { type: "date" },
+          { label: "Email", type: "email" },
+        ],
+      });
+      const fields = repaired.formFields as Record<string, unknown>[];
+      expect(fields[0]!.type).toBe("text");
+      expect(fields[0]!.label).toBeTruthy();
+      expect(fields[1]).toEqual({ label: "Email", type: "email" });
+      expect(() => validateTemplateProps("contact_split", repaired)).not.toThrow();
+    });
+
+    it("maps common type synonyms (phone, message, dropdown)", () => {
+      const repaired = repairTemplateProps("contact_split", {
+        headline: "Get in touch",
+        formFields: [
+          { label: "Phone", type: "phone" },
+          { label: "Notes", type: "message" },
+          { label: "Topic", type: "dropdown", options: ["A", "B"] },
+        ],
+      });
+      const fields = repaired.formFields as Record<string, unknown>[];
+      expect(fields.map((f) => f.type)).toEqual(["tel", "textarea", "select"]);
+      expect(() => validateTemplateProps("contact_split", repaired)).not.toThrow();
+    });
+  });
 });

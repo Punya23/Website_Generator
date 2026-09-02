@@ -23,6 +23,7 @@ const HERO_WEIGHT: Record<string, number> = {
   HeroEditorial: 3,
   HeroSplitCinematic: 3,
   HeroVideo: 2,
+  HeroMetro: 2,
   HeroSpotlight: 1,
 };
 

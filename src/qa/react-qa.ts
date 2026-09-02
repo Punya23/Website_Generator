@@ -19,6 +19,7 @@ const MOTION_HEAVY_TEMPLATES = new Set([
   "text_marquee",
   "stats_marquee",
   "hero_video",
+  "hero_metro",
 ]);
 
 const PLACEHOLDER_COPY = [

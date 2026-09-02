@@ -60,6 +60,16 @@ export function openRouterMaxTokensCap(): number {
   return Number.isFinite(n) && n > 0 ? n : 2048;
 }
 
+/** Reasoning models (gpt-oss, deepseek-r1-style, etc. — common on Ollama Cloud) emit a hidden
+ *  "thinking" pass in a separate `reasoning` field that still counts against completion tokens.
+ *  Without headroom for it, the visible JSON content gets cut off mid-object (finish_reason
+ *  "length" with a truncated `content`) well before the role's normal budget is "used up" by
+ *  visible output. Add a flat buffer on top of the role budget for this provider only. */
+export function ollamaReasoningBufferTokens(): number {
+  const n = Number.parseInt(process.env.OLLAMA_REASONING_BUFFER_TOKENS ?? "2048", 10);
+  return Number.isFinite(n) && n >= 0 ? n : 2048;
+}
+
 export function clampRequestMaxTokens(requested: number, provider: string | null): number {
   if (provider !== "openrouter") return requested;
   return Math.min(requested, openRouterMaxTokensCap());
@@ -76,6 +86,9 @@ export function resolveRequestMaxTokens(
     // Full-site blueprint / director JSON needs more headroom than section copy
     const cap = Math.max(openRouterMaxTokensCap(), 3072);
     return Math.min(base, cap);
+  }
+  if (provider === "ollama") {
+    return base + ollamaReasoningBufferTokens();
   }
   return clampRequestMaxTokens(base, provider);
 }

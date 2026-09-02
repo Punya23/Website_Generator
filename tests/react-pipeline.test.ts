@@ -82,7 +82,7 @@ describe("react pipeline (mock)", () => {
     const composed = composePageSections(home, instances);
     expect(composed.length).toBe(home.sections.length);
     expect(composed.every((s) => s.props && typeof s.props === "object")).toBe(true);
-    expect(composed.some((s) => ["hero_editorial", "hero_split_cinematic", "hero_video", "hero_spotlight"].includes(s.templateId))).toBe(true);
+    expect(composed.some((s) => ["hero_editorial", "hero_split_cinematic", "hero_video", "hero_metro", "hero_spotlight", "hero_statement"].includes(s.templateId))).toBe(true);
     expect(composed.length).toBeGreaterThanOrEqual(3);
   });
 });

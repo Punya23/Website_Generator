@@ -22,6 +22,7 @@ import {
   visionQaEnabled,
   visionQaHomeOnly,
   maxVisionRetries,
+  useSkinFillPipeline,
 } from "../llm/pipeline-speed.js";
 import { mapPool } from "../util/async-pool.js";
 import { attachMotionPlan } from "../agents/contracts/index.js";
@@ -47,6 +48,8 @@ import {
 } from "../design/design-language.js";
 import { minimalChromeSpec, minimalMotionPlan } from "../agents/minimal-site-chrome.js";
 import { acceptGeneratedProject } from "../react-codegen/accept-generated.js";
+import { fillSiteSkin } from "../agents/skin-fill-agent.js";
+import { alignSitePlanToSkin, pickSiteSkin } from "../skins/picker.js";
 
 export function getOutputMode(): "react" | "html" {
   const mode = (process.env.OUTPUT_MODE ?? "react").toLowerCase();
@@ -293,13 +296,17 @@ const MEDIA_POSITION_VALUES = new Set(["background", "left", "right"]);
 /** Mirror each section's own layoutVariant/density/mediaPosition props into a full SiteLayoutPlan —
  *  see the call site for why an empty plan silently broke both layout QA and the vision-retry
  *  layout-fix agent. Unrecognized/omitted values fall back to the same "default" the components
- *  themselves fall back to, so this is a lossless snapshot of what actually renders. */
-function buildLayoutPlanFromInstances(
-  pageRows: Array<{ instances: SectionInstance[] }>
-): SiteLayoutPlan {
+ *  themselves fall back to, so this is a lossless snapshot of what actually renders.
+ *
+ *  Reads from `props`, not `instance.layoutSpec`: page codegen writes layoutVariant/density/
+ *  mediaPosition straight into the section's props and never populates `layoutSpec` at all, so a
+ *  version of this that read `layoutSpec` (skin-fill's own field, merged into props anyway —
+ *  see `applyFrozenLayout`) reproduced the exact "always empty" bug for the page-codegen path
+ *  while only accidentally working for skin-fill. Reading props is correct for both. */
+function buildLayoutPlanFromInstances(pages: Record<string, SectionInstance[]>): SiteLayoutPlan {
   const sections: Record<string, SectionLayoutSpec> = {};
-  for (const row of pageRows) {
-    for (const inst of row.instances) {
+  for (const list of Object.values(pages)) {
+    for (const inst of list) {
       const props = inst.props ?? {};
       const variantCandidate = LayoutVariantSchema.safeParse(props.layoutVariant);
       const density = DENSITY_VALUES.has(String(props.density))
@@ -318,19 +325,139 @@ function buildLayoutPlanFromInstances(
   return { sections };
 }
 
-/**
- * Single production React path: page-codegen only.
- * Design council → visual contract → composition → typed acceptance → chrome/motion → assemble → accept.
- */
-export async function runReactPipeline(
+function assembleReactPages(
+  ctx: SiteContext,
+  pageRows: Array<{ blueprint: PageBlueprint; instances: SectionInstance[] }>,
+  visualContract: ReturnType<typeof resolveSiteVisualContract>
+): Record<string, ReactPage> {
+  const reactPages: Record<string, ReactPage> = {};
+  for (const pagePlan of ctx.sitePlan.pages) {
+    const row = pageRows.find((r) => r.blueprint.slug === pagePlan.slug);
+    if (!row) continue;
+    const stamped: SectionInstance[] = row.instances.map((s) => ({
+      ...s,
+      props: { ...s.props },
+    }));
+    applyPageRhythm(stamped, visualContract);
+    const composed = attachMotionPlan(
+      composePageSections(row.blueprint, stamped),
+      ctx.motionPlan!
+    );
+    reactPages[pagePlan.slug] = {
+      slug: pagePlan.slug,
+      title: pagePlan.title,
+      navLabel: pagePlan.navLabel,
+      sections: composed,
+    };
+    ctx.reactPages = { ...ctx.reactPages, [pagePlan.slug]: reactPages[pagePlan.slug]! };
+  }
+  return reactPages;
+}
+
+async function lookAndContract(ctx: SiteContext) {
+  const lookProfile = await proposeSiteLookProfile(ctx);
+  applyDesignBriefToTheme(ctx.designSystem, lookProfile);
+  const siteFx = resolveSiteFxTreatment(ctx, lookProfile);
+  const visualContract = resolveSiteVisualContract(ctx.designSystem, siteFx);
+  ctx.siteFx = siteFx;
+  pipelineLog(`[pipeline] Site FX treatment: ${siteFx}`);
+  pipelineLog(
+    `[pipeline] Visual contract: fx=${visualContract.visualFx} surface=${visualContract.defaultSurface} panel=${visualContract.defaultPanel}`
+  );
+  return { lookProfile, visualContract };
+}
+
+function directorQaFrom(
+  ctx: SiteContext,
+  blueprints: PageBlueprint[],
+  instances: Record<string, SectionInstance[]>,
+  skinChrome?: { footerLayout?: "two-column" | "centered" | "cta-heavy"; grainOverlay?: boolean }
+) {
+  const blueprintQa = runBlueprintQA(blueprints, ctx);
+  if (blueprintQa.issues.length > 0) {
+    pipelineLog(
+      `[pipeline] Blueprint QA notes: ${blueprintQa.issues.map((i) => i.message).join("; ")}`
+    );
+  }
+  const chromeSpec0 = minimalChromeSpec(ctx, blueprints);
+  if (skinChrome?.footerLayout) chromeSpec0.footer.layout = skinChrome.footerLayout;
+  if (skinChrome?.grainOverlay !== undefined) {
+    chromeSpec0.immersive = {
+      ...chromeSpec0.immersive,
+      grainOverlay: skinChrome.grainOverlay,
+    };
+  }
+  const motionPlan = minimalMotionPlan(ctx, blueprints, chromeSpec0);
+  const layoutPlan = buildLayoutPlanFromInstances(instances);
+  ctx.chromeSpec = chromeSpec0;
+  ctx.motionPlan = motionPlan;
+  ctx.layoutPlan = layoutPlan;
+  return {
+    blueprintQa,
+    chromeQa: runChromeQA(chromeSpec0),
+    motionQa: runMotionQA(motionPlan, blueprints),
+    layoutQa: runLayoutQA(layoutPlan, blueprints),
+  };
+}
+
+async function runSkinFillReactPipeline(
   ctx: SiteContext,
   registry: MediaRegistry,
   outputDir: string,
-  options: { previewBasePath?: string } = {}
+  options: { previewBasePath?: string }
+): Promise<ReactPipelineResult> {
+  pipelineLog(
+    `[pipeline] Skin fill (default React path)${isQualityPipeline() ? " · quality" : isFastPipeline() ? " · fast" : ""}`
+  );
+  const { lookProfile, visualContract } = await lookAndContract(ctx);
+  void lookProfile;
+
+  const skin = await timedStep("site", "pick skin", () =>
+    pickSiteSkin({
+      brief: ctx.expandedBrief,
+      consumerId: ctx.consumerId,
+      variationSeed: ctx.variationSeed,
+      profileId: ctx.verticalProfile?.profileId,
+    })
+  );
+  ctx.skinId = skin.id;
+  ctx.skinName = skin.name;
+  ctx.sitePlan = alignSitePlanToSkin(ctx.sitePlan, skin);
+  ctx.designSystem = {
+    ...ctx.designSystem,
+    navShape: skin.chrome.navShape,
+    motionPreset: skin.motionPreset,
+  };
+  pipelineLog(
+    `[pipeline] Skin ${skin.id} (${skin.name}) · ${skin.categories.join(", ")} · ${skin.visualFamily}`
+  );
+
+  const filled = await timedStep("site", "skin fill", () => fillSiteSkin(ctx, skin, registry));
+  for (const [slug, list] of Object.entries(filled.instances)) {
+    pipelineLog(`[pipeline] ${slug}: ${list.map((s) => s.templateId).join("→")}`);
+  }
+
+  const directorQa = directorQaFrom(ctx, filled.blueprints, filled.instances, {
+    footerLayout: skin.chrome.footerLayout,
+    grainOverlay: skin.chrome.grainOverlay,
+  });
+  const pageRows = ctx.sitePlan.pages.map((page) => ({
+    blueprint: filled.blueprints.find((bp) => bp.slug === page.slug)!,
+    instances: filled.instances[page.slug] ?? [],
+  }));
+  const reactPages = assembleReactPages(ctx, pageRows, visualContract);
+  return finishReactPipeline(ctx, reactPages, filled.blueprints, registry, outputDir, options, directorQa);
+}
+
+async function runPageCodegenReactPipeline(
+  ctx: SiteContext,
+  registry: MediaRegistry,
+  outputDir: string,
+  options: { previewBasePath?: string }
 ): Promise<ReactPipelineResult> {
   const pages = ctx.sitePlan.pages;
   pipelineLog(
-    `[pipeline] Page codegen (sole React path)${isQualityPipeline() ? " · quality" : isFastPipeline() ? " · fast" : ""}`
+    `[pipeline] Page codegen (opt-in)${isQualityPipeline() ? " · quality" : isFastPipeline() ? " · fast" : ""}`
   );
 
   type PageRow = {
@@ -338,16 +465,8 @@ export async function runReactPipeline(
     instances: SectionInstance[];
   };
 
-  const lookProfile = await proposeSiteLookProfile(ctx);
-  // Commit the art-director's decisions to the theme BEFORE tokens/contract/motion are derived, so
-  // type scale, spacing and motion all follow the brief rather than heuristic defaults.
-  applyDesignBriefToTheme(ctx.designSystem, lookProfile);
-  const siteFx = resolveSiteFxTreatment(ctx, lookProfile);
-  const visualContract = resolveSiteVisualContract(ctx.designSystem, siteFx);
-  ctx.siteFx = siteFx;
-
+  const { lookProfile, visualContract } = await lookAndContract(ctx);
   const siteComposition = buildSiteCompositionPlan(ctx, lookProfile);
-  pipelineLog(`[pipeline] Site FX treatment: ${siteFx}`);
   pipelineLog(
     `[pipeline] Site composition: ${Object.entries(siteComposition.pages)
       .map(([slug, h]) => `${slug}→${h.heroComponent}`)
@@ -370,68 +489,25 @@ export async function runReactPipeline(
   );
 
   const blueprints = pageRows.map((r) => r.blueprint);
+  const instancesBySlug: Record<string, SectionInstance[]> = {};
+  for (const row of pageRows) instancesBySlug[row.blueprint.slug] = row.instances;
+  const directorQa = directorQaFrom(ctx, blueprints, instancesBySlug);
+  const reactPages = assembleReactPages(ctx, pageRows, visualContract);
+  return finishReactPipeline(ctx, reactPages, blueprints, registry, outputDir, options, directorQa);
+}
 
-  const blueprintQa = runBlueprintQA(blueprints, ctx);
-  // Log on ANY issue, not just hard failures — soft notes (e.g. PAGE_STRUCTURE_TOO_SIMILAR) were
-  // silently swallowed here because `passed` only reflects hard issues, hiding the exact signal
-  // that would have caught the "every page looks the same" regression during a real run.
-  if (blueprintQa.issues.length > 0) {
-    pipelineLog(
-      `[pipeline] Blueprint QA notes: ${blueprintQa.issues.map((i) => i.message).join("; ")}`
-    );
+/**
+ * Default production React path: authored site skin + one copy-fill call.
+ * Opt into the old per-page composer with PIPELINE_PAGE_CODEGEN=1.
+ */
+export async function runReactPipeline(
+  ctx: SiteContext,
+  registry: MediaRegistry,
+  outputDir: string,
+  options: { previewBasePath?: string } = {}
+): Promise<ReactPipelineResult> {
+  if (useSkinFillPipeline()) {
+    return runSkinFillReactPipeline(ctx, registry, outputDir, options);
   }
-
-  const chromeSpec0 = minimalChromeSpec(ctx, blueprints);
-  const motionPlan = minimalMotionPlan(ctx, blueprints, chromeSpec0);
-  // Seed the layout plan from what page codegen actually wrote into each section's own
-  // layoutVariant/density/mediaPosition props, instead of leaving it `{}`. An always-empty plan
-  // meant runLayoutQA compared every section against nothing and hard-failed 100% of sections on
-  // every single run (MISSING_LAYOUT_SPEC × N) — pure noise, never a real signal. It also broke the
-  // vision-retry layout-fix agent silently: applyLayoutFixes() reads `plan.sections[id] ?? {variant:
-  // "default"}` as the section's "current" state, so with an empty plan every fix computed its
-  // before/after from a fake "default" starting point regardless of the LLM's real choice, AND
-  // mergeLayoutIntoProps() spread that fabricated spec's undefined mediaPosition back over the
-  // section's real props — silently clearing a deliberate left/right image position on any
-  // unrelated layout fix (e.g. a density tweak). Seeding real values fixes QA signal + fix accuracy.
-  const layoutPlan = buildLayoutPlanFromInstances(pageRows);
-  ctx.chromeSpec = chromeSpec0;
-  ctx.motionPlan = motionPlan;
-  ctx.layoutPlan = layoutPlan;
-
-  const chromeQa = runChromeQA(chromeSpec0);
-  const motionQa = runMotionQA(motionPlan, blueprints);
-  const layoutQa = runLayoutQA(layoutPlan, blueprints);
-  pipelineLog(
-    `[pipeline] Visual contract: fx=${visualContract.visualFx} surface=${visualContract.defaultSurface} panel=${visualContract.defaultPanel}`
-  );
-
-  const reactPages: Record<string, ReactPage> = {};
-  for (const pagePlan of pages) {
-    const row = pageRows.find((r) => r.blueprint.slug === pagePlan.slug)!;
-    // Clone props, then run the sequence-aware rhythm pass so surfaces/bandFills alternate down the
-    // page instead of every section sharing one identical treatment (the "monotonous rhythm" fix).
-    const stamped: SectionInstance[] = row.instances.map((s) => ({
-      ...s,
-      props: { ...s.props },
-    }));
-    applyPageRhythm(stamped, visualContract);
-    const composed = attachMotionPlan(
-      composePageSections(row.blueprint, stamped),
-      ctx.motionPlan!
-    );
-    reactPages[pagePlan.slug] = {
-      slug: pagePlan.slug,
-      title: pagePlan.title,
-      navLabel: pagePlan.navLabel,
-      sections: composed,
-    };
-    ctx.reactPages = { ...ctx.reactPages, [pagePlan.slug]: reactPages[pagePlan.slug]! };
-  }
-
-  return finishReactPipeline(ctx, reactPages, blueprints, registry, outputDir, options, {
-    blueprintQa,
-    chromeQa,
-    motionQa,
-    layoutQa,
-  });
+  return runPageCodegenReactPipeline(ctx, registry, outputDir, options);
 }

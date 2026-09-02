@@ -156,6 +156,16 @@ export function normalizePageCodegenProps(
     }
   }
 
+  if (templateId === "hero_metro") {
+    delete out.lockPage;
+    if (out.video !== undefined && (!out.video || typeof out.video !== "object" || Array.isArray(out.video))) {
+      delete out.video;
+    }
+    if (out.images !== undefined && !Array.isArray(out.images)) {
+      delete out.images;
+    }
+  }
+
   if (templateId === "contact_split" && out.formFields !== undefined && !Array.isArray(out.formFields)) {
     delete out.formFields;
   }

@@ -8,6 +8,7 @@ import { normalizePageCodegenProps } from "../agents/page-codegen-normalize.js";
 import { normalizeMotionPlan, resolveMotionPreset } from "../motion/presets.js";
 import type { MotionPreset } from "../types.js";
 import { generateFontLayout } from "./font-codegen.js";
+import { luminance } from "../theme/contrast.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const COMPONENT_LIBRARY = path.join(__dirname, "component-library");
@@ -204,9 +205,18 @@ export function themeCssVars(theme: SiteTheme): string {
     theme.sectionGapMode === "tight" ? "3.5rem" : theme.sectionGapMode === "airy" ? "7rem" : "5rem";
   const navBlur =
     theme.navTreatment === "glass-dark" || theme.navTreatment === "glass-light" ? "14px" : "0px";
+  // Adaptive top scrim behind transparent navs: a backdrop in the OPPOSITE luminance of the nav
+  // text so the nav is legible over any hero image (light text → dark scrim, dark text → light
+  // scrim). Fixes the "white nav text invisible over a light hero photo" vision flag universally.
+  const navTextLight = luminance(c.navText ?? c.text) > 0.5;
+  const navScrim = navTextLight ? "rgba(0, 0, 0, 0.38)" : "rgba(255, 255, 255, 0.5)";
   return `:root {
   --color-bg: ${c.bg};
   --color-surface: ${c.surface};
+  /* Untainted aliases the [data-page-tone] rules in globals.css mix from — see the comment there
+     for why the tone rules must never reference --color-bg/--color-surface directly. */
+  --color-bg-base: ${c.bg};
+  --color-surface-base: ${c.surface};
   --color-text: ${c.text};
   --color-muted: ${c.muted};
   --color-accent: ${c.accent};
@@ -219,6 +229,7 @@ export function themeCssVars(theme: SiteTheme): string {
   --color-gradient-from: ${c.gradientFrom};
   --color-gradient-to: ${c.gradientTo};
   --nav-blur: ${navBlur};
+  --nav-scrim-color: ${navScrim};
   --max-content: ${theme.layout?.maxWidth ?? "1200px"};
   --section-gap: ${gap};
   --radius: ${radiusValue(theme.radiusScale)};

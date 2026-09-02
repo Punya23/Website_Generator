@@ -1,4 +1,13 @@
-import type { PageBlueprint, QAResult, ReactPage, SectionInstance, SiteContext } from "../types.js";
+import type {
+  PageBlueprint,
+  QAResult,
+  ReactPage,
+  SectionInstance,
+  SectionLayoutSpec,
+  SiteContext,
+  SiteLayoutPlan,
+} from "../types.js";
+import { LayoutVariantSchema } from "../types.js";
 import { composePageSections } from "../agents/page-composer-agent.js";
 import { generateReactProject, buildReactProject } from "../react-codegen/assemble-project.js";
 import { startReactPreviewServer, stopReactPreviewServer } from "../react-codegen/react-preview-server.js";
@@ -41,7 +50,6 @@ import { minimalChromeSpec, minimalMotionPlan } from "../agents/minimal-site-chr
 import { acceptGeneratedProject } from "../react-codegen/accept-generated.js";
 import { fillSiteSkin } from "../agents/skin-fill-agent.js";
 import { alignSitePlanToSkin, pickSiteSkin } from "../skins/picker.js";
-import type { SiteLayoutPlan } from "../types.js";
 
 export function getOutputMode(): "react" | "html" {
   const mode = (process.env.OUTPUT_MODE ?? "react").toLowerCase();
@@ -282,14 +290,35 @@ async function finishReactPipeline(
   };
 }
 
-function layoutPlanFromInstances(pages: Record<string, SectionInstance[]>): SiteLayoutPlan {
-  const sections: SiteLayoutPlan["sections"] = {};
+const DENSITY_VALUES = new Set(["airy", "normal", "compact"]);
+const MEDIA_POSITION_VALUES = new Set(["background", "left", "right"]);
+
+/** Mirror each section's own layoutVariant/density/mediaPosition props into a full SiteLayoutPlan —
+ *  see the call site for why an empty plan silently broke both layout QA and the vision-retry
+ *  layout-fix agent. Unrecognized/omitted values fall back to the same "default" the components
+ *  themselves fall back to, so this is a lossless snapshot of what actually renders.
+ *
+ *  Reads from `props`, not `instance.layoutSpec`: page codegen writes layoutVariant/density/
+ *  mediaPosition straight into the section's props and never populates `layoutSpec` at all, so a
+ *  version of this that read `layoutSpec` (skin-fill's own field, merged into props anyway —
+ *  see `applyFrozenLayout`) reproduced the exact "always empty" bug for the page-codegen path
+ *  while only accidentally working for skin-fill. Reading props is correct for both. */
+function buildLayoutPlanFromInstances(pages: Record<string, SectionInstance[]>): SiteLayoutPlan {
+  const sections: Record<string, SectionLayoutSpec> = {};
   for (const list of Object.values(pages)) {
-    for (const section of list) {
-      sections[section.id] = {
-        variant: section.layoutSpec?.variant ?? "default",
-        density: section.layoutSpec?.density,
-        mediaPosition: section.layoutSpec?.mediaPosition,
+    for (const inst of list) {
+      const props = inst.props ?? {};
+      const variantCandidate = LayoutVariantSchema.safeParse(props.layoutVariant);
+      const density = DENSITY_VALUES.has(String(props.density))
+        ? (props.density as SectionLayoutSpec["density"])
+        : undefined;
+      const mediaPosition = MEDIA_POSITION_VALUES.has(String(props.mediaPosition))
+        ? (props.mediaPosition as SectionLayoutSpec["mediaPosition"])
+        : undefined;
+      sections[inst.id] = {
+        variant: variantCandidate.success ? variantCandidate.data : "default",
+        density,
+        mediaPosition,
       };
     }
   }
@@ -359,7 +388,7 @@ function directorQaFrom(
     };
   }
   const motionPlan = minimalMotionPlan(ctx, blueprints, chromeSpec0);
-  const layoutPlan = layoutPlanFromInstances(instances);
+  const layoutPlan = buildLayoutPlanFromInstances(instances);
   ctx.chromeSpec = chromeSpec0;
   ctx.motionPlan = motionPlan;
   ctx.layoutPlan = layoutPlan;

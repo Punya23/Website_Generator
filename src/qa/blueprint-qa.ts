@@ -209,6 +209,42 @@ export function runBlueprintQA(
     }
   }
 
+  // Cross-page sameness check: core pages (About/Services/Contact) that resolve to a near-identical
+  // template sequence are the "every page looks the same" complaint made concrete — flag it even
+  // though composition hints try to prevent it upstream, so a regression is visible in QA output.
+  const coreBlueprints = corePagesOnly(blueprints);
+  for (let i = 0; i < coreBlueprints.length; i++) {
+    for (let j = i + 1; j < coreBlueprints.length; j++) {
+      const a = coreBlueprints[i]!;
+      const b = coreBlueprints[j]!;
+      const overlap = shareRatio(
+        a.sections.map((s) => s.templateId),
+        b.sections.map((s) => s.templateId)
+      );
+      if (overlap >= 0.7) {
+        issues.push({
+          severity: "soft",
+          code: "PAGE_STRUCTURE_TOO_SIMILAR",
+          message: `${a.slug} and ${b.slug} share ${Math.round(overlap * 100)}% of their section sequence — pages should look distinct`,
+        });
+      }
+    }
+  }
+
   const hard = issues.filter((i) => i.severity === "hard");
   return { passed: hard.length === 0, issues };
+}
+
+const CORE_COMPARE_SLUGS = new Set(["home", "about", "services", "contact"]);
+
+function corePagesOnly(blueprints: PageBlueprint[]): PageBlueprint[] {
+  return blueprints.filter((bp) => CORE_COMPARE_SLUGS.has(bp.slug));
+}
+
+/** Fraction of the shorter sequence's template ids also present (order-insensitive) in the other. */
+function shareRatio(a: string[], b: string[]): number {
+  if (a.length === 0 || b.length === 0) return 0;
+  const setB = new Set(b);
+  const shared = a.filter((id) => setB.has(id)).length;
+  return shared / Math.min(a.length, b.length);
 }

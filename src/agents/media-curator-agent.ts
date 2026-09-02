@@ -300,10 +300,17 @@ async function enrichTemplateImages(
     if ("field" in spec && spec.field) {
       const nested = (spec as ImageFieldSpec & { nested?: string }).nested;
       if (nested) {
-        if (!out[spec.field]) {
-          out[spec.field] = { [nested]: { imageQuery: business, alt: business } };
+        // Seed-check must look at the NESTED key (parent[nested], e.g. video.poster) that
+        // enrichImageField actually reads/writes — not the outer field (video) itself. Page codegen
+        // normalization leaves `video: {}` (present but empty, not undefined) when the LLM omits a
+        // video, so `!out[spec.field]` was always false and this seed step silently never ran;
+        // enrichImageField then found `video.poster` undefined and bailed before ever resolving an
+        // image. Confirmed via a live generated site: every hero_video section shipped `video: {}`
+        // with no poster and no src — a blank hero background on 100% of runs that pick this hero.
+        const parent = { ...(out[spec.field] as Record<string, unknown> | undefined) };
+        if (!parent[nested]) {
+          parent[nested] = { imageQuery: business, alt: business };
         }
-        const parent = { ...(out[spec.field] as Record<string, unknown>) };
         await enrichImageField(
           parent,
           nested,

@@ -107,33 +107,39 @@ function HeroAtmosphere({
   fx: VisualFx;
   children: ReactNode;
 }) {
-  if (fx === "spotlight") {
-    return (
-      <NoiseGradientBg strong mesh grain className="absolute inset-0">
-        <CursorSpotlight className="w-full" intensity={0.42}>
-          {children}
-        </CursorSpotlight>
-      </NoiseGradientBg>
+  // The mesh/grain/solid backdrop is purely decorative — it must be its own absolutely-positioned
+  // layer with NO children, sized against the parent section's `relative` box. Previously every
+  // branch here wrapped `children` INSIDE the `absolute inset-0` element, which takes the real
+  // content out of normal flow entirely: an absolutely positioned subtree contributes zero height
+  // to its parent. Every HeroSpotlight section (any fx, any layoutVariant) rendered as a 0px-tall
+  // box regardless of how much real headline/image content it had — confirmed via direct DOM
+  // measurement (`getBoundingClientRect().height === 0`) on a live generated site. Real content
+  // now renders as an in-flow sibling so the section gets real height again.
+  const backdrop =
+    fx === "spotlight" ? (
+      <NoiseGradientBg strong mesh grain className="absolute inset-0" />
+    ) : fx === "glass" ? (
+      <NoiseGradientBg strong mesh grain={false} className="absolute inset-0" />
+    ) : (
+      <div className="absolute inset-0 bg-bg" aria-hidden />
     );
-  }
-  if (fx === "glass") {
-    return (
-      <NoiseGradientBg strong mesh grain={false} className="absolute inset-0">
+
+  // CursorSpotlight is an interactive content wrapper (tracks pointer position over the content
+  // itself), not decoration, so the real children stay inside it rather than the backdrop layer.
+  const content =
+    fx === "spotlight" ? (
+      <CursorSpotlight className="relative z-10 w-full" intensity={0.42}>
         {children}
-      </NoiseGradientBg>
-    );
-  }
-  if (fx === "editorial") {
-    return (
-      <div className="absolute inset-0 bg-bg">
-        <div className="relative z-10">{children}</div>
-      </div>
-    );
-  }
-  return (
-    <div className="absolute inset-0 bg-bg">
+      </CursorSpotlight>
+    ) : (
       <div className="relative z-10">{children}</div>
-    </div>
+    );
+
+  return (
+    <>
+      {backdrop}
+      {content}
+    </>
   );
 }
 

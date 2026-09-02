@@ -8,6 +8,8 @@
      flags as the single most recognizable "a machine built this" tell. Ink accent reads premium. */
   --color-bg: #fafaf9;
   --color-surface: #ffffff;
+  --color-bg-base: #fafaf9;
+  --color-surface-base: #ffffff;
   --color-text: #18181b;
   --color-muted: #6b7280;
   --color-accent: #171717;
@@ -74,7 +76,7 @@
   position: absolute;
   inset: 0 0 auto 0;
   height: 220%;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0));
+  background: linear-gradient(to bottom, var(--nav-scrim-color, rgba(0, 0, 0, 0.34)), transparent);
   pointer-events: none;
   z-index: -1;
   opacity: 1;
@@ -129,6 +131,31 @@
 
 [data-gradient-mood="monochrome"] .cta-gradient {
   background: linear-gradient(135deg, var(--color-accent), color-mix(in srgb, var(--color-accent) 65%, black));
+}
+
+/* HeroVideo image scrim — plain CSS like .cta-gradient and .mesh-gradient above, not Tailwind
+   bg-gradient-to, from, via, to utilities. A live generated build showed those utilities produce
+   no background image at all for this project CSS-var-backed color tokens, so the scrim never
+   rendered and hero headline text sat directly on the raw photo with zero darkening no matter
+   which mediaOverlay value was chosen. Every other gradient in this file is already hand-written
+   for exactly this reason; this was the one holdout.
+   NOTE: this comment deliberately avoids apostrophes and backticks — an odd apostrophe count
+   combined with a backtick pair inside a globals.css comment reproducibly broke the Tailwind v3.4
+   and PostCSS build for this project (a real, verified toolchain quirk, not a hypothesis) with a
+   misleading "unclosed string" error reported at an unrelated, distant line. Confirmed by bisection
+   on a live build: removing this exact comment fixed the build; restoring it verbatim broke it
+   again; rewriting it without those characters fixed it again. Keep CSS comments in this file free
+   of apostrophes and backticks, or pair them evenly, to avoid retriggering this. */
+.hero-scrim-top {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, var(--color-bg), transparent 75%);
+}
+.hero-scrim-full {
+  position: absolute;
+  inset: 0;
+  background: var(--color-bg);
+  opacity: 0.5;
 }
 
 .hero-split-offset {
@@ -205,6 +232,35 @@
     min-width: 0;
   }
 
+  /* A lone card stranded in the last row (e.g. 3 items in a 2-col grid, 7 in a 3-col grid)
+     renders half-width and reads as a broken/mismatched card next to its full-width siblings —
+     the "different sized boxes" look. Stretch that orphan to fill its row instead. One global
+     rule fixes every card-grid site-wide (team, feature, portfolio, pricing, gallery) rather
+     than each component re-deriving its own breakpoint math. Mirrors the exact class combos
+     cardGridClassForCount() emits (layout.tsx). */
+  .card-grid.sm\:grid-cols-2 > *:nth-child(odd):last-child {
+    grid-column: 1 / -1;
+  }
+  @media (min-width: 1024px) {
+    .card-grid.lg\:grid-cols-2 > *:nth-child(odd):last-child {
+      grid-column: 1 / -1;
+    }
+    .card-grid.lg\:grid-cols-3:not(.xl\:grid-cols-4) > *:nth-child(3n + 1):last-child {
+      grid-column: 1 / -1;
+    }
+    .card-grid.lg\:grid-cols-3.xl\:grid-cols-4 > *:nth-child(3n + 1):last-child {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (min-width: 1280px) {
+    .card-grid.xl\:grid-cols-4 > *:nth-child(3n + 1):last-child {
+      grid-column: auto;
+    }
+    .card-grid.xl\:grid-cols-4 > *:nth-child(4n + 1):last-child {
+      grid-column: 1 / -1;
+    }
+  }
+
   .section-media {
     width: 100%;
     max-width: 100%;
@@ -258,11 +314,18 @@
   .text-balance {
     text-wrap: balance;
   }
+  /* Both rules were a fixed clamp() completely disconnected from --section-gap (the theme's own
+     sectionGapMode: tight/normal/airy → 3.5rem/5rem/7rem, set in themeCssVars()) — every generated
+     site got the same ~128px section padding regardless of the art-director's chosen rhythm. Direct
+     DOM measurement on a live generated site showed 128px top+bottom on ordinary body sections
+     (256px of padding alone per section, ~36% of total page height across a 5-section page) —
+     exactly the "static / too much dead space" vision-QA flag repeated across independent runs.
+     Now the theme token drives the ceiling; the clamp only softens small viewports. */
   .py-section {
-    padding-block: clamp(4rem, 10vw, 8rem);
+    padding-block: clamp(2.5rem, 6vw, var(--section-gap, 5rem));
   }
   .py-section-hero {
-    padding-block: clamp(5.5rem, 13vw, 10.5rem);
+    padding-block: clamp(3rem, 8vw, calc(var(--section-gap, 5rem) * 1.35));
   }
   .surface-elevated {
     @apply bg-surface shadow-[var(--shadow)];
@@ -290,7 +353,21 @@
   to { transform: translateX(-50%); }
 }
 
-/* Page-tone token shifts — set via data-page-tone on body */
+/* Page-tone token shifts — set via data-page-tone on body.
+   CRITICAL: --color-bg/--color-surface must mix FROM --color-bg-base/--color-surface-base, never
+   from --color-bg/--color-surface themselves. A rule that redeclares a custom property using
+   var() of that SAME property, on the SAME element the rule matches, is a cycle per the CSS custom
+   properties spec — not a "read the parent/root value" fallback. The property becomes
+   guaranteed-invalid on that element AND every descendant that inherits it (i.e. the entire body),
+   so background-color: var(--color-bg) resolves to nothing (transparent) everywhere on the page.
+   This previously broke --color-bg/--color-surface site-wide on every warm/cool-toned generation —
+   invisible for light themes (transparent happens to fall back to the browser's white canvas, which
+   reads as correct by coincidence) but would render solid-black-on-nothing for a dark theme.
+   Confirmed via computed-style inspection on a live generated build: --color-bg read a valid value
+   on <html> (:root, untouched by this rule) but resolved to nothing on <body> and everything inside
+   it (where this rule wins the cascade — an attribute selector outranks the plain `body` element
+   selector). The *-base aliases are declared once at :root (assemble-project.ts) and never
+   redeclared anywhere, so they can never be cycled into. */
 [data-page-tone="dark"] {
   --color-border: rgba(255, 255, 255, 0.12);
 }
@@ -298,8 +375,8 @@
   opacity: 1;
 }
 [data-page-tone="warm"] {
-  --color-bg: color-mix(in srgb, var(--color-bg) 92%, #f5e6d3 8%);
-  --color-surface: color-mix(in srgb, var(--color-surface) 94%, #fff7ed 6%);
+  --color-bg: color-mix(in srgb, var(--color-bg-base) 92%, #f5e6d3 8%);
+  --color-surface: color-mix(in srgb, var(--color-surface-base) 94%, #fff7ed 6%);
 }
 [data-page-tone="warm"] .mesh-gradient {
   background:
@@ -307,8 +384,8 @@
     radial-gradient(ellipse 60% 50% at 80% 0%, color-mix(in srgb, #f97316 12%, transparent), transparent);
 }
 [data-page-tone="cool"] {
-  --color-bg: color-mix(in srgb, var(--color-bg) 94%, #e0f2fe 6%);
-  --color-surface: color-mix(in srgb, var(--color-surface) 96%, #f0f9ff 4%);
+  --color-bg: color-mix(in srgb, var(--color-bg-base) 94%, #e0f2fe 6%);
+  --color-surface: color-mix(in srgb, var(--color-surface-base) 96%, #f0f9ff 4%);
 }
 [data-page-tone="cool"] .mesh-gradient {
   background:

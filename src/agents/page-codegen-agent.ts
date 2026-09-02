@@ -38,6 +38,12 @@ RULES:
 - FeatureBento: 3–6 items with specific titles and descriptions for THIS business; set span "wide" or "large" on at least one item
 - Do NOT add newsletter, announcement, or generic "Ready to get started?" filler — write specific copy for THIS business
 - Vary section types — avoid repeating the same component twice on this page
+- CARD COUNTS: for any component with a repeated "items"/"members"/"projects"/"tiers" array (FeatureBento,
+  TeamGrid, PortfolioStrip, GalleryMasonry, PricingTiers, StatsAnimated, TestimonialCarousel…), write
+  2, 3, 4, or 6 entries — never 5 or 7+. Odd counts leave one card stranded half-width in the last
+  row, reading as a broken/mismatched box next to its full-size siblings.
+- Follow this page's personality in the COMPOSITION HINT notes — About/Services/Contact must be
+  structurally distinct from Home and from each other, not the same hero+grid+grid+CTA shape reskinned
 - Prefer [premium] and [immersive] tagged components in the palette when they fit this page's intent — they are the signature, Framer-grade layouts; do not default to plain/untagged sections when a tagged one fits
 - Be visually distinctive for THIS brand — avoid generic SaaS patterns and stock phrasing
 - Props must include real copy (headlines, body, items) specific to the business — not placeholders

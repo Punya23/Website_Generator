@@ -44,7 +44,7 @@ In-depth reference for how this repository turns a short business brief into a m
 | **Composition** | Which section components appear, in what order, with what roles |
 | **Design tokens** | Colors, fonts, nav treatment, motion presets, chrome (footer/nav extras) |
 
-**Default path today (quality + React):** after brief expansion, site plan, and design system, pick an unused **site skin** for this customer, then **one LLM call fills all copy slots**. Images are resolved deterministically. A Next.js 14 static export is assembled and built. Structural + vision QA may trigger targeted retries. Result lands under `output/` and can be previewed in the playground or published. Opt into the old per-page composer with `PIPELINE_PAGE_CODEGEN=1`.
+**Default path today:** pick an unused **site skin**, slot the user's brief into the frozen templates, write **complete HTML pages** (`index.html`, `about.html`, `services.html`, `contact.html`) linked to each other. Look tokens come from the skin, not a regex vertical profile or design-council pipeline. Opt into the Next/React path with `OUTPUT_MODE=react`. Opt into the old per-page composer with `PIPELINE_PAGE_CODEGEN=1`.
 
 ---
 
@@ -144,7 +144,7 @@ flowchart TD
 4. **Variation seed** — Deterministic diversity key. Quality mode often derives from a random UUID hash; can be set from playground. Used for palette drifts, blueprint pool picks, composition hints.
 5. **Design system** — Design Council in parallel: palette + typography + nav surface → merge → optional design refine → design/token QA (contrast).
 6. **SiteContext** — Runtime bag holding brief, plan, theme, profiles, seed, pages/reactPages, chrome/motion/layout plans, media registry, CMS, QA history.
-7. **Branch:** `OUTPUT_MODE=react` (default) → `runReactPipeline`; `html` → HTML section builders + `renderer`.
+7. **Branch:** skin-fill + `OUTPUT_MODE=html` (default) → `runSkinHtmlPipeline`; `OUTPUT_MODE=react` → `runReactPipeline`; `PIPELINE_SKIN_FILL=0` + html → legacy section builders.
 8. **Build / serve / fallback** — React: assemble library + write pages → `npm install` + `npm run build` → serve `out/` (or HTML preview fallback if build fails).
 9. **QA** — Blueprint/chrome/motion/layout (when applicable), React structural QA, vision QA with optional retry loops.
 10. **Persist / publish** — Draft site context in Supabase when configured; `AUTO_PUBLISH` uploads static files.
@@ -215,6 +215,58 @@ Selection is deterministic — no LLM call. `src/skins/taxonomy.ts` owns a two-a
 `classifyTaxonomy(text)` scores exact-word keyword hits (strong 3 / medium 2 / weak 1), takes the top industry with declared order as tie-break, and derives the archetype from the copy or from the winning industry's default. Matching is deliberately exact-word rather than stem/prefix so that boilerplate in a brief cannot outvote the sentence describing the business.
 
 `pickSkinFromCatalog` classifies the brief, narrows the category pool to the best `taxonomyAffinity` tier (industry hit > runner-up > category-only), applies the vertical profile's visual-family preference within that tier, then falls back to the existing unused / adjacent-category / any ladder. Skins carry optional `industries` and `archetype` fields; untagged authored skins still rank on category alone.
+
+### Verbatim template sites (default path)
+
+`src/templates/` builds sites from real HTML template archives kept **as-is** — original markup and
+CSS, recolored onto one palette. It is the default generation path whenever a corpus has been
+ingested (`npm run templates:ingest` over `templates_bundle/`), falling back to skin fill when the
+cache is empty and disabled with `PIPELINE_VERBATIM_TEMPLATES=0`.
+
+**Selection: one anchor identity, plus compatibility-scored mixing.** `src/templates/select.ts`
+locks one **anchor** template's identity for the whole site — its nav, footer and hero always come
+from the anchor, so chrome never changes between pages and a hero never reads as "whose site is
+this." Every other section role (features, story, gallery, pricing, faq, cta, contact, team, stats)
+is **mixable**: ranked across the anchor's own candidates plus any other template's candidates whose
+`ingest/design-fingerprint.ts` design fingerprint (container width, corner-radius scale, spacing
+rhythm) clears `TEMPLATE_MIX_COMPATIBILITY_THRESHOLD` against the anchor's — a candidate below that
+bar is not a lower-ranked option, it is not a candidate at all. `templates/compose.ts` then restyles
+any accepted borrowed section's own CSS toward the anchor's fingerprint (`ingest/restyle-css.ts`) so
+a mixed-in card's corners and container line up with its neighbors instead of merely avoiding a hard
+mismatch. This replaced an earlier "reach into another template only when the anchor has nothing"
+design that made real mixing rare in practice (see `select.ts`'s own module docstring for the full
+history — this codebase has tried "max-spread mixing with no compatibility check," "one-anchor,
+mixing only as a last resort," and settled on this bounded-mixing shape after both extremes shipped
+visible defects). `TEMPLATE_MIX_SECTIONS=0` reverts to the anchor-only behavior for a quick rollback.
+
+This is a deliberate inversion of the skin/ingest design above, which never vendors third-party
+HTML. See [`src/templates/README.md`](../src/templates/README.md) for the ingest stages (safe
+extraction, section split, id/asset namespacing, `[data-tpl]` CSS scoping, colour remap, role and
+copy-slot classification), what is deliberately *not* kept verbatim (the template author's contact
+details, logo, filler copy and demo navigation), and the editing path for generated sites.
+
+**Which templates a site may use.** Each ingested template is classified into the same
+industry × archetype taxonomy a brief goes through, from the template's own markup rather than
+from the folder it shipped in: hero headline, page `<title>`s, nav labels, section headings and
+body copy are scored as separately weighted evidence alongside the bundle folder and the zip
+filename (`src/templates/ingest/classify-taxonomy.ts`). Hero copy outweighs the folder, so a
+"Business, Finance & Law" archive whose hero reads *Trusted plumbing contractor* classifies as
+`home-services`. Across this repo's own 778-template corpus the folder name was wrong for 408 of
+them.
+
+Selection then treats that classification as a **hard gate**, not a ranking preference
+(`src/templates/taxonomy-scope.ts`). A site is scoped to one tier — exact industry, then near-miss
+industry, then the same coarse category — descending only as far as the roles a page cannot do
+without (nav/hero/footer) require; individual optional roles widen on their own so one rare band
+never drags the whole site down a tier. Strict mode (`TEMPLATE_STRICT_TAXONOMY=1`, the default)
+refuses the unrelated tier outright, yielding only when the corpus has nothing that can build a
+page at all — which is logged as a warning and recorded on the generation. The site-wide light/dark
+origin lock is applied on top and is equally hard: a theme is only locked in if it leaves every
+required role fillable, and an opposite-origin section is never a candidate.
+
+Re-tag an already-ingested corpus in place with `npm run templates:backfill-taxonomy` (add
+`--force` to reclassify templates that already carry a classification). It reads the cached section
+fragments rather than re-extracting archives, and rebuilds the flat index when it finishes.
 
 ### Ingested skins
 
@@ -534,6 +586,32 @@ Still useful as fallback and for older tests (`OUTPUT_MODE=html` is often pinned
 
 Vision often complains about generic copy or empty visual sections — those signals feed both product UX (playground terminal) and retry routing. Soft issues may leave `generation degraded` without hard abort.
 
+**Verbatim-path structural QA.** `qa/code-qa.ts`'s original overflow/grid/height checks are all keyed
+on `[data-block-id]` / `.layout-grid[data-layout=...]` — markers only the classic block-composition
+renderer emits. `templates/compose.ts` wraps every verbatim section in `[data-tpl][data-role]
+[data-section]` instead, so those checks silently matched zero elements on 100% of verbatim output
+(the default path) until a parallel `[data-tpl]`-keyed check family was added: real overflow
+detection on the markers this pipeline actually emits, plus a new `CROSS_TEMPLATE_WIDTH_MISMATCH`
+check — the first deterministic check able to catch two adjacent sections from different source
+templates rendering at visibly different content widths (the "boxes don't line up" defect real
+cross-template mixing can introduce). `extractTemplateSectionManifestFromUrl` grounds the final
+vision judge (`orchestrator/final-vision-gate.ts`) in real per-section bounding boxes and `templateId`
+provenance instead of an empty manifest, and `vision-agent.ts`'s `VISUAL_TEMPLATE_MISMATCH` code lets
+the vision judge flag the same defect class the LLM way. A hard code-qa issue on the verbatim path
+now triggers the same one-shot redo the vision verdict does (`orchestrator.ts`), not just an entry in
+the final `degraded` flag.
+
+**Playwright `page.evaluate()` gotcha.** Never declare a named `const`/`let` function INSIDE an
+`evaluate()` callback. `tsx`'s esbuild transform wraps a named function expression in a call to a
+`__name(...)` helper it injects at the top of the *compiled module* — Playwright serializes only the
+callback's own source and re-evaluates that string inside the browser's isolated context, which has
+no such helper, so the callback throws `ReferenceError: __name is not defined` the instant it runs
+under a real `tsx`-invoked generation (this does NOT reproduce under Vitest, which transforms
+differently — confirmed live: a `CROSS_TEMPLATE_WIDTH_MISMATCH` check written with an inner
+`const contentWidth = (el) => ...` helper passed every unit test and then failed every real `npm run
+generate` page with this error, turning the entire `runCodeQA` call into one `QA_RUNTIME_ERROR` per
+page). Inline the computation instead.
+
 ---
 
 ## 16. LLM client, models, budgets, and speed modes
@@ -632,6 +710,9 @@ See `.env.example` for the full list. Grouped essentials:
 - `SECTION_FILL_CONCURRENCY`
 - `BESPOKE_SECTION_CODEGEN` (+ bespoke concurrency/timeouts)
 - `PIPELINE_COST_CAP_USD`, `LLM_BUDGET_*`, `PIPELINE_JSON_LOG`
+- `TEMPLATE_MIX_SECTIONS=0` (disable cross-template mixing — anchor-only fallback)
+- `TEMPLATE_MIX_COMPATIBILITY_THRESHOLD` (0-1, default 0.55 — how compatible a design fingerprint must be to mix in)
+- `TEMPLATE_PROBE_REMOTE_IMAGES=0` (skip the network dimension-probe for externally-hotlinked template images at ingest)
 
 ### Ingest
 
@@ -640,6 +721,7 @@ See `.env.example` for the full list. Grouped essentials:
 - `INGEST_SEARCH_PAGES`, `INGEST_MAX_QUERIES`, `INGEST_SEARCH_DELAY_MS`, `INGEST_DRY_QUERIES`
 - `INGEST_SIGNATURE_CAP` (approved skins allowed per layout cluster)
 - `INGEST_SCREENSHOT=needed|always|never`, `INGEST_SCREENSHOT_CONCURRENCY`, `INGEST_SCREENSHOT_TIMEOUT_MS`, `INGEST_THUMBS_DIR`
+- `npm run templates:backfill-design-tokens` — retrofit `designFingerprint` onto an already-ingested corpus (reads cached CSS only, no re-extraction; rebuilds the flat index when it finishes, same as `templates:backfill-taxonomy`)
 
 ### Vision / Playwright
 

@@ -5,6 +5,15 @@ import { llm } from "../llm/client.js";
 const VISION_SYSTEM = `Visual QA reviewer. You receive desktop (1280px) and mobile (390px) screenshots plus a block manifest (id, type, bounds, sectionId).
 Flag real layout problems AND generic/templated-looking sections — both matter for a premium marketing site.
 
+Some manifest entries additionally carry a "templateId" — this page mixes sections vendored from
+different third-party HTML templates, one per section, and templateId names which one. When two
+vertically-adjacent entries have DIFFERENT templateId values, specifically compare their bounds:
+does the lower one's content sit noticeably narrower or wider than the one above it, do its cards/
+buttons look like a visibly different corner-radius or spacing rhythm than its neighbor? That is a
+real defect this specific pipeline can introduce (mixing bounded by a heuristic, not a pixel-perfect
+guarantee) and no other check here catches — use VISUAL_TEMPLATE_MISMATCH for it specifically,
+rather than the more generic VISUAL_SPACING, so it can be tracked and fixed at the source.
+
 Use these structured codes when applicable:
 - VISUAL_NAV_CONTRAST — unreadable nav links, white-on-white glass, poor nav contrast
 - VISUAL_MOTION_MONOTONY — identical static sections, no scroll rhythm, lifeless page
@@ -12,6 +21,7 @@ Use these structured codes when applicable:
 - VISUAL_SPACING — cramped gaps, overflow, misalignment (set sectionId when known)
 - VISUAL_CHROME — footer/nav chrome issues, missing CTA, broken link grouping
 - VISUAL_GENERIC_TEMPLATE — a section looks like generic AI-website-builder output: a hero shape or card grid you'd recognize from any other generated site, no bespoke visual signature tied to this specific business, interchangeable with a competitor's site. Set sectionId to the specific offending section.
+- VISUAL_TEMPLATE_MISMATCH — two adjacent sections with different manifest templateId values visibly disagree on container width, corner style, or spacing rhythm — the page reads as two designs stitched together. Set sectionId to the section that looks out of place (usually the narrower/oddly-styled one).
 
 Output JSON: { "issues": [{ "severity": "hard"|"soft", "code": "VISUAL_*", "message": "...", "targetId": "...", "sectionId": "...", "suggestion": "..." }], "summary": "one line" }
 Empty issues if page looks good. Always set sectionId when you can identify the section.`;

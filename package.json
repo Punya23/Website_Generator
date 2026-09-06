@@ -28,7 +28,11 @@
     "hosting:browser": "tsx scripts/check-browser-render.ts",
     "hosting:local": "tsx scripts/hosting-local.ts",
     "estimate:cost": "tsx scripts/estimate-site-cost.ts",
-    "hosting:pages": "tsx scripts/publish-cloudflare-pages.ts"
+    "hosting:pages": "tsx scripts/publish-cloudflare-pages.ts",
+    "templates:ingest": "tsx src/templates/ingest/run-ingest.ts",
+    "templates:backfill-theme": "tsx src/templates/ingest/backfill-theme.ts",
+    "templates:backfill-design-tokens": "tsx src/templates/ingest/backfill-design-tokens.ts",
+    "templates:backfill-taxonomy": "tsx src/templates/ingest/backfill-taxonomy.ts"
   },
   "keywords": [
     "website-generator",
@@ -37,12 +41,21 @@
   "license": "MIT",
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
+    "@types/yauzl": "^3.4.0",
+    "cheerio": "^1.2.0",
+    "colord": "^2.10.0",
+    "domhandler": "^6.0.1",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
+    "image-size": "^2.0.2",
     "openai": "^4.77.0",
     "playwright": "^1.49.1",
+    "postcss": "^8.5.28",
+    "postcss-safe-parser": "^7.0.1",
+    "postcss-selector-parser": "^7.1.6",
     "serve": "^14.2.6",
     "ws": "^8.21.0",
+    "yauzl": "^3.4.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

@@ -2,6 +2,7 @@ import { chromium, type Browser } from "playwright";
 import type { QAIssue, QAResult } from "../types.js";
 import { SUPPORTED_BLOCK_TYPES } from "../agents/content-normalize.js";
 import { withTimeout } from "../util/timed.js";
+import { scanHtmlForFillerLeaks } from "../templates/filler-patterns.js";
 
 let sharedBrowser: Browser | null = null;
 let browserLaunch: Promise<Browser> | null = null;
@@ -17,6 +18,11 @@ export interface BlockManifestEntry {
   height: number;
   width: number;
   sectionId?: string;
+  /** Set only for a manifest entry describing a verbatim-template section (`extractTemplateSection
+   *  ManifestFromUrl`) — which source template this section's markup came from. Lets the vision
+   *  judge (and a human reading the same JSON) tell "these two adjacent, differently-sized sections
+   *  are from different templates" from "one component just rendered oddly on its own". */
+  templateId?: string;
 }
 
 /** Safe under concurrent callers — without the shared in-flight promise, two callers that both
@@ -57,13 +63,35 @@ export async function closeQABrowser(): Promise<void> {
 
 const OVERFLOW_TOLERANCE_PX = 4;
 
-export async function runCodeQA(html: string, pageSlug: string): Promise<QAResult> {
+export interface CodeQAOptions {
+  /**
+   * `file://` URL of this page as written to disk. `page.setContent` leaves the document on
+   * `about:blank`, which cannot load `file://` subresources at all — so a page that links external
+   * stylesheets and images (verbatim-template output does) reports every one of them broken. When
+   * a URL is supplied the page is really navigated to, which makes the asset checks meaningful.
+   */
+  pageUrl?: string;
+  /** Tells `scanHtmlForFillerLeaks` this site's own already-substituted copyright credit apart from
+   *  a genuinely leaked one — see that function's doc comment. Omitted, every page's own (correct)
+   *  footer copyright line reads as a leak, unconditionally. */
+  businessName?: string;
+}
+
+export async function runCodeQA(
+  html: string,
+  pageSlug: string,
+  options: CodeQAOptions = {}
+): Promise<QAResult> {
   return withQAMutex(() =>
-    withTimeout(runCodeQAInner(html, pageSlug), QA_PAGE_TIMEOUT_MS, `QA for ${pageSlug}`)
+    withTimeout(runCodeQAInner(html, pageSlug, options), QA_PAGE_TIMEOUT_MS, `QA for ${pageSlug}`)
   );
 }
 
-async function runCodeQAInner(html: string, pageSlug: string): Promise<QAResult> {
+async function runCodeQAInner(
+  html: string,
+  pageSlug: string,
+  options: CodeQAOptions = {}
+): Promise<QAResult> {
   const issues: QAIssue[] = [];
 
   if (/\{"id":\s*"[^"]+",\s*"type":/.test(html)) {
@@ -72,6 +100,24 @@ async function runCodeQAInner(html: string, pageSlug: string): Promise<QAResult>
       code: "RAW_JSON_LEAK",
       message: "Page HTML contains raw JSON block data",
       suggestion: "Normalize block types before render or add missing renderer cases",
+    });
+  }
+
+  // A universal, structure-only check (harmless on react/classic output, which never has lorem to
+  // begin with): did the template author's own placeholder/filler text actually ship on this page,
+  // independent of which compose-time pass should have caught it. This is the gate that was
+  // missing — `compose.ts` tracked `slotsSkipped`/`fillerRewritten` as observability, but nothing
+  // failed the build on a leftover "lorem ipsum" or the template author's own street address.
+  const fillerLeaks = scanHtmlForFillerLeaks(html, options.businessName);
+  if (fillerLeaks.length > 0) {
+    const sample = fillerLeaks[0]!;
+    issues.push({
+      severity: "hard",
+      code: "TEMPLATE_FILLER_LEAK",
+      message:
+        `${fillerLeaks.length} leftover placeholder/filler text node(s) shipped on this page ` +
+        `(e.g. ${sample.code} at ${sample.selector}: "${sample.sample}")`,
+      suggestion: "Widen copy-slot coverage on the source template, or its filler-neutralization pass, for this shape",
     });
   }
 
@@ -91,7 +137,11 @@ async function runCodeQAInner(html: string, pageSlug: string): Promise<QAResult>
     const browser = await getBrowser();
     const page = await browser.newPage();
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 15_000 });
+    if (options.pageUrl) {
+      await page.goto(options.pageUrl, { waitUntil: "domcontentloaded", timeout: 15_000 });
+    } else {
+      await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 15_000 });
+    }
 
     await page.evaluate((timeoutMs) => {
       const waitImages = Promise.all(
@@ -132,6 +182,92 @@ async function runCodeQAInner(html: string, pageSlug: string): Promise<QAResult>
         message: `Overflow on ${o.type} (${o.id})`,
         targetId: o.id !== "unknown" ? o.id : undefined,
         suggestion: "Use Stack instead of Row or reduce columns",
+      });
+    }
+
+    // Verbatim-template output never carries `[data-block-id]` (that marker is emitted only by the
+    // classic block-composition renderer) — it wraps every section in `[data-tpl][data-section]`
+    // instead (`templates/compose.ts`). Without this, the overflow check above silently matches zero
+    // elements on 100% of verbatim pages, the default generation path, no matter how broken the
+    // layout actually is. Same check, the marker this pipeline actually emits.
+    const templateOverflowIssues = await page.evaluate((tolerance) => {
+      const found: Array<{ templateId: string; sectionId: string }> = [];
+      document.querySelectorAll<HTMLElement>("[data-tpl]").forEach((el) => {
+        if (el.scrollWidth > el.clientWidth + tolerance) {
+          found.push({
+            templateId: el.dataset.tpl ?? "unknown",
+            sectionId: el.dataset.section ?? "unknown",
+          });
+        }
+      });
+      return found;
+    }, OVERFLOW_TOLERANCE_PX);
+
+    for (const o of templateOverflowIssues) {
+      issues.push({
+        severity: "hard",
+        code: "HORIZONTAL_OVERFLOW",
+        message: `Overflow on section ${o.sectionId} (template ${o.templateId})`,
+        targetId: o.sectionId,
+        suggestion: "Re-ingest the source template, or widen its container CSS",
+      });
+    }
+
+    // The defect real cross-template mixing can introduce and nothing else here checks for: a
+    // section borrowed from a different source template rendering at a visibly different content
+    // width or corner radius than its neighbor, so the page reads as two designs stitched together
+    // rather than one site. `firstElementChild`'s own width is a coarse but effective proxy for "how
+    // wide this section's own layout system rendered its main content row" — good enough to catch a
+    // 940px container sitting next to a 1400px one, the actual "boxes don't line up" symptom.
+    const templateMismatchIssues = await page.evaluate(() => {
+      // NOTE: no named helper function declared in this callback, deliberately. Playwright sends
+      // only this function's own serialized source into the browser's isolated evaluation context;
+      // esbuild/tsx's name-preservation transform wraps a NAMED const/let function in a call to a
+      // `__name(...)` helper it injects at the top of the compiled MODULE, not inside the function
+      // itself — so a real `tsx`-run generation (not vitest, which transforms differently) threw
+      // `ReferenceError: __name is not defined` the moment this evaluated in-browser. Confirmed
+      // live. Every computation here stays inlined for exactly this reason.
+      const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-tpl]"));
+      const found: Array<{ a: string; b: string; templateA: string; templateB: string; widthA: number; widthB: number }> = [];
+      for (let i = 1; i < sections.length; i += 1) {
+        const prev = sections[i - 1]!;
+        const cur = sections[i]!;
+        const prevTpl = prev.dataset.tpl;
+        const curTpl = cur.dataset.tpl;
+        if (!prevTpl || !curTpl || prevTpl === curTpl) continue;
+        // Chrome (nav/footer) intentionally always comes from one anchor template and is excluded
+        // from this comparison on purpose — it never legitimately differs from a content section.
+        if (cur.dataset.role === "nav" || cur.dataset.role === "footer") continue;
+        const prevChild = prev.firstElementChild as HTMLElement | null;
+        const curChild = cur.firstElementChild as HTMLElement | null;
+        const widthA = (prevChild ?? prev).getBoundingClientRect().width;
+        const widthB = (curChild ?? cur).getBoundingClientRect().width;
+        if (widthA < 100 || widthB < 100) continue; // hidden/collapsed section — not a real signal
+        const ratio = Math.max(widthA, widthB) / Math.min(widthA, widthB);
+        if (ratio > 1.2) {
+          found.push({
+            a: prev.dataset.section ?? "unknown",
+            b: cur.dataset.section ?? "unknown",
+            templateA: prevTpl,
+            templateB: curTpl,
+            widthA: Math.round(widthA),
+            widthB: Math.round(widthB),
+          });
+        }
+      }
+      return found;
+    });
+
+    for (const m of templateMismatchIssues) {
+      issues.push({
+        severity: "hard",
+        code: "CROSS_TEMPLATE_WIDTH_MISMATCH",
+        message:
+          `Section ${m.b} (template ${m.templateB}, ${m.widthB}px content) sits directly under ` +
+          `${m.a} (template ${m.templateA}, ${m.widthA}px content) — mismatched container widths ` +
+          `from mixing source templates`,
+        targetId: m.b,
+        suggestion: "Lower TEMPLATE_MIX_COMPATIBILITY_THRESHOLD's effect by re-scoring this pairing, or exclude it from mixing",
       });
     }
 
@@ -249,10 +385,17 @@ async function runCodeQAInner(html: string, pageSlug: string): Promise<QAResult>
 
     await page.close();
 
-    // Mobile viewport pass (390px)
+    // Mobile viewport pass (390px). Same `pageUrl` requirement as the desktop pass above: a page
+    // with external stylesheets (verbatim-template output always does) measured via `setContent`
+    // has no base URL to resolve them against, so every measurement below would run against
+    // unstyled content — silently useless rather than merely inaccurate.
     const mobilePage = await browser.newPage();
     await mobilePage.setViewportSize({ width: 390, height: 844 });
-    await mobilePage.setContent(html, { waitUntil: "domcontentloaded", timeout: 15_000 });
+    if (options.pageUrl) {
+      await mobilePage.goto(options.pageUrl, { waitUntil: "domcontentloaded", timeout: 15_000 });
+    } else {
+      await mobilePage.setContent(html, { waitUntil: "domcontentloaded", timeout: 15_000 });
+    }
 
     const mobileOverflow = await mobilePage.evaluate((tolerance) => {
       const found: string[] = [];
@@ -264,6 +407,26 @@ async function runCodeQAInner(html: string, pageSlug: string): Promise<QAResult>
       });
       return found;
     }, OVERFLOW_TOLERANCE_PX);
+
+    const templateMobileOverflow = await mobilePage.evaluate((tolerance) => {
+      const found: Array<{ templateId: string; sectionId: string }> = [];
+      document.querySelectorAll<HTMLElement>("[data-tpl]").forEach((el) => {
+        if (el.scrollWidth > el.clientWidth + tolerance) {
+          found.push({ templateId: el.dataset.tpl ?? "unknown", sectionId: el.dataset.section ?? "unknown" });
+        }
+      });
+      return found;
+    }, OVERFLOW_TOLERANCE_PX);
+
+    for (const o of templateMobileOverflow) {
+      issues.push({
+        severity: "soft",
+        code: "MOBILE_OVERFLOW",
+        message: `Mobile horizontal overflow on section ${o.sectionId} (template ${o.templateId})`,
+        targetId: o.sectionId,
+        suggestion: "Stack columns on narrow viewports",
+      });
+    }
 
     for (const id of mobileOverflow) {
       issues.push({
@@ -311,6 +474,36 @@ export async function extractBlockManifest(html: string): Promise<BlockManifestE
     await page.close();
     return manifest;
   });
+}
+
+/**
+ * The verbatim-template counterpart to `extractBlockManifestFromUrl` — grounds the final vision
+ * judge (`final-vision-gate.ts`) in real per-section structural data instead of an empty manifest,
+ * which is otherwise its only structural signal for the pipeline's default generation path. Must be
+ * called against a live served URL (same reasoning as `CodeQAOptions.pageUrl`): the CSS these
+ * measurements depend on will not load via `page.setContent`.
+ */
+export async function extractTemplateSectionManifestFromUrl(url: string): Promise<BlockManifestEntry[]> {
+  const browser = await getBrowser();
+  const page = await browser.newPage();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(url, { waitUntil: "networkidle", timeout: 15_000 });
+  const manifest = await page.evaluate(() => {
+    return Array.from(document.querySelectorAll<HTMLElement>("[data-tpl]")).map((el) => {
+      const r = el.getBoundingClientRect();
+      return {
+        id: el.dataset.section ?? "unknown",
+        type: el.dataset.role ?? "section",
+        top: Math.round(r.top),
+        height: Math.round(r.height),
+        width: Math.round(r.width),
+        sectionId: el.dataset.section,
+        templateId: el.dataset.tpl,
+      };
+    });
+  });
+  await page.close();
+  return manifest;
 }
 
 export async function screenshotPage(html: string): Promise<string> {

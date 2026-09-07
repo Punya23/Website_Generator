@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseLlmJson, repairLlmJson } from "../src/llm/parse-json.js";
+import { healMismatchedBrackets, parseLlmJson, repairLlmJson } from "../src/llm/parse-json.js";
 
 describe("parseLlmJson", () => {
   it("parses fenced JSON", () => {
@@ -33,5 +33,31 @@ describe("parseLlmJson", () => {
       '"blockTypes":["headline","text"],'
     );
     expect(parseLlmJson(raw)).toEqual({ pages });
+  });
+
+  it("heals an array closed with } instead of ] — the exact malformed response a real Ollama call produced", () => {
+    // Confirmed live: gen-verify2.log (a real generation), the same call, 3 retries in a row, all
+    // with this exact mistake — a stable per-model tic, not a one-off. Neither the old trailing-
+    // comma repair nor correct substring extraction can fix a wrong bracket TYPE.
+    const raw = '{"queries":["family law consultation Austin","compassionate attorney mediation","Austin skyline legal office"} }';
+    expect(parseLlmJson<{ queries: string[] }>(raw).queries).toEqual([
+      "family law consultation Austin",
+      "compassionate attorney mediation",
+      "Austin skyline legal office",
+    ]);
+  });
+
+  it("heals a mismatched bracket without touching a } or ] that appears inside a string value", () => {
+    const raw = '{"note":"use { or ] as a placeholder","items":["a","b"]}';
+    expect(healMismatchedBrackets(raw)).toBe(raw); // already valid — nothing to heal
+    expect(parseLlmJson<{ note: string; items: string[] }>(raw)).toEqual({
+      note: "use { or ] as a placeholder",
+      items: ["a", "b"],
+    });
+  });
+
+  it("does not invent a closer for a genuinely truncated response", () => {
+    const raw = '{"queries":["a","b"';
+    expect(() => parseLlmJson(raw)).toThrow(/Invalid JSON from LLM/);
   });
 });

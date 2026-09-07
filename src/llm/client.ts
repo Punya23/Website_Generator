@@ -247,7 +247,12 @@ export class LLMClient {
     if (!from || next >= this.chain.length) return false;
     const to = this.chain[next]!;
     this.lastError = extractErrorMessage(err);
-    console.warn(`[llm] falling back ${from} → ${to}`);
+    // The triggering error used to be dropped here — only the LAST provider in the chain to fail
+    // ever reached a log line, so a cross-provider cascade (confirmed live: ollama hit an
+    // account-level auth/quota error, failed over to a second provider whose own key also turned
+    // out to be dead) surfaced only the second failure. The first — the one that actually explains
+    // why failover happened at all — was invisible without this.
+    console.warn(`[llm] falling back ${from} → ${to} (${from} failed: ${this.lastError})`);
     this.activate(next);
     return true;
   }

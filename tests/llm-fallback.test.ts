@@ -116,7 +116,9 @@ describe("free-first LLM fallback", () => {
     expect(text).toBe("second-provider");
     expect(client.provider).toBe("ollama");
     expect(calls).toEqual(["groq", "ollama"]);
-    expect(warn).toHaveBeenCalledWith("[llm] falling back groq → ollama");
+    // The triggering error rides along now — a cross-provider cascade used to lose the FIRST
+    // failure's reason entirely, surfacing only whichever provider failed last (confirmed live).
+    expect(warn).toHaveBeenCalledWith("[llm] falling back groq → ollama (groq failed: Invalid API key)");
     warn.mockRestore();
   });
 

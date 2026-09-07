@@ -14,6 +14,7 @@ import * as cheerio from "cheerio";
 import type { Element as DomElement } from "domhandler";
 import type { ExpandedBrief } from "../types.js";
 import type { PhotoSlot, SectionRole, SlotLocator } from "./types.js";
+import { LAZY_SRC_ATTRS } from "./ingest/photo-slots.js";
 import {
   COPYRIGHT_RE,
   elementSelector,
@@ -640,6 +641,11 @@ export async function applyPhotoSlots(
       const before = el.attr("src") ?? "(none)";
       el.attr("src", url);
       el.removeAttr("srcset");
+      // Lazy-load attributes (see `ingest/photo-slots.ts`'s `effectiveImgSrc`) are how ingest found
+      // this slot's real dimensions in the first place when `src` itself was a blank/placeholder —
+      // stripped here so nothing still reads them, and so a dropped source-tree path they held
+      // doesn't linger in shipped markup.
+      for (const attr of LAZY_SRC_ATTRS) el.removeAttr(attr);
       if (!el.attr("alt")) el.attr("alt", "Photograph");
       changes.push({ kind: "photo:img", selector: slot.selector, before, after: url });
     }

@@ -113,12 +113,12 @@ export function templateMixCompatibilityThreshold(): number {
   return Number.isFinite(n) && n >= 0 && n <= 1 ? n : 0.55;
 }
 
-/** Set to 0 to turn every mixable role back into "anchor first, any-template-fallback-only-when-
- *  empty" (the single-anchor behaviour this mixing rewrite replaces) without touching selection
- *  code — a fast rollback switch if compatibility-scored mixing ever needs to be disabled in prod. */
+/** Default OFF: a site builds from one anchor template only ("anchor first, any-template-fallback-
+ *  only-when-empty") — cross-template mixing visibly clashed too often in practice even gated by
+ *  fingerprint compatibility. Set TEMPLATE_MIX_SECTIONS=1 to re-enable compatibility-scored mixing. */
 export function templateMixEnabled(): boolean {
-  const v = (process.env.TEMPLATE_MIX_SECTIONS ?? "1").trim().toLowerCase();
-  return v !== "0" && v !== "false";
+  const v = (process.env.TEMPLATE_MIX_SECTIONS ?? "0").trim().toLowerCase();
+  return v === "1" || v === "true";
 }
 
 /** Zip-bomb / zip-slip guardrails for extracting templates from an unaudited local bundle

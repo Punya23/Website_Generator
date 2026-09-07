@@ -22,6 +22,34 @@ import type { PhotoSlot } from "../types.js";
 
 const MIN_PHOTO_DIMENSION = 200;
 
+/** Real scraped templates very often ship lazy-loaded `<img>`s: `src` holds a 1x1 placeholder gif
+ *  or a `data:` URI, and the real image lives in one of these attributes until a lazy-load script
+ *  (never shipped into this pipeline's static output) swaps it in on scroll. Left alone, `src`
+ *  stays a placeholder forever on the generated site — an "empty image" that was never actually
+ *  missing, just parked in the wrong attribute. Checked in this order; first non-blank wins. */
+export const LAZY_SRC_ATTRS = ["data-src", "data-original", "data-lazy-src", "data-lazy", "data-echo"] as const;
+
+function isBlankOrPlaceholderSrc(src: string): boolean {
+  if (!src.trim()) return true;
+  if (src.startsWith("data:")) return true;
+  return false;
+}
+
+/** The `src` this `<img>` will actually paint once lazy-loading (which never runs here) is
+ *  accounted for: a real `src` if present, otherwise the first lazy-load attribute that carries
+ *  one. Exported so `copy-slots.ts` can strip the same attributes it read here once it writes the
+ *  resolved photo's real `src`, so nothing re-clobbers it. */
+export function effectiveImgSrc($: cheerio.CheerioAPI, node: DomElement): string {
+  const el = $(node);
+  const src = el.attr("src") ?? "";
+  if (!isBlankOrPlaceholderSrc(src)) return src;
+  for (const attr of LAZY_SRC_ATTRS) {
+    const value = el.attr(attr);
+    if (value && value.trim()) return value.trim();
+  }
+  return src;
+}
+
 const DECORATIVE_PATH_RE =
   /\b(shapes?|icons?|patterns?|badges?|arrows?|blobs?|dots?|lines?|bg|backgrounds?|overlays?|textures?|deco(rations?)?|dividers?|separators?|logos?|favicons?|sprites?|noise|grains?|sh)\b/i;
 
@@ -137,7 +165,7 @@ export async function detectPhotoSlots(html: string, options: DetectPhotoSlotsOp
     const el = $(node);
     const selector = firstMatchSelector($, node, root);
     if (!selector || options.claimedSelectors.has(selector)) continue;
-    const dims = await measure(options.rootDir, prefix, el.attr("src") ?? "");
+    const dims = await measure(options.rootDir, prefix, effectiveImgSrc($, node));
     if (!dims) continue;
     slots.push({ selector, kind: "img", ...dims, ...(el.attr("alt") ? { alt: el.attr("alt") } : {}) });
   }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { scopeCss, scopeSelector, sanitizeCss, parseCssTolerantly } from "../src/templates/ingest/scope-css.js";
 import { recolorCss } from "../src/templates/ingest/recolor-css.js";
 import { getPalette } from "../src/templates/palette.js";
@@ -643,6 +643,17 @@ describe("pickTemplateRoot", () => {
 });
 
 describe("cross-template mixing (select.ts)", () => {
+  // Mixing is opt-in (default OFF — see `templateMixEnabled`, TEMPLATE_MIX_SECTIONS=0 default);
+  // this whole block is specifically exercising the opt-in behavior.
+  const prevMix = process.env.TEMPLATE_MIX_SECTIONS;
+  beforeEach(() => {
+    process.env.TEMPLATE_MIX_SECTIONS = "1";
+  });
+  afterEach(() => {
+    if (prevMix === undefined) delete process.env.TEMPLATE_MIX_SECTIONS;
+    else process.env.TEMPLATE_MIX_SECTIONS = prevMix;
+  });
+
   const soft: DesignFingerprint = { containerMaxWidthPx: 1200, radiusPx: 8, radiusScale: "soft", spacingScale: "normal" };
   const softClose: DesignFingerprint = { containerMaxWidthPx: 1220, radiusPx: 10, radiusScale: "soft", spacingScale: "normal" };
   const clashing: DesignFingerprint = { containerMaxWidthPx: 2000, radiusPx: 999, radiusScale: "pill", spacingScale: "loose" };

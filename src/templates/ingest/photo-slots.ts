@@ -1,17 +1,21 @@
 /**
  * Content-photo detection: which images in a section are real photography (hero banners,
- * gallery/portfolio shots, team photos) versus decorative vendor art (shapes, icons, background
- * textures) that must stay exactly as the template shipped it.
+ * gallery/portfolio shots, team photos, a 120x120 pricing-card product shot) versus decorative
+ * vendor art (shapes, icons, dividers) that must stay exactly as the template shipped it, or a
+ * fabricated-person photo (testimonial/team avatar) that stays untouched on purpose regardless of
+ * whether it's "real photography" — see `AVATAR_RE` below.
  *
- * Two independent signals, both required: real pixel dimensions (read from the actual file, not
- * guessed) above a floor that decorative art rarely reaches, and a path that doesn't name itself
- * as decorative. Neither signal alone is reliable — a decorative blob graphic can be large
- * (confirmed in this repo's own bundle: a 1196x1196 "shapes/r-1.png"), and a real photo can be
- * served small — but the combination catches the common cases without a model in the loop.
- *
- * Two markup shapes carry photography: `<img src>`, and a `style="background-image:url(...)"`
- * inline style on an arbitrary element — full-bleed hero/feature photos are very often the latter
- * (confirmed live: 35 of 84 sections in this repo's Arup sample use inline background-image).
+ * Dimension used to gate at 200px — high enough to exclude genuine small content photography too
+ * (confirmed live: a real generation shipped irrelevant vendor demo photos because its actual
+ * photo slots were 120-200px and never crossed that floor). It is NOT gone, though: dropping it to
+ * "only excludes a literal tracking pixel" was tried and immediately proven wrong on this repo's
+ * own corpus — nav-bar social icons and inline feature-list arrow icons (both classic `<a><img>`
+ * icon-link patterns, e.g. 17x18, 20x20, 22x22) have no decorative keyword in their path at all
+ * (generically named "1.png", "2.png"...) and got swept in as "content photos" the moment size
+ * stopped gating anything. `MIN_PHOTO_DIMENSION` now sits at a line no real icon/glyph crosses but
+ * every genuine small content photo does (the user's own 120x120 example clears it with margin) —
+ * `DECORATIVE_PATH_RE` and `AVATAR_RE` (path, alt text, or a nearby ancestor's class) still do the
+ * finer-grained decorative-vs-real and real-vs-fabricated-person work within that.
  */
 import path from "node:path";
 import * as cheerio from "cheerio";
@@ -20,7 +24,10 @@ import { imageSizeFromFile } from "image-size/fromFile";
 import { templateProbeRemoteImages } from "../config.js";
 import type { PhotoSlot } from "../types.js";
 
-const MIN_PHOTO_DIMENSION = 200;
+/** Confirmed live against this repo's own corpus: real icon/glyph assets (nav social icons, inline
+ *  arrow links) top out in the high 30s/low 40s px on at least one axis; genuine content photos —
+ *  even small ones — essentially never ship below this. */
+const MIN_PHOTO_DIMENSION = 64;
 
 /** Real scraped templates very often ship lazy-loaded `<img>`s: `src` holds a 1x1 placeholder gif
  *  or a `data:` URI, and the real image lives in one of these attributes until a lazy-load script
@@ -141,8 +148,7 @@ async function measureRemote(src: string): Promise<{ width: number; height: numb
 async function measure(
   rootDir: string,
   prefix: string,
-  src: string,
-  minDimension = MIN_PHOTO_DIMENSION
+  src: string
 ): Promise<{ width: number; height: number } | null> {
   if (!src.startsWith(prefix)) {
     return /^https?:\/\//i.test(src) ? measureRemote(src) : null;
@@ -153,27 +159,22 @@ async function measure(
   try {
     const dims = await imageSizeFromFile(absolutePath);
     if (!dims.width || !dims.height) return null;
-    if (dims.width < minDimension || dims.height < minDimension) return null;
+    if (dims.width < MIN_PHOTO_DIMENSION || dims.height < MIN_PHOTO_DIMENSION) return null;
     return { width: dims.width, height: dims.height };
   } catch {
     return null; // unreadable/corrupt image file — leave it verbatim rather than guess
   }
 }
 
-/** A gallery/portfolio slider very often ships its OWN slides smaller than a hero photo — confirmed
- *  live: a real anchor template's gallery slider shipped 196×118 room photos that never crossed
- *  `MIN_PHOTO_DIMENSION`, so they were never a photo slot at all and shipped verbatim, unrelated to
- *  the generated site's actual business, on every site that ever picked that template. A second,
- *  much lower floor applies ONLY inside a recognizable gallery/slider container — real decorative
- *  art (icons, dividers, sprites) essentially never lives inside one of these. */
-const GALLERY_CONTAINER_RE = /\b(swiper|slider|carousel|gallery|lightbox|portfolio)\b/i;
-/** Even inside a gallery container, a small square-ish image is very likely a fabricated person's
- *  photo (testimonial avatar, "meet the team" headshot) rather than a real content photo — those
- *  stay untouched on purpose (see `select.ts`'s `PEOPLE_ROLES` gate and its own doc comment on not
- *  shipping invented people). Checked against the image's own path/alt AND its nearby ancestors'
- *  classes, since the avatar itself is rarely named anything distinctive. */
+/** A fabricated-person photo (testimonial avatar, "meet the team" headshot) is real photography by
+ *  every other signal here, but stays untouched on purpose regardless — see `select.ts`'s
+ *  `PEOPLE_ROLES` gate and its own doc comment on not shipping invented people. The avatar itself
+ *  is rarely named anything distinctive, so this checks its own path/alt AND nearby ancestors'
+ *  classes (a "testimonial-card" wrapper around an anonymously-named "img-1.jpg", say). Checked
+ *  universally now — this used to run only inside a detected gallery/slider container, back when
+ *  dimension alone kept most avatars out of the general path; now that dimension is not a
+ *  filtering signal at all, an avatar anywhere needs this same protection. */
 const AVATAR_RE = /\b(avatar|testimonial|author|team|staff|profile|reviewer|client-?photo|user-?photo)\b/i;
-const GALLERY_MIN_PHOTO_DIMENSION = 80;
 
 function ancestorClassesMatch($: cheerio.CheerioAPI, node: DomElement, re: RegExp, depth = 4): boolean {
   let current: DomElement | null = node;
@@ -195,16 +196,10 @@ export async function detectPhotoSlots(html: string, options: DetectPhotoSlotsOp
     const selector = firstMatchSelector($, node, root);
     if (!selector || options.claimedSelectors.has(selector)) continue;
     const src = effectiveImgSrc($, node);
-    let dims = await measure(options.rootDir, prefix, src);
-    if (!dims && (GALLERY_CONTAINER_RE.test(el.attr("class") ?? "") || ancestorClassesMatch($, node, GALLERY_CONTAINER_RE))) {
-      const looksLikeAvatar =
-        AVATAR_RE.test(src) ||
-        AVATAR_RE.test(el.attr("alt") ?? "") ||
-        ancestorClassesMatch($, node, AVATAR_RE);
-      if (!looksLikeAvatar) {
-        dims = await measure(options.rootDir, prefix, src, GALLERY_MIN_PHOTO_DIMENSION);
-      }
-    }
+    const looksLikeAvatar =
+      AVATAR_RE.test(src) || AVATAR_RE.test(el.attr("alt") ?? "") || ancestorClassesMatch($, node, AVATAR_RE);
+    if (looksLikeAvatar) continue;
+    const dims = await measure(options.rootDir, prefix, src);
     if (!dims) continue;
     slots.push({ selector, kind: "img", ...dims, ...(el.attr("alt") ? { alt: el.attr("alt") } : {}) });
   }
@@ -213,6 +208,7 @@ export async function detectPhotoSlots(html: string, options: DetectPhotoSlotsOp
     const el = $(node);
     const selector = firstMatchSelector($, node, root);
     if (!selector || options.claimedSelectors.has(selector)) continue;
+    if (ancestorClassesMatch($, node, AVATAR_RE)) continue;
     const match = INLINE_BG_URL_RE.exec(el.attr("style") ?? "");
     if (!match) continue;
     const dims = await measure(options.rootDir, prefix, match[2]!);

@@ -601,20 +601,22 @@ describe("photo-slots", () => {
     expect(slots).toHaveLength(0);
   });
 
-  it("claims a below-floor gallery/slider thumbnail as a photo slot, using the lower gallery floor", async () => {
+  it("claims a below-old-floor image as a photo slot regardless of container — dimension is not a signal anymore", async () => {
     // Confirmed live: a real anchor template's gallery slider ships 196x118 room photos — below
-    // MIN_PHOTO_DIMENSION (200) on both axes — so they were never a photo slot at all and shipped
+    // the OLD 200px floor on both axes — so they were never a photo slot at all and shipped
     // verbatim (someone else's hotel-room photography) on every generated site that picked this
     // template, completely unrelated to the actual business. A real fixture of that exact file.
+    // Dimension is no longer a filtering signal at all (see this file's own module comment) — this
+    // now passes for ANY container, gallery or not, as long as it isn't decorative or an avatar.
     const source = path.resolve(
       "data/template-cache/tpl_9c31777d1197/src/buyer-file/restin/assets/img/home-1/room/09.jpg"
     );
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "photo-slot-gallery-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "photo-slot-small-"));
     try {
-      await fs.mkdir(path.join(dir, "assets", "img", "gallery"), { recursive: true });
-      await fs.copyFile(source, path.join(dir, "assets", "img", "gallery", "09.jpg"));
+      await fs.mkdir(path.join(dir, "assets", "img", "misc"), { recursive: true });
+      await fs.copyFile(source, path.join(dir, "assets", "img", "misc", "09.jpg"));
 
-      const html = `<div class="swiper-slide"><div class="details-image"><img src="_tpl-assets/${TPL}/assets/img/gallery/09.jpg" alt="img"></div></div>`;
+      const html = `<div class="card"><img src="_tpl-assets/${TPL}/assets/img/misc/09.jpg" alt="img"></div>`;
       const slots = await detectPhotoSlots(html, { rootDir: dir, templateId: TPL, claimedSelectors: new Set() });
       expect(slots).toHaveLength(1);
       expect(slots[0]?.kind).toBe("img");
@@ -623,24 +625,7 @@ describe("photo-slots", () => {
     }
   });
 
-  it("does NOT lower the floor for a below-floor image outside any gallery/slider container", async () => {
-    const source = path.resolve(
-      "data/template-cache/tpl_9c31777d1197/src/buyer-file/restin/assets/img/home-1/room/09.jpg"
-    );
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "photo-slot-plain-"));
-    try {
-      await fs.mkdir(path.join(dir, "assets", "img", "misc"), { recursive: true });
-      await fs.copyFile(source, path.join(dir, "assets", "img", "misc", "09.jpg"));
-
-      const html = `<div class="card"><img src="_tpl-assets/${TPL}/assets/img/misc/09.jpg" alt="img"></div>`;
-      const slots = await detectPhotoSlots(html, { rootDir: dir, templateId: TPL, claimedSelectors: new Set() });
-      expect(slots).toHaveLength(0);
-    } finally {
-      await fs.rm(dir, { recursive: true, force: true });
-    }
-  });
-
-  it("does not lower the floor inside a gallery container for something that looks like a fabricated-person avatar", async () => {
+  it("still excludes a fabricated-person avatar by path/alt/ancestor class, no matter its size or container", async () => {
     const source = path.resolve(
       "data/template-cache/tpl_9c31777d1197/src/buyer-file/restin/assets/img/home-1/room/09.jpg"
     );
@@ -649,7 +634,7 @@ describe("photo-slots", () => {
       await fs.mkdir(path.join(dir, "assets", "img", "testimonial"), { recursive: true });
       await fs.copyFile(source, path.join(dir, "assets", "img", "testimonial", "author.jpg"));
 
-      const html = `<div class="swiper-slide testimonial-slide"><img src="_tpl-assets/${TPL}/assets/img/testimonial/author.jpg" alt="Author avatar"></div>`;
+      const html = `<div class="testimonial-slide"><img src="_tpl-assets/${TPL}/assets/img/testimonial/author.jpg" alt="Author avatar"></div>`;
       const slots = await detectPhotoSlots(html, { rootDir: dir, templateId: TPL, claimedSelectors: new Set() });
       expect(slots).toHaveLength(0);
     } finally {

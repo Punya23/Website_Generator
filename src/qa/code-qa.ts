@@ -232,58 +232,80 @@ async function runCodeQAInner(
       ]);
     }, IMAGE_LOAD_TIMEOUT_MS);
 
-    const overflowIssues = await page.evaluate((tolerance) => {
-      const found: Array<{ id: string; type: string; scrollW: number; clientW: number }> = [];
-      document.querySelectorAll("[data-block-id]").forEach((el) => {
-        const htmlEl = el as HTMLElement;
-        if (htmlEl.scrollWidth > htmlEl.clientWidth + tolerance) {
-          found.push({
-            id: htmlEl.dataset.blockId ?? "unknown",
-            type: htmlEl.dataset.blockType ?? "block",
-            scrollW: htmlEl.scrollWidth,
-            clientW: htmlEl.clientWidth,
-          });
-        }
-      });
-      return found;
+    // Two more shapes tried and rejected here before this one, both confirmed live against a real
+    // generation: (1) gating on the element's OWN bounding rect being on-screen — doesn't catch an
+    // off-canvas menu translated via `transform`, since the ANCESTOR never moves, only the child
+    // does; (2) measuring only the rightmost edge of on-screen descendants — catches the off-canvas
+    // case but still flags a hover-triggered dropdown panel (hidden via `opacity`/`visibility`, not
+    // `display:none`, so its rect is real) and a small intentional decorative bleed past the edge
+    // (a hero's floating image, ~35px over — normal design, invisible to a viewer) as "overflow".
+    // Off-canvas menus, hidden dropdowns, and clipped decorative bleed all share one real trait:
+    // none of them make the PAGE ITSELF horizontally scrollable — a real visitor never sees a
+    // scrollbar or gets to drag content into view for any of them. That page-level scrollWidth vs
+    // clientWidth check is also the browser's own literal definition of "does this page overflow
+    // horizontally" — simplest, cheapest, and correct by construction for every shape above. Only
+    // enumerate per-element culprits (for a useful message/targetId) once the page itself actually
+    // overflows.
+    const pageOverflows = await page.evaluate((tolerance) => {
+      const doc = document.documentElement;
+      return doc.scrollWidth > doc.clientWidth + tolerance;
     }, OVERFLOW_TOLERANCE_PX);
 
-    for (const o of overflowIssues) {
-      issues.push({
-        severity: "hard",
-        code: "HORIZONTAL_OVERFLOW",
-        message: `Overflow on ${o.type} (${o.id})`,
-        targetId: o.id !== "unknown" ? o.id : undefined,
-        suggestion: "Use Stack instead of Row or reduce columns",
-      });
-    }
+    if (pageOverflows) {
+      const overflowIssues = await page.evaluate((tolerance) => {
+        const found: Array<{ id: string; type: string; scrollW: number; clientW: number }> = [];
+        document.querySelectorAll("[data-block-id]").forEach((el) => {
+          const htmlEl = el as HTMLElement;
+          if (htmlEl.scrollWidth > htmlEl.clientWidth + tolerance) {
+            found.push({
+              id: htmlEl.dataset.blockId ?? "unknown",
+              type: htmlEl.dataset.blockType ?? "block",
+              scrollW: htmlEl.scrollWidth,
+              clientW: htmlEl.clientWidth,
+            });
+          }
+        });
+        return found;
+      }, OVERFLOW_TOLERANCE_PX);
 
-    // Verbatim-template output never carries `[data-block-id]` (that marker is emitted only by the
-    // classic block-composition renderer) — it wraps every section in `[data-tpl][data-section]`
-    // instead (`templates/compose.ts`). Without this, the overflow check above silently matches zero
-    // elements on 100% of verbatim pages, the default generation path, no matter how broken the
-    // layout actually is. Same check, the marker this pipeline actually emits.
-    const templateOverflowIssues = await page.evaluate((tolerance) => {
-      const found: Array<{ templateId: string; sectionId: string }> = [];
-      document.querySelectorAll<HTMLElement>("[data-tpl]").forEach((el) => {
-        if (el.scrollWidth > el.clientWidth + tolerance) {
-          found.push({
-            templateId: el.dataset.tpl ?? "unknown",
-            sectionId: el.dataset.section ?? "unknown",
-          });
-        }
-      });
-      return found;
-    }, OVERFLOW_TOLERANCE_PX);
+      for (const o of overflowIssues) {
+        issues.push({
+          severity: "hard",
+          code: "HORIZONTAL_OVERFLOW",
+          message: `Overflow on ${o.type} (${o.id})`,
+          targetId: o.id !== "unknown" ? o.id : undefined,
+          suggestion: "Use Stack instead of Row or reduce columns",
+        });
+      }
 
-    for (const o of templateOverflowIssues) {
-      issues.push({
-        severity: "hard",
-        code: "HORIZONTAL_OVERFLOW",
-        message: `Overflow on section ${o.sectionId} (template ${o.templateId})`,
-        targetId: o.sectionId,
-        suggestion: "Re-ingest the source template, or widen its container CSS",
-      });
+      // Verbatim-template output never carries `[data-block-id]` (that marker is emitted only by
+      // the classic block-composition renderer) — it wraps every section in
+      // `[data-tpl][data-section]` instead (`templates/compose.ts`). Without this, the overflow
+      // check above silently matches zero elements on 100% of verbatim pages, the default
+      // generation path, no matter how broken the layout actually is. Same check, the marker this
+      // pipeline actually emits.
+      const templateOverflowIssues = await page.evaluate((tolerance) => {
+        const found: Array<{ templateId: string; sectionId: string }> = [];
+        document.querySelectorAll<HTMLElement>("[data-tpl]").forEach((el) => {
+          if (el.scrollWidth > el.clientWidth + tolerance) {
+            found.push({
+              templateId: el.dataset.tpl ?? "unknown",
+              sectionId: el.dataset.section ?? "unknown",
+            });
+          }
+        });
+        return found;
+      }, OVERFLOW_TOLERANCE_PX);
+
+      for (const o of templateOverflowIssues) {
+        issues.push({
+          severity: "hard",
+          code: "HORIZONTAL_OVERFLOW",
+          message: `Overflow on section ${o.sectionId} (template ${o.templateId})`,
+          targetId: o.sectionId,
+          suggestion: "Re-ingest the source template, or widen its container CSS",
+        });
+      }
     }
 
     // The defect real cross-template mixing can introduce and nothing else here checks for: a
@@ -450,6 +472,11 @@ async function runCodeQAInner(
           return;
         }
         if (src.startsWith("data:")) return;
+        // `src="#"` is a bare fragment identifier, not a resource reference at all — a real,
+        // common template pattern for a lightbox/popup's target `<img>` (id names like
+        // "popup-img"/"lightboxImage" confirmed live), left empty on purpose until the template's
+        // own JS populates it on click. It will never load, by design, and was never "broken".
+        if (src === "#") return;
         if (!el.complete || el.naturalWidth === 0) broken.push(label);
       });
       return { broken, empty };
@@ -488,45 +515,54 @@ async function runCodeQAInner(
       await mobilePage.setContent(html, { waitUntil: "domcontentloaded", timeout: 15_000 });
     }
 
-    const mobileOverflow = await mobilePage.evaluate((tolerance) => {
-      const found: string[] = [];
-      document.querySelectorAll("[data-block-id]").forEach((el) => {
-        const htmlEl = el as HTMLElement;
-        if (htmlEl.scrollWidth > htmlEl.clientWidth + tolerance) {
-          found.push(htmlEl.dataset.blockId ?? "unknown");
-        }
-      });
-      return found;
+    // Same page-level discriminator as the desktop pass above — see its comment for the two
+    // rejected per-element approaches this replaced.
+    const pageOverflowsMobile = await mobilePage.evaluate((tolerance) => {
+      const doc = document.documentElement;
+      return doc.scrollWidth > doc.clientWidth + tolerance;
     }, OVERFLOW_TOLERANCE_PX);
 
-    const templateMobileOverflow = await mobilePage.evaluate((tolerance) => {
-      const found: Array<{ templateId: string; sectionId: string }> = [];
-      document.querySelectorAll<HTMLElement>("[data-tpl]").forEach((el) => {
-        if (el.scrollWidth > el.clientWidth + tolerance) {
-          found.push({ templateId: el.dataset.tpl ?? "unknown", sectionId: el.dataset.section ?? "unknown" });
-        }
-      });
-      return found;
-    }, OVERFLOW_TOLERANCE_PX);
+    if (pageOverflowsMobile) {
+      const mobileOverflow = await mobilePage.evaluate((tolerance) => {
+        const found: string[] = [];
+        document.querySelectorAll("[data-block-id]").forEach((el) => {
+          const htmlEl = el as HTMLElement;
+          if (htmlEl.scrollWidth > htmlEl.clientWidth + tolerance) {
+            found.push(htmlEl.dataset.blockId ?? "unknown");
+          }
+        });
+        return found;
+      }, OVERFLOW_TOLERANCE_PX);
 
-    for (const o of templateMobileOverflow) {
-      issues.push({
-        severity: "soft",
-        code: "MOBILE_OVERFLOW",
-        message: `Mobile horizontal overflow on section ${o.sectionId} (template ${o.templateId})`,
-        targetId: o.sectionId,
-        suggestion: "Stack columns on narrow viewports",
-      });
-    }
+      const templateMobileOverflow = await mobilePage.evaluate((tolerance) => {
+        const found: Array<{ templateId: string; sectionId: string }> = [];
+        document.querySelectorAll<HTMLElement>("[data-tpl]").forEach((el) => {
+          if (el.scrollWidth > el.clientWidth + tolerance) {
+            found.push({ templateId: el.dataset.tpl ?? "unknown", sectionId: el.dataset.section ?? "unknown" });
+          }
+        });
+        return found;
+      }, OVERFLOW_TOLERANCE_PX);
 
-    for (const id of mobileOverflow) {
-      issues.push({
-        severity: "soft",
-        code: "MOBILE_OVERFLOW",
-        message: `Mobile horizontal overflow on block ${id}`,
-        targetId: id !== "unknown" ? id : undefined,
-        suggestion: "Stack columns on narrow viewports",
-      });
+      for (const o of templateMobileOverflow) {
+        issues.push({
+          severity: "soft",
+          code: "MOBILE_OVERFLOW",
+          message: `Mobile horizontal overflow on section ${o.sectionId} (template ${o.templateId})`,
+          targetId: o.sectionId,
+          suggestion: "Stack columns on narrow viewports",
+        });
+      }
+
+      for (const id of mobileOverflow) {
+        issues.push({
+          severity: "soft",
+          code: "MOBILE_OVERFLOW",
+          message: `Mobile horizontal overflow on block ${id}`,
+          targetId: id !== "unknown" ? id : undefined,
+          suggestion: "Stack columns on narrow viewports",
+        });
+      }
     }
 
     await mobilePage.close();

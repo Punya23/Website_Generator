@@ -10,6 +10,7 @@ import { pipelineLog } from "../util/pipeline-log.js";
 import { composeSite, pageFileName, type FileCopy } from "../templates/compose.js";
 import { selectSiteSections } from "../templates/select.js";
 import { polishComposedCopy } from "../agents/copy-polish-agent.js";
+import { repairFlaggedSections } from "../agents/section-repair-agent.js";
 import { recordGeneration, type GenerationRecord } from "../templates/generation-store.js";
 import type { VerbatimSiteState } from "../templates/revise.js";
 import type { PlacedSection } from "../templates/types.js";
@@ -150,7 +151,7 @@ export async function runVerbatimTemplatePipeline(
   );
   state.overrides = polish.overrides;
 
-  const finalComposed =
+  let finalComposed =
     Object.keys(polish.overrides).length > 0
       ? await timedStep("site", "recompose (polish)", () =>
           composeSite({
@@ -182,10 +183,10 @@ export async function runVerbatimTemplatePipeline(
   // QA needs the real files on disk: these pages link external stylesheets and images, and a
   // page checked without them reports every asset broken. Staging once also surfaces genuinely
   // missing assets, which is the failure mode that actually matters here.
-  const stageDir = await stageSite(finalComposed.htmlPages, finalComposed.files);
+  let stageDir = await stageSite(finalComposed.htmlPages, finalComposed.files);
 
-  const qaResults: Record<string, QAResult> = {};
-  const blockManifests: Record<string, BlockManifestEntry[]> = {};
+  let qaResults: Record<string, QAResult> = {};
+  let blockManifests: Record<string, BlockManifestEntry[]> = {};
   for (const [slug, html] of Object.entries(finalComposed.htmlPages)) {
     const pageUrl = pathToFileURL(path.join(stageDir, pageFileName(slug))).href;
     qaResults[slug] = await timedStep(slug, "QA", () =>
@@ -198,6 +199,67 @@ export async function runVerbatimTemplatePipeline(
       // failure leaves that page ungrounded (same as before this existed) rather than failing QA.
       blockManifests[slug] = [];
     }
+  }
+
+  // Section repair: QA just named the exact sections it found broken (EMPTY_SECTION,
+  // UNDEFINED_LEAK, RAW_JSON_LEAK, TEMPLATE_FILLER_LEAK) — a targeted follow-up pass over only
+  // those runs, gated behind an actual QA finding rather than running unconditionally like the
+  // copy-polish pass above. One repair round, bounded: the agent's own tool loop (up to 3 turns,
+  // see `section-repair-agent.ts`) is where "check the fix before shipping it" happens, not a
+  // pipeline-level retry loop that could re-run QA indefinitely.
+  const repairOverrides: Record<string, string> = {};
+  let sectionsAttempted = 0;
+  for (const [slug, result] of Object.entries(qaResults)) {
+    const flaggable = result.issues.filter((i) => i.sectionId);
+    if (flaggable.length === 0) continue;
+    const repair = await timedStep(slug, "section repair", () =>
+      repairFlaggedSections(ctx.expandedBrief, slug, finalComposed.htmlPages[slug] ?? "", flaggable)
+    );
+    sectionsAttempted += repair.attempted;
+    Object.assign(repairOverrides, repair.overrides);
+  }
+
+  if (Object.keys(repairOverrides).length > 0) {
+    pipelineLog(
+      `[pipeline] Section repair: fixed ${Object.keys(repairOverrides).length}/${sectionsAttempted} flagged run(s) — recomposing and re-checking`
+    );
+    await fs.rm(stageDir, { recursive: true, force: true });
+    const repaired = await timedStep("site", "recompose (section repair)", () =>
+      composeSite({
+        brief: ctx.expandedBrief,
+        rawBrief: ctx.businessBrief,
+        pages: selected.pages,
+        registry,
+        logoSrc: ctx.logoSrc,
+        ...(selected.anchorTemplateId ? { anchorTemplateId: selected.anchorTemplateId } : {}),
+        overrides: { ...polish.overrides, ...repairOverrides },
+        photos: finalComposed.photos,
+        ...(options.editable ? { editable: true } : {}),
+      })
+    );
+    finalComposed = repaired;
+    state.overrides = { ...polish.overrides, ...repairOverrides };
+    state.photos = repaired.photos;
+
+    stageDir = await stageSite(finalComposed.htmlPages, finalComposed.files);
+    qaResults = {};
+    blockManifests = {};
+    for (const [slug, html] of Object.entries(finalComposed.htmlPages)) {
+      const pageUrl = pathToFileURL(path.join(stageDir, pageFileName(slug))).href;
+      qaResults[slug] = await timedStep(slug, "QA (post-repair)", () =>
+        runCodeQA(html, slug, { pageUrl, businessName: ctx.expandedBrief.businessName })
+      );
+      try {
+        blockManifests[slug] = await extractTemplateSectionManifestFromUrl(pageUrl);
+      } catch {
+        blockManifests[slug] = [];
+      }
+    }
+  } else if (sectionsAttempted > 0) {
+    pipelineLog(`[pipeline] Section repair: attempted ${sectionsAttempted} flagged run(s), none fixed`);
+  }
+
+  for (const slug of Object.keys(finalComposed.htmlPages)) {
     ctx.pages[slug] = {
       slug,
       title: slug === "home" ? ctx.expandedBrief.businessName : `${slug[0]!.toUpperCase()}${slug.slice(1)}`,

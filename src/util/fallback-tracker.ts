@@ -19,7 +19,10 @@ export type FallbackAgent =
   | "page_codegen"
   | "skin_fill"
   | "site_look"
-  | "build_repair";
+  | "build_repair"
+  | "verbatim_media"
+  | "copy_polish"
+  | "section_repair";
 
 const counts: Record<string, number> = {};
 

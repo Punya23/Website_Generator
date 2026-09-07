@@ -54,7 +54,11 @@ export async function backfillPhotoSlotsForTemplate(templateId: string): Promise
         section.slots.filter((slot) => slot.attr === "alt").map((slot) => slot.selector)
       );
       const photoSlots = await detectPhotoSlots(html, { rootDir, templateId, claimedSelectors });
-      if (photoSlots.length !== section.photoSlots.length) changed = true;
+      // Was count-only (`photoSlots.length !== section.photoSlots.length`) — missed a real fix
+      // live: a selector-uniqueness bug produced the same COUNT of slots before and after, just
+      // with corrected (now-distinct) selector strings, so every affected template's manifest was
+      // silently left unwritten by this exact class of fix. Full structural comparison instead.
+      if (JSON.stringify(photoSlots) !== JSON.stringify(section.photoSlots)) changed = true;
       return { ...section, photoSlots };
     })
   );

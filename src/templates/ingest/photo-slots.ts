@@ -76,16 +76,32 @@ function assetOutputPrefix(templateId: string): string {
   return `_tpl-assets/${templateId}/`;
 }
 
+/** Safety cap against pathological/malformed markup — real templates never nest anywhere close to
+ *  this deep. Not the mechanism that limits selector length in practice; see below. */
+const MAX_SELECTOR_CLIMB_DEPTH = 30;
+
 function firstMatchSelector($: cheerio.CheerioAPI, node: DomElement, root: cheerio.Cheerio<never>): string | null {
   const id = $(node).attr("id");
   if (id) return `#${id.replace(/([^\w-])/g, "\\$1")}`;
   const parts: string[] = [];
   let current: DomElement | null = node;
-  for (let depth = 0; current && depth < 4; depth++) {
+  for (let depth = 0; current && depth < MAX_SELECTOR_CLIMB_DEPTH; depth++) {
     const tag = (current as { tagName?: string }).tagName?.toLowerCase() ?? "*";
     const parent: cheerio.Cheerio<DomElement> = $(current).parent();
     const position = parent.children(tag).toArray().indexOf(current);
     parts.unshift(position >= 0 ? `${tag}:nth-of-type(${position + 1})` : tag);
+    const candidate = parts.join(" > ");
+    // Stop climbing the instant this selector uniquely identifies the node within the whole
+    // loaded document — `detectPhotoSlots` always loads exactly one section's HTML in isolation,
+    // so "unique in the document" IS "unique in the section". A selector that still matches more
+    // than one element here is not safe to stop on: confirmed live, an OLD fixed depth-4 cap
+    // produced the IDENTICAL selector for all three cards in a repeated service-card row (the
+    // differentiating ancestor — which sibling `.col-xl-4` column this card sits in — was five
+    // levels up, past the cap), so every one of the three photo slots' `$(selector).first()`
+    // targeted card #1's image; cards #2 and #3 never got touched at all and shipped the
+    // template author's own unresolved placeholder art forever, on every site that ever drew
+    // this section, real Pexels image or not.
+    if ($(candidate).length === 1) return candidate;
     if (parent.length === 0 || parent.is(root as unknown as string)) break;
     current = parent.get(0) ?? null;
   }

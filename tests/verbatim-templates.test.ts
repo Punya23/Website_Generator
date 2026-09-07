@@ -641,6 +641,32 @@ describe("photo-slots", () => {
       await fs.rm(dir, { recursive: true, force: true });
     }
   });
+
+  it("gives repeated near-identical cards distinct selectors instead of all colliding on card #1", async () => {
+    // Confirmed live: a real generation's 3-card service row produced the IDENTICAL selector for
+    // every card's photo slot (the differentiating ancestor — which sibling column each card sits
+    // in — was past the old fixed depth-4 climb), so every one of the 3 slots' `$(selector)
+    // .first()` at apply time targeted card #1's <img>; cards #2 and #3 never got a resolved photo
+    // and shipped the template author's own unreplaced placeholder art forever, real Pexels image
+    // for card #1 or not. Real fixture of that exact file, reused 3x — the actual failure shape.
+    const source = path.resolve(
+      "data/template-cache/tpl_9c31777d1197/src/buyer-file/restin/assets/img/home-1/room/09.jpg"
+    );
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "photo-slot-repeated-cards-"));
+    try {
+      await fs.mkdir(path.join(dir, "assets", "img"), { recursive: true });
+      await fs.copyFile(source, path.join(dir, "assets", "img", "card.jpg"));
+
+      const card = (n: number) =>
+        `<div class="col"><div class="inner"><div class="holder"><img src="_tpl-assets/${TPL}/assets/img/card.jpg" alt="Card ${n}"></div></div></div>`;
+      const html = `<div class="row">${card(1)}${card(2)}${card(3)}</div>`;
+      const slots = await detectPhotoSlots(html, { rootDir: dir, templateId: TPL, claimedSelectors: new Set() });
+      expect(slots).toHaveLength(3);
+      expect(new Set(slots.map((s) => s.selector)).size).toBe(3); // every selector distinct
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("branded-copy headings", () => {

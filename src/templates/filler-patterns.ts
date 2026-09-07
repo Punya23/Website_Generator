@@ -7,6 +7,7 @@
  */
 import * as cheerio from "cheerio";
 import type { Element as DomElement } from "domhandler";
+import { looksLikeRawJson } from "../llm/parse-json.js";
 
 /** Unmistakable markers — one is enough, none of these are English. */
 export const LOREM_RE = /\b(lorem|ipsum|dolor sit amet|consectetur|adipisicing|adipiscing|eiusmod|tempor|incididunt|aliquip|commodo consequat|voluptate|excepteur|proident)\b/i;
@@ -69,7 +70,7 @@ export function elementSelector($: cheerio.CheerioAPI, node: unknown): string {
 export interface FillerLeak {
   /** Which pattern matched — mirrors the `filler:*` change kinds `copy-slots.ts` records when it
    *  catches the same shape at compose time. */
-  code: "lorem" | "copyright" | "selfReferentialHeading" | "streetAddress";
+  code: "lorem" | "copyright" | "selfReferentialHeading" | "streetAddress" | "rawJson";
   selector: string;
   sample: string;
 }
@@ -121,6 +122,15 @@ export function scanHtmlForFillerLeaks(html: string, businessName?: string): Fil
 
     if (looksLikeLorem(text)) {
       leaks.push({ code: "lorem", selector: elementSelector($, node), sample: text.slice(0, 80) });
+      return;
+    }
+    // The literal live-site symptom that motivated this check: an LLM copy step's raw
+    // `{"headline":"...","body":"..."}` (or a malformed retry's error prose it never should have
+    // spliced) landing straight in a heading or paragraph because whatever validated it upstream
+    // only checked "is this a string", not "does this actually read like copy". Catches any JSON
+    // shape, not just one specific block-envelope regex.
+    if (looksLikeRawJson(text)) {
+      leaks.push({ code: "rawJson", selector: elementSelector($, node), sample: text.slice(0, 80) });
       return;
     }
     if (COPYRIGHT_RE.test(text)) {

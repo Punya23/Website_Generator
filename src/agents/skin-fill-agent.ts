@@ -5,7 +5,7 @@ import { allowMocks, requireLlm, strictLlmRequired, handleLlmFailure } from "../
 import { recordFallback } from "../util/fallback-tracker.js";
 import { pipelineLog } from "../util/pipeline-log.js";
 import { chatJsonWithRetry } from "../llm/json-agent.js";
-import { parseLlmJson } from "../llm/parse-json.js";
+import { looksLikeRawJson, parseLlmJson } from "../llm/parse-json.js";
 import { getTemplate } from "../section-templates/registry.js";
 import { COPY_PROP_SCHEMAS, type TemplateId } from "../section-templates/schemas.js";
 import { repairTemplateProps } from "../section-templates/repair-props.js";
@@ -15,7 +15,7 @@ import { minimalBriefContext } from "./page-codegen-agent.js";
 import { stampContactFormProps } from "../forms/contact-form.js";
 import type { MediaRegistry } from "../media/media-registry.js";
 import { skinSectionId, type SiteSkin, type SkinSection } from "../skins/schema.js";
-import type { VerticalDesignProfile } from "../design/vertical-profiles.js";
+import { useSkinFillLlm } from "../llm/pipeline-speed.js";
 
 const LAYOUT_KEYS = new Set([
   "layoutVariant",
@@ -76,6 +76,28 @@ export function slotSchemaForSkin(skin: SiteSkin, onlyIds?: Set<string>): string
   return lines.join("\n");
 }
 
+/** Walks a value looking for a string leaf that is itself raw JSON — a `z.string()` schema field
+ *  happily accepts `'{"headline":"..."}'` as a value, so schema validation alone doesn't catch a
+ *  model handing back its whole envelope (or a nested object) as one field's content. Returns the
+ *  first offending field path found, or `undefined` when everything is real copy. */
+function findRawJsonLeak(value: unknown, path = ""): string | undefined {
+  if (typeof value === "string") return looksLikeRawJson(value) ? path || "(root)" : undefined;
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      const hit = findRawJsonLeak(value[i], `${path}[${i}]`);
+      if (hit) return hit;
+    }
+    return undefined;
+  }
+  if (value && typeof value === "object") {
+    for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+      const hit = findRawJsonLeak(v, path ? `${path}.${key}` : key);
+      if (hit) return hit;
+    }
+  }
+  return undefined;
+}
+
 export function validateFilledCopy(
   templateId: string,
   props: Record<string, unknown>
@@ -90,6 +112,10 @@ export function validateFilledCopy(
       .join("; ");
     return { ok: false, error: `${templateId}: ${detail}` };
   }
+  // Shape-valid but content-poisoned: fails validation on purpose so this section stays
+  // "outstanding" and gets a real retry (see the 3-attempt loop below) instead of shipping.
+  const leak = findRawJsonLeak(parsed.data);
+  if (leak) return { ok: false, error: `${templateId}: ${leak}: looks like raw JSON, not copy` };
   return { ok: true, props: repaired };
 }
 
@@ -159,13 +185,8 @@ export function mockFillSkinCopy(ctx: SiteContext, skin: SiteSkin): Record<strin
     sections.forEach((section, index) => {
       const id = skinSectionId(slug, index, section.templateId);
       const blueprintSection = { id, templateId: section.templateId, intent: section.intent };
-      let props = mockPropsForTemplate(
-        section.templateId,
-        blueprintSection,
-        ctx.expandedBrief,
-        slug,
-        ctx.verticalProfile as VerticalDesignProfile | undefined
-      );
+      // Slot the brief only — never overlay vertical-profile CTA/copy hints.
+      let props = mockPropsForTemplate(section.templateId, blueprintSection, ctx.expandedBrief, slug);
       if (section.templateId === "quote_calculator" && skin.widgetUnit) {
         props.unitLabel = skin.widgetUnit;
       }
@@ -321,100 +342,116 @@ function pagesFromCopyMap(
 export async function fillSiteSkin(
   ctx: SiteContext,
   skin: SiteSkin,
-  registry: MediaRegistry
+  registry: MediaRegistry,
+  options?: { enrichMedia?: boolean }
 ): Promise<{ instances: Record<string, SectionInstance[]>; blueprints: PageBlueprint[] }> {
-  requireLlm("skin fill");
-
   const mockCopy = mockFillSkinCopy(ctx, skin);
   let copyByPage = mockCopy;
 
-  if (llm.isAvailable) {
-    const allIds: string[] = [];
-    for (const [slug, sections] of Object.entries(skin.pages)) {
-      sections.forEach((section, index) => allIds.push(skinSectionId(slug, index, section.templateId)));
-    }
-    // Sections that pass validation are kept even if a later attempt (or a different
-    // section) fails — one bad enum shouldn't discard bespoke copy for the rest of the site.
-    const accepted = new Map<string, Record<string, unknown>>();
-    let outstanding = new Set<string>(allIds);
-    let lastError: string | undefined;
-
-    for (let attempt = 0; attempt < 3 && outstanding.size > 0; attempt++) {
-      const onlyIds = attempt > 0 ? outstanding : undefined;
-      let parsed: Record<string, unknown>;
-      try {
-        parsed = await chatJsonWithRetry(
-          "skin fill",
-          SKIN_FILL_PROMPT,
-          (parseError) => buildUserPrompt(ctx, skin, parseError ?? lastError, onlyIds),
-          {
-            tokenRole: "page",
-            model: llm.getPageCodegenModel(),
-            initialTemperature: 0.7,
-            maxAttempts: 2,
-          },
-          (raw) => parseLlmJson(raw) as Record<string, unknown>
-        );
-      } catch (err) {
-        // A malformed-JSON exhaustion here only means *this* attempt produced nothing usable —
-        // fall through to the next outer attempt instead of discarding sections already accepted.
-        if (strictLlmRequired()) {
-          recordFallback("skin_fill");
-          handleLlmFailure("skin fill", err);
-        }
-        lastError = err instanceof Error ? err.message : String(err);
-        pipelineLog(`[pipeline] Skin fill attempt ${attempt + 1}/3 produced no usable JSON: ${lastError}`);
-        continue;
-      }
-
-      const { copy } = mergeFill(skin, extractPageMap(parsed));
-      const errors: string[] = [];
-      const stillBad = new Set<string>();
-      for (const [slug, sections] of Object.entries(skin.pages)) {
-        sections.forEach((section, index) => {
-          const id = skinSectionId(slug, index, section.templateId);
-          if (!outstanding.has(id)) return;
-          const props = copy[slug]?.[id] ?? {};
-          if (Object.keys(props).length === 0) {
-            stillBad.add(id);
-            errors.push(`${id}: missing`);
-            return;
-          }
-          const check = validateFilledCopy(section.templateId, props);
-          if (check.ok) accepted.set(id, check.props);
-          else {
-            stillBad.add(id);
-            errors.push(`${id}: ${check.error}`);
-          }
-        });
-      }
-      outstanding = stillBad;
-      if (errors.length) {
-        lastError = errors.slice(0, 8).join(" | ");
-        pipelineLog(`[pipeline] Skin fill validation failed (attempt ${attempt + 1}/3): ${lastError}`);
-      }
-    }
-
-    if (outstanding.size === 0 && accepted.size === allIds.length) {
-      copyByPage = pagesFromCopyMap(skin, accepted, mockCopy);
-    } else if (accepted.size > 0) {
-      for (const id of outstanding) recordFallback("skin_fill", id);
-      pipelineLog(
-        `[pipeline] Skin fill: ${accepted.size}/${allIds.length} section(s) used bespoke copy; mock copy used for: ${[...outstanding].join(", ")}`
-      );
-      copyByPage = pagesFromCopyMap(skin, accepted, mockCopy);
-    } else {
-      recordFallback("skin_fill");
-      pipelineLog(`[pipeline] Skin fill fell back to mock copy entirely: ${lastError ?? "validation failed"}`);
-    }
-  } else if (!allowMocks()) {
-    throw new Error("Skin fill requires LLM");
+  if (useSkinFillLlm()) {
+    copyByPage = await fillSkinCopyWithLlm(ctx, skin, mockCopy);
   } else {
-    recordFallback("skin_fill");
+    pipelineLog("[pipeline] Skin copy slotted from the brief — templates unchanged, no LLM rewrite");
   }
 
-  const instances = await instancesFromSkinCopy(ctx, skin, copyByPage, registry);
+  const instances = await instancesFromSkinCopy(ctx, skin, copyByPage, registry, options);
   return { instances, blueprints: skinInstancesToBlueprints(skin, instances) };
+}
+
+async function fillSkinCopyWithLlm(
+  ctx: SiteContext,
+  skin: SiteSkin,
+  mockCopy: Record<string, Record<string, Record<string, unknown>>>
+): Promise<Record<string, Record<string, Record<string, unknown>>>> {
+  requireLlm("skin fill");
+
+  let copyByPage = mockCopy;
+  if (!llm.isAvailable) {
+    if (!allowMocks()) throw new Error("Skin fill requires LLM");
+    recordFallback("skin_fill");
+    return mockCopy;
+  }
+
+  const allIds: string[] = [];
+  for (const [slug, sections] of Object.entries(skin.pages)) {
+    sections.forEach((section, index) => allIds.push(skinSectionId(slug, index, section.templateId)));
+  }
+  // Sections that pass validation are kept even if a later attempt (or a different
+  // section) fails — one bad enum shouldn't discard bespoke copy for the rest of the site.
+  const accepted = new Map<string, Record<string, unknown>>();
+  let outstanding = new Set<string>(allIds);
+  let lastError: string | undefined;
+
+  for (let attempt = 0; attempt < 3 && outstanding.size > 0; attempt++) {
+    const onlyIds = attempt > 0 ? outstanding : undefined;
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = await chatJsonWithRetry(
+        "skin fill",
+        SKIN_FILL_PROMPT,
+        (parseError) => buildUserPrompt(ctx, skin, parseError ?? lastError, onlyIds),
+        {
+          tokenRole: "page",
+          model: llm.getPageCodegenModel(),
+          initialTemperature: 0.7,
+          maxAttempts: 2,
+        },
+        (raw) => parseLlmJson(raw) as Record<string, unknown>
+      );
+    } catch (err) {
+      // A malformed-JSON exhaustion here only means *this* attempt produced nothing usable —
+      // fall through to the next outer attempt instead of discarding sections already accepted.
+      if (strictLlmRequired()) {
+        recordFallback("skin_fill");
+        handleLlmFailure("skin fill", err);
+      }
+      lastError = err instanceof Error ? err.message : String(err);
+      pipelineLog(`[pipeline] Skin fill attempt ${attempt + 1}/3 produced no usable JSON: ${lastError}`);
+      continue;
+    }
+
+    const { copy } = mergeFill(skin, extractPageMap(parsed));
+    const errors: string[] = [];
+    const stillBad = new Set<string>();
+    for (const [slug, sections] of Object.entries(skin.pages)) {
+      sections.forEach((section, index) => {
+        const id = skinSectionId(slug, index, section.templateId);
+        if (!outstanding.has(id)) return;
+        const props = copy[slug]?.[id] ?? {};
+        if (Object.keys(props).length === 0) {
+          stillBad.add(id);
+          errors.push(`${id}: missing`);
+          return;
+        }
+        const check = validateFilledCopy(section.templateId, props);
+        if (check.ok) accepted.set(id, check.props);
+        else {
+          stillBad.add(id);
+          errors.push(`${id}: ${check.error}`);
+        }
+      });
+    }
+    outstanding = stillBad;
+    if (errors.length) {
+      lastError = errors.slice(0, 8).join(" | ");
+      pipelineLog(`[pipeline] Skin fill validation failed (attempt ${attempt + 1}/3): ${lastError}`);
+    }
+  }
+
+  if (outstanding.size === 0 && accepted.size === allIds.length) {
+    copyByPage = pagesFromCopyMap(skin, accepted, mockCopy);
+  } else if (accepted.size > 0) {
+    for (const id of outstanding) recordFallback("skin_fill", id);
+    pipelineLog(
+      `[pipeline] Skin fill: ${accepted.size}/${allIds.length} section(s) used brief copy; mock copy used for: ${[...outstanding].join(", ")}`
+    );
+    copyByPage = pagesFromCopyMap(skin, accepted, mockCopy);
+  } else {
+    recordFallback("skin_fill");
+    pipelineLog(`[pipeline] Skin fill fell back to brief copy entirely: ${lastError ?? "validation failed"}`);
+  }
+
+  return copyByPage;
 }
 
 export { pagePlansFromSkin };

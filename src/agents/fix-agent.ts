@@ -5,6 +5,8 @@ import { pipelineLog } from "../util/pipeline-log.js";
 import { normalizeLayoutNode, sanitizeLayoutNode } from "./layout-normalize.js";
 import { serializeContextForFix } from "../site-context/assemble.js";
 import { requireLlm } from "../util/llm-required.js";
+import { chatJsonWithRetry } from "../llm/json-agent.js";
+import { parseLlmJson } from "../llm/parse-json.js";
 
 const FIX_SYSTEM = `You are a layout fix agent. QA found issues — apply minimal surgical fixes.
 
@@ -41,9 +43,18 @@ export async function applyFixes(options: ApplyFixesOptions): Promise<FixResult>
 
   requireLlm("layout fix");
 
-  const raw = await llm.chat(
+  const blockIds = content.map((c) => c.id);
+  // chatJsonWithRetry (up to 3 attempts) replaces a blind `JSON.parse(raw) as FixResult` — a
+  // truncated or malformed fix response used to throw the whole QA-fix pass on the first bad
+  // Ollama reply instead of getting a real re-ask.
+  const parsed = await chatJsonWithRetry<FixResult>(
+    `layout fix ${pageSlug}`,
     FIX_SYSTEM,
-    `PAGE: ${pageSlug}
+    (parseError) => {
+      const suffix = parseError
+        ? `\n\nPRIOR RESPONSE WAS INVALID JSON (${parseError}). Output valid JSON only.`
+        : "";
+      return `PAGE: ${pageSlug}
 ISSUES:
 ${JSON.stringify(issues, null, 2)}
 
@@ -53,17 +64,17 @@ ${serializeContextForFix(ctx, pageSlug)}
 CURRENT LAYOUT:
 ${JSON.stringify(layout, null, 2)}
 
-BLOCK IDS: ${content.map((c) => c.id).join(", ")}`,
-    {
-      jsonMode: true,
-      temperature: 0.2,
-      model: llm.getFixModel(),
-      tokenRole: "composition",
+BLOCK IDS: ${blockIds.join(", ")}${suffix}`;
+    },
+    { jsonMode: true, temperature: 0.2, model: llm.getFixModel(), tokenRole: "composition" },
+    (raw) => {
+      const candidate = parseLlmJson<Partial<FixResult>>(raw);
+      if (!candidate.layout || typeof candidate.layout !== "object") {
+        throw new SyntaxError('Expected a JSON object with a "layout" field');
+      }
+      return candidate as FixResult;
     }
   );
-
-  const parsed = JSON.parse(raw) as FixResult;
-  const blockIds = content.map((c) => c.id);
   const normalized = normalizeLayoutNode(parsed.layout, blockIds);
   if (!normalized) {
     throw new Error("Fix agent returned invalid layout");

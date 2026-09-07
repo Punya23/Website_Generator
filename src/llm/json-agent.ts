@@ -6,7 +6,10 @@ import { pipelineLog } from "../util/pipeline-log.js";
 function isRetryableOutputError(err: unknown): boolean {
   return isJsonParseError(err) || err instanceof ZodError;
 }
-const DEFAULT_MAX_ATTEMPTS = 2;
+// A lightweight local model (Ollama) is flakier at strict JSON than a hosted frontier model —
+// 2 attempts left real generations one bad response away from throwing. 3 gives room for one
+// syntax-repair retry AND one real re-ask before giving up.
+const DEFAULT_MAX_ATTEMPTS = 3;
 const RETRY_TEMPERATURE = 0.35;
 
 export interface ChatJsonWithRetryOptions extends LLMOptions {

@@ -108,14 +108,31 @@ async function runCodeQAInner(
   // independent of which compose-time pass should have caught it. This is the gate that was
   // missing — `compose.ts` tracked `slotsSkipped`/`fillerRewritten` as observability, but nothing
   // failed the build on a leftover "lorem ipsum" or the template author's own street address.
+  // `scanHtmlForFillerLeaks` also catches generic raw-JSON-in-a-text-node (`rawJson`) — a broader,
+  // shape-based net than the one narrow block-envelope regex above, for the LLM copy-step leak
+  // this repo's own generations have shipped live (a polished heading/paragraph that is itself
+  // still `{"headline":"...","body":"..."}`).
   const fillerLeaks = scanHtmlForFillerLeaks(html, options.businessName);
-  if (fillerLeaks.length > 0) {
-    const sample = fillerLeaks[0]!;
+  const rawJsonLeaks = fillerLeaks.filter((leak) => leak.code === "rawJson");
+  const otherLeaks = fillerLeaks.filter((leak) => leak.code !== "rawJson");
+  if (rawJsonLeaks.length > 0) {
+    const sample = rawJsonLeaks[0]!;
+    issues.push({
+      severity: "hard",
+      code: "RAW_JSON_LEAK",
+      message:
+        `${rawJsonLeaks.length} text node(s) shipped raw JSON instead of copy ` +
+        `(e.g. at ${sample.selector}: "${sample.sample}")`,
+      suggestion: "Guard whatever LLM copy step wrote this field against JSON-shaped output before splicing it in",
+    });
+  }
+  if (otherLeaks.length > 0) {
+    const sample = otherLeaks[0]!;
     issues.push({
       severity: "hard",
       code: "TEMPLATE_FILLER_LEAK",
       message:
-        `${fillerLeaks.length} leftover placeholder/filler text node(s) shipped on this page ` +
+        `${otherLeaks.length} leftover placeholder/filler text node(s) shipped on this page ` +
         `(e.g. ${sample.code} at ${sample.selector}: "${sample.sample}")`,
       suggestion: "Widen copy-slot coverage on the source template, or its filler-neutralization pass, for this shape",
     });
@@ -359,18 +376,27 @@ async function runCodeQAInner(
       }
     }
 
-    const brokenImages = await page.evaluate(() => {
+    // Was `img[src]` + an early `if (!src) return` — an `<img>` with no `src` at all, or `src=""`
+    // (a stock/photo-slot resolution that silently failed and left the attribute blank instead of
+    // populating it), never matched that selector and was never flagged: the literal "empty image"
+    // this repo's own generations have shipped. Now checked as its own case, distinct from a real
+    // hotlink that 404s or times out.
+    const { broken: brokenImages, empty: emptyImages } = await page.evaluate(() => {
       const broken: string[] = [];
-      document.querySelectorAll("img[src]").forEach((img) => {
+      const empty: string[] = [];
+      document.querySelectorAll("img").forEach((img) => {
         const el = img as HTMLImageElement;
+        const parent = el.closest("[data-block-id]") as HTMLElement | null;
+        const label = parent?.dataset.blockId ?? "image";
         const src = el.getAttribute("src")?.trim() ?? "";
-        if (!src || src.startsWith("data:")) return;
-        if (!el.complete || el.naturalWidth === 0) {
-          const parent = el.closest("[data-block-id]") as HTMLElement | null;
-          broken.push(parent?.dataset.blockId ?? "image");
+        if (!src) {
+          empty.push(label);
+          return;
         }
+        if (src.startsWith("data:")) return;
+        if (!el.complete || el.naturalWidth === 0) broken.push(label);
       });
-      return broken;
+      return { broken, empty };
     });
 
     for (const id of brokenImages) {
@@ -380,6 +406,15 @@ async function runCodeQAInner(
         message: `Broken image in block ${id}`,
         targetId: id,
         suggestion: "Clear src for re-enrichment",
+      });
+    }
+    for (const id of emptyImages) {
+      issues.push({
+        severity: "hard",
+        code: "EMPTY_IMAGE",
+        message: `Image in block ${id} has no src at all (never resolved)`,
+        targetId: id,
+        suggestion: "Photo/media resolution silently failed for this slot — investigate the resolver, don't just clear src again",
       });
     }
 

@@ -48,6 +48,25 @@ export function isJsonParseError(err: unknown): boolean {
   return err instanceof SyntaxError || (err instanceof Error && /JSON/i.test(err.message));
 }
 
+/**
+ * True when `text` looks like it's still JSON (or a JSON-mode model's error/refusal prose) rather
+ * than prose copy — the guard every place that splices a raw LLM string into a page's text content
+ * (as opposed to a schema-validated field) must run first. Real live-site symptom this exists to
+ * catch: a value like `{"headline":"Great Bakes","body":"..."}` landing verbatim in an `<h1>`
+ * because the field-level parse succeeded (it IS valid JSON — just the whole envelope, not the one
+ * field a caller asked for) or a retry/self-check path handed back its own raw response instead of
+ * the extracted value.
+ */
+export function looksLikeRawJson(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  if (/^[{[][\s\S]*[}\]]$/.test(t) === false) return false;
+  // Cheap positive signal on top of the bracket check: a real JSON object/array almost always has
+  // a `"key":` pair or `,` between elements — a stray "{smile}" or "[laughs]" aside in real copy
+  // has neither and should not trip this.
+  return /"[^"]+"\s*:/.test(t) || /^[[{]\s*["{[]/.test(t);
+}
+
 export function parseLlmJson<T = unknown>(raw: string): T {
   if (!raw.trim()) {
     throw new SyntaxError("Empty JSON payload from LLM");

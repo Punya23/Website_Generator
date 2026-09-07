@@ -2,6 +2,8 @@ import type { ContentBlock, ExpandedBrief, PagePlan } from "../types.js";
 import { llm } from "../llm/client.js";
 import { briefToContext } from "./expand-brief-agent.js";
 import { allowMocks, requireLlm } from "../util/llm-required.js";
+import { chatJsonWithRetry } from "../llm/json-agent.js";
+import { parseLlmJson } from "../llm/parse-json.js";
 
 const CONTENT_SYSTEM = `You are an expert website copywriter. Write rich, specific, conversion-focused content.
 You have ZERO layout awareness — never mention grids, columns, or placement.
@@ -38,9 +40,7 @@ export async function generateContent(
   requireLlm("content generation");
 
   if (llm.isAvailable) {
-    const raw = await llm.chat(
-      CONTENT_SYSTEM,
-      `${briefToContext(brief)}
+    const userPrompt = (parseError?: string) => `${briefToContext(brief)}
 
 PAGE: ${pagePlan.slug} (${pagePlan.title})
 Goal: ${pagePlan.goal}
@@ -48,11 +48,26 @@ minBlocks: ${pagePlan.minBlocks}
 Content focus: ${pagePlan.contentFocus.join(", ")}
 Layout hint (for tone only, do NOT implement): ${pagePlan.layoutHint}
 
-Generate ${pagePlan.minBlocks}+ content blocks. Be thorough and specific to ${brief.businessName}.`,
-      { jsonMode: true, temperature: 0.85, tokenRole: "composition" }
+Generate ${pagePlan.minBlocks}+ content blocks. Be thorough and specific to ${brief.businessName}.${
+      parseError ? `\n\nPRIOR RESPONSE WAS INVALID JSON (${parseError}). Output valid JSON only.` : ""
+    }`;
+    // Ollama-sized models occasionally drop the outer `{"blocks":[...]}` envelope or emit truncated
+    // JSON — chatJsonWithRetry re-asks (up to 3 attempts total) instead of the blind
+    // `JSON.parse(raw) as {...}` this used to do, which threw the whole page generation on any
+    // malformed response.
+    return chatJsonWithRetry(
+      `content ${pagePlan.slug}`,
+      CONTENT_SYSTEM,
+      userPrompt,
+      { jsonMode: true, temperature: 0.85, tokenRole: "composition" },
+      (raw) => {
+        const parsed = parseLlmJson<{ blocks?: unknown }>(raw);
+        if (!Array.isArray(parsed.blocks)) {
+          throw new SyntaxError("Expected a JSON object with a \"blocks\" array");
+        }
+        return parsed.blocks as ContentBlock[];
+      }
     );
-    const parsed = JSON.parse(raw) as { blocks: ContentBlock[] };
-    return parsed.blocks;
   }
 
   if (!allowMocks()) throw new Error("Content generation requires LLM");

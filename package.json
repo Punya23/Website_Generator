@@ -32,7 +32,8 @@
     "templates:ingest": "tsx src/templates/ingest/run-ingest.ts",
     "templates:backfill-theme": "tsx src/templates/ingest/backfill-theme.ts",
     "templates:backfill-design-tokens": "tsx src/templates/ingest/backfill-design-tokens.ts",
-    "templates:backfill-taxonomy": "tsx src/templates/ingest/backfill-taxonomy.ts"
+    "templates:backfill-taxonomy": "tsx src/templates/ingest/backfill-taxonomy.ts",
+    "templates:backfill-photo-slots": "tsx src/templates/ingest/backfill-photo-slots.ts"
   },
   "keywords": [
     "website-generator",

@@ -138,7 +138,12 @@ async function measureRemote(src: string): Promise<{ width: number; height: numb
   }
 }
 
-async function measure(rootDir: string, prefix: string, src: string): Promise<{ width: number; height: number } | null> {
+async function measure(
+  rootDir: string,
+  prefix: string,
+  src: string,
+  minDimension = MIN_PHOTO_DIMENSION
+): Promise<{ width: number; height: number } | null> {
   if (!src.startsWith(prefix)) {
     return /^https?:\/\//i.test(src) ? measureRemote(src) : null;
   }
@@ -148,11 +153,35 @@ async function measure(rootDir: string, prefix: string, src: string): Promise<{ 
   try {
     const dims = await imageSizeFromFile(absolutePath);
     if (!dims.width || !dims.height) return null;
-    if (dims.width < MIN_PHOTO_DIMENSION || dims.height < MIN_PHOTO_DIMENSION) return null;
+    if (dims.width < minDimension || dims.height < minDimension) return null;
     return { width: dims.width, height: dims.height };
   } catch {
     return null; // unreadable/corrupt image file — leave it verbatim rather than guess
   }
+}
+
+/** A gallery/portfolio slider very often ships its OWN slides smaller than a hero photo — confirmed
+ *  live: a real anchor template's gallery slider shipped 196×118 room photos that never crossed
+ *  `MIN_PHOTO_DIMENSION`, so they were never a photo slot at all and shipped verbatim, unrelated to
+ *  the generated site's actual business, on every site that ever picked that template. A second,
+ *  much lower floor applies ONLY inside a recognizable gallery/slider container — real decorative
+ *  art (icons, dividers, sprites) essentially never lives inside one of these. */
+const GALLERY_CONTAINER_RE = /\b(swiper|slider|carousel|gallery|lightbox|portfolio)\b/i;
+/** Even inside a gallery container, a small square-ish image is very likely a fabricated person's
+ *  photo (testimonial avatar, "meet the team" headshot) rather than a real content photo — those
+ *  stay untouched on purpose (see `select.ts`'s `PEOPLE_ROLES` gate and its own doc comment on not
+ *  shipping invented people). Checked against the image's own path/alt AND its nearby ancestors'
+ *  classes, since the avatar itself is rarely named anything distinctive. */
+const AVATAR_RE = /\b(avatar|testimonial|author|team|staff|profile|reviewer|client-?photo|user-?photo)\b/i;
+const GALLERY_MIN_PHOTO_DIMENSION = 80;
+
+function ancestorClassesMatch($: cheerio.CheerioAPI, node: DomElement, re: RegExp, depth = 4): boolean {
+  let current: DomElement | null = node;
+  for (let i = 0; i < depth && current; i++) {
+    if (re.test($(current).attr("class") ?? "")) return true;
+    current = $(current).parent().get(0) ?? null;
+  }
+  return false;
 }
 
 export async function detectPhotoSlots(html: string, options: DetectPhotoSlotsOptions): Promise<PhotoSlot[]> {
@@ -165,7 +194,17 @@ export async function detectPhotoSlots(html: string, options: DetectPhotoSlotsOp
     const el = $(node);
     const selector = firstMatchSelector($, node, root);
     if (!selector || options.claimedSelectors.has(selector)) continue;
-    const dims = await measure(options.rootDir, prefix, effectiveImgSrc($, node));
+    const src = effectiveImgSrc($, node);
+    let dims = await measure(options.rootDir, prefix, src);
+    if (!dims && (GALLERY_CONTAINER_RE.test(el.attr("class") ?? "") || ancestorClassesMatch($, node, GALLERY_CONTAINER_RE))) {
+      const looksLikeAvatar =
+        AVATAR_RE.test(src) ||
+        AVATAR_RE.test(el.attr("alt") ?? "") ||
+        ancestorClassesMatch($, node, AVATAR_RE);
+      if (!looksLikeAvatar) {
+        dims = await measure(options.rootDir, prefix, src, GALLERY_MIN_PHOTO_DIMENSION);
+      }
+    }
     if (!dims) continue;
     slots.push({ selector, kind: "img", ...dims, ...(el.attr("alt") ? { alt: el.attr("alt") } : {}) });
   }

@@ -51,6 +51,22 @@ describe("repairFlaggedSections", () => {
     sectionId: "sec_hero",
   };
 
+  it("targets a section flagged SLOT_SKIPPED — compose.ts's own signal, not a QA leak pattern", async () => {
+    const html = sectionHtml("sec_hero", "tpl_x:sec_hero#0", "Generic vendor text nobody wrote for this business.");
+    vi.mocked(llm.chat)
+      .mockResolvedValueOnce(
+        JSON.stringify({ tool: "check_text", args: { text: "Fresh sourdough baked daily in Bristol." } })
+      )
+      .mockResolvedValueOnce(
+        JSON.stringify({ finish: true, fixes: [{ id: "tpl_x:sec_hero#0", text: "Fresh sourdough baked daily in Bristol." }] })
+      );
+    const result = await repairFlaggedSections(BRIEF, "home", html, [
+      { severity: "hard", code: "SLOT_SKIPPED", message: "1 copy slot left as template text", sectionId: "sec_hero" },
+    ]);
+    expect(result.attempted).toBe(1);
+    expect(result.overrides["tpl_x:sec_hero#0"]).toBe("Fresh sourdough baked daily in Bristol.");
+  });
+
   it("does nothing when no issue names a sectionId", async () => {
     const html = sectionHtml("sec_hero", "tpl_x:sec_hero#0", "broken text");
     const result = await repairFlaggedSections(BRIEF, "home", html, [{ ...issue, sectionId: undefined }]);

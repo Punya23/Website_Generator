@@ -108,6 +108,12 @@ export interface SectionProvenance {
   changes: CopyChange[];
   photosApplied: number;
   photosSkipped: number;
+  /** Copy slots in this section the brief had nothing to say for — the original template
+   *  author's own text ships in that spot, unchanged. Not caught by any leak-pattern check (it's
+   *  neither lorem, an address, nor a self-referential heading — just generic prose nobody wrote
+   *  for THIS business), so this count is a section's own worth-repairing signal, independent of
+   *  QA. See `repairFlaggedSections` (`section-repair-agent.ts`), which now targets this directly. */
+  slotsSkipped: number;
 }
 
 export interface ComposedSite {
@@ -721,6 +727,7 @@ export async function composeSite(options: ComposeOptions): Promise<ComposedSite
         changes: [...substituted.changes, ...withPhotos.changes],
         photosApplied: withPhotos.applied,
         photosSkipped: withPhotos.skipped,
+        slotsSkipped: substituted.skipped,
       });
     }
 

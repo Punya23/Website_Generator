@@ -20,12 +20,23 @@ import { runToolLoop, type ToolDef } from "../llm/tool-loop.js";
 import type { ExpandedBrief } from "../types.js";
 import type { QAIssue } from "../types.js";
 
-/** QA codes a repair pass can plausibly fix by rewriting text — structural issues (overflow,
- *  cross-template mismatch) aren't in scope here, only content-shaped ones. */
-const REPAIRABLE_CODES = new Set(["EMPTY_SECTION", "UNDEFINED_LEAK", "RAW_JSON_LEAK", "TEMPLATE_FILLER_LEAK"]);
+/** Codes a repair pass can plausibly fix by rewriting text — structural issues (overflow,
+ *  cross-template mismatch) aren't in scope here, only content-shaped ones. `SLOT_SKIPPED` isn't a
+ *  QA pattern match at all — `compose.ts` knows directly, with no guessing, exactly which sections
+ *  had a copy slot the brief had nothing to say for (still the template author's own generic
+ *  prose), and `verbatim-template-pipeline.ts` feeds those in as issues the same shape as QA's. */
+const REPAIRABLE_CODES = new Set([
+  "EMPTY_SECTION",
+  "UNDEFINED_LEAK",
+  "RAW_JSON_LEAK",
+  "TEMPLATE_FILLER_LEAK",
+  "SLOT_SKIPPED",
+]);
 
 const REPAIR_SYSTEM = `You are fixing broken copy on a real, specific business's website. QA flagged one or more
-text runs as broken (empty, a raw JSON leak, leftover placeholder text, or a literal "undefined").
+text runs as broken: empty, a raw JSON leak, leftover placeholder text, a literal "undefined", or —
+most common — a copy slot the business's own brief had nothing to say for, so the template author's
+own generic prose is still sitting there unchanged.
 
 For each flagged run: write a short, real, specific replacement grounded in the business summary —
 never generic template boilerplate, never JSON, never empty. Before you finish, call check_text on

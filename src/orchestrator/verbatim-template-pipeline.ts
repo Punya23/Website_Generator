@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import type { QAResult, SiteContext } from "../types.js";
+import type { QAIssue, QAResult, SiteContext } from "../types.js";
 import { extractTemplateSectionManifestFromUrl, runCodeQA, type BlockManifestEntry } from "../qa/code-qa.js";
 import { timedStep } from "../util/timed.js";
 import { pipelineLog } from "../util/pipeline-log.js";
@@ -207,16 +207,29 @@ export async function runVerbatimTemplatePipeline(
     }
   }
 
-  // Section repair: QA just named the exact sections it found broken (EMPTY_SECTION,
-  // UNDEFINED_LEAK, RAW_JSON_LEAK, TEMPLATE_FILLER_LEAK) — a targeted follow-up pass over only
-  // those runs, gated behind an actual QA finding rather than running unconditionally like the
-  // copy-polish pass above. One repair round, bounded: the agent's own tool loop (up to 3 turns,
-  // see `section-repair-agent.ts`) is where "check the fix before shipping it" happens, not a
-  // pipeline-level retry loop that could re-run QA indefinitely.
+  // Section repair: two independent sources feed the same repair pass. QA names sections it
+  // pattern-matched as broken (EMPTY_SECTION, UNDEFINED_LEAK, RAW_JSON_LEAK, TEMPLATE_FILLER_LEAK)
+  // — but a skipped copy slot (the brief had nothing to say, so the template author's own generic
+  // prose ships unchanged) is neither lorem, an address, nor a self-referential heading, so no leak
+  // pattern ever catches it; `compose.ts`'s own per-section `slotsSkipped` count already knows
+  // exactly which sections these are, with no pattern-matching or guessing involved. Both sources
+  // are just "this section needs a real pass", so they're merged into the same repair call. One
+  // repair round, bounded: the agent's own tool loop (up to 3 turns, see `section-repair-agent.ts`)
+  // is where "check the fix before shipping it" happens, not a pipeline-level retry loop that could
+  // re-run QA indefinitely.
   const repairOverrides: Record<string, string> = {};
   let sectionsAttempted = 0;
-  for (const [slug, result] of Object.entries(qaResults)) {
-    const flaggable = result.issues.filter((i) => i.sectionId);
+  for (const slug of Object.keys(finalComposed.htmlPages)) {
+    const qaIssues = qaResults[slug]?.issues.filter((i) => i.sectionId) ?? [];
+    const skippedSlotIssues: QAIssue[] = (finalComposed.provenance[slug] ?? [])
+      .filter((section) => section.slotsSkipped > 0)
+      .map((section) => ({
+        severity: "hard" as const,
+        code: "SLOT_SKIPPED",
+        message: `${section.slotsSkipped} copy slot(s) in section ${section.sectionId} left as the template's own text — the brief had nothing to say for them`,
+        sectionId: section.sectionId,
+      }));
+    const flaggable = [...qaIssues, ...skippedSlotIssues];
     if (flaggable.length === 0) continue;
     const repair = await timedStep(slug, "section repair", () =>
       repairFlaggedSections(ctx.expandedBrief, slug, finalComposed.htmlPages[slug] ?? "", flaggable)

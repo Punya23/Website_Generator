@@ -1,4 +1,5 @@
 import { chromium, type Browser } from "playwright";
+import * as cheerio from "cheerio";
 import type { QAIssue, QAResult } from "../types.js";
 import { SUPPORTED_BLOCK_TYPES } from "../agents/content-normalize.js";
 import { withTimeout } from "../util/timed.js";
@@ -63,6 +64,90 @@ export async function closeQABrowser(): Promise<void> {
 
 const OVERFLOW_TOLERANCE_PX = 4;
 
+/** A JS-side templating slip landing verbatim in shipped copy — a field that was `undefined`/`null`
+ *  got interpolated instead of guarded. Own check, own message: this is a different failure than a
+ *  raw JSON envelope (`looksLikeRawJson`) even though both are "text that shouldn't be there". */
+const UNDEFINED_LEAK_RE = /(^|[\s>])(undefined|null|NaN|\[object Object\])([\s<.,!?]|$)/;
+
+/**
+ * Structural, no-vision, no-Playwright check over every `[data-tpl][data-section]` wrapper
+ * `templates/compose.ts` emits — one pass per SECTION rather than one aggregate pass over the whole
+ * page, so a single corrupted section names itself (`sectionId`) instead of surfacing as "something
+ * on this page is wrong" that a human then has to hunt for across a dozen sections. Runs before the
+ * browser is ever touched — cheap enough to run on every page, every generation, every time
+ * (`code-qa.ts`'s doc comment: "let the time increase" is fine, this barely costs any).
+ *
+ * Falls back to the old whole-page-only scan when no section markers are present at all (the
+ * react-codegen/classic block renderer doesn't emit them) — this function is additive, not a
+ * replacement for that path.
+ */
+function validateSectionsStructurally(html: string, businessName?: string): QAIssue[] {
+  const $ = cheerio.load(html, null, false);
+  const sections = $("[data-tpl][data-section]").toArray();
+  if (sections.length === 0) {
+    return scanHtmlForFillerLeaks(html, businessName).map((leak) => ({
+      severity: "hard" as const,
+      code: leak.code === "rawJson" ? "RAW_JSON_LEAK" : "TEMPLATE_FILLER_LEAK",
+      message: `${leak.code} leak at ${leak.selector}: "${leak.sample}"`,
+      suggestion:
+        leak.code === "rawJson"
+          ? "Guard whatever LLM copy step wrote this field against JSON-shaped output before splicing it in"
+          : "Widen copy-slot coverage on the source template, or its filler-neutralization pass, for this shape",
+    }));
+  }
+
+  const issues: QAIssue[] = [];
+  for (const node of sections) {
+    const el = $(node);
+    const templateId = el.attr("data-tpl") ?? "unknown";
+    const sectionId = el.attr("data-section") ?? "unknown";
+    const role = el.attr("data-role") ?? "unknown";
+    const text = el.text().replace(/\s+/g, " ").trim();
+    const hasMedia =
+      el.find("img, svg, video, picture, source").length > 0 ||
+      /background-image\s*:\s*url\(/i.test(el.attr("style") ?? "") ||
+      el.find("[style*='background-image']").length > 0;
+
+    if (!text && !hasMedia) {
+      issues.push({
+        severity: "hard",
+        code: "EMPTY_SECTION",
+        message: `Section ${sectionId} (template ${templateId}, role ${role}) rendered with no text and no media at all`,
+        sectionId,
+        suggestion: "Copy substitution or photo resolution produced nothing for every slot in this section — check compose.ts's slot coverage for this template",
+      });
+    }
+
+    if (text && UNDEFINED_LEAK_RE.test(` ${text} `)) {
+      issues.push({
+        severity: "hard",
+        code: "UNDEFINED_LEAK",
+        message: `Section ${sectionId} (template ${templateId}) shipped a literal "undefined"/"null"/"NaN" in its copy`,
+        sectionId,
+        suggestion: "An optional/missing field was interpolated without a guard — find the binding for this section and default it",
+      });
+    }
+
+    // `$.html(node)` re-serializes just this section's subtree, so `scanHtmlForFillerLeaks` (and
+    // its rawJson check) runs scoped to it — the leak gets this section's real id, not "somewhere
+    // on the page".
+    const leaks = scanHtmlForFillerLeaks($.html(node), businessName);
+    for (const leak of leaks) {
+      issues.push({
+        severity: "hard",
+        code: leak.code === "rawJson" ? "RAW_JSON_LEAK" : "TEMPLATE_FILLER_LEAK",
+        message: `Section ${sectionId} (template ${templateId}): ${leak.code} leak at ${leak.selector}: "${leak.sample}"`,
+        sectionId,
+        suggestion:
+          leak.code === "rawJson"
+            ? "Guard whatever LLM copy step wrote this field against JSON-shaped output before splicing it in"
+            : "Widen copy-slot coverage on the source template, or its filler-neutralization pass, for this shape",
+      });
+    }
+  }
+  return issues;
+}
+
 export interface CodeQAOptions {
   /**
    * `file://` URL of this page as written to disk. `page.setContent` leaves the document on
@@ -103,40 +188,11 @@ async function runCodeQAInner(
     });
   }
 
-  // A universal, structure-only check (harmless on react/classic output, which never has lorem to
-  // begin with): did the template author's own placeholder/filler text actually ship on this page,
-  // independent of which compose-time pass should have caught it. This is the gate that was
-  // missing — `compose.ts` tracked `slotsSkipped`/`fillerRewritten` as observability, but nothing
-  // failed the build on a leftover "lorem ipsum" or the template author's own street address.
-  // `scanHtmlForFillerLeaks` also catches generic raw-JSON-in-a-text-node (`rawJson`) — a broader,
-  // shape-based net than the one narrow block-envelope regex above, for the LLM copy-step leak
-  // this repo's own generations have shipped live (a polished heading/paragraph that is itself
-  // still `{"headline":"...","body":"..."}`).
-  const fillerLeaks = scanHtmlForFillerLeaks(html, options.businessName);
-  const rawJsonLeaks = fillerLeaks.filter((leak) => leak.code === "rawJson");
-  const otherLeaks = fillerLeaks.filter((leak) => leak.code !== "rawJson");
-  if (rawJsonLeaks.length > 0) {
-    const sample = rawJsonLeaks[0]!;
-    issues.push({
-      severity: "hard",
-      code: "RAW_JSON_LEAK",
-      message:
-        `${rawJsonLeaks.length} text node(s) shipped raw JSON instead of copy ` +
-        `(e.g. at ${sample.selector}: "${sample.sample}")`,
-      suggestion: "Guard whatever LLM copy step wrote this field against JSON-shaped output before splicing it in",
-    });
-  }
-  if (otherLeaks.length > 0) {
-    const sample = otherLeaks[0]!;
-    issues.push({
-      severity: "hard",
-      code: "TEMPLATE_FILLER_LEAK",
-      message:
-        `${otherLeaks.length} leftover placeholder/filler text node(s) shipped on this page ` +
-        `(e.g. ${sample.code} at ${sample.selector}: "${sample.sample}")`,
-      suggestion: "Widen copy-slot coverage on the source template, or its filler-neutralization pass, for this shape",
-    });
-  }
+  // Per-section structural check (filler/JSON leaks, empty sections, literal "undefined" leaks) —
+  // see `validateSectionsStructurally`'s doc comment. This is the gate that was missing —
+  // `compose.ts` tracked `slotsSkipped`/`fillerRewritten` as observability, but nothing failed the
+  // build on a leftover "lorem ipsum", a JSON envelope, or a section that silently rendered empty.
+  issues.push(...validateSectionsStructurally(html, options.businessName));
 
   for (const match of html.matchAll(/data-block-type="([^"]+)"/g)) {
     const blockType = match[1];

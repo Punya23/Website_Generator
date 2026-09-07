@@ -597,8 +597,18 @@ export async function extractTemplateSectionManifestFromUrl(url: string): Promis
   return manifest;
 }
 
-export async function screenshotPage(html: string): Promise<string> {
-  const dual = await screenshotPageDual(html);
+export interface ScreenshotOptions {
+  /** `file://` (or `http(s)://`) URL of this page as staged/served on disk — see `stageSite` in
+   *  `orchestrator/verbatim-template-pipeline.ts`. Without this, `page.setContent()` leaves the
+   *  document on `about:blank` with no base URL at all: verbatim-template output's external
+   *  stylesheet `<link>`s and local `_tpl-assets/...` images never resolve, and both the debug
+   *  screenshot and the final vision-QA judge end up looking at (and grading) a page with zero CSS
+   *  and zero images loaded — confirmed live on a real generation. */
+  pageUrl?: string;
+}
+
+export async function screenshotPage(html: string, options: ScreenshotOptions = {}): Promise<string> {
+  const dual = await screenshotPageDual(html, options);
   return dual.desktop;
 }
 
@@ -607,23 +617,72 @@ export interface ViewportScreenshots {
   mobile: string;
 }
 
-export async function screenshotPageDual(html: string): Promise<ViewportScreenshots> {
+export async function screenshotPageDual(
+  html: string,
+  options: ScreenshotOptions = {}
+): Promise<ViewportScreenshots> {
   return withQAMutex(() =>
-    withTimeout(screenshotPageDualInner(html), QA_PAGE_TIMEOUT_MS, "dual screenshot")
+    withTimeout(screenshotPageDualInner(html, options), QA_PAGE_TIMEOUT_MS, "dual screenshot")
   );
 }
 
-async function screenshotPageDualInner(html: string): Promise<ViewportScreenshots> {
+async function waitForPageReady(page: import("playwright").Page): Promise<void> {
+  await page.evaluate((timeoutMs) => {
+    const waitImages = Promise.all(
+      Array.from(document.images).map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise<void>((resolve) => {
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+        });
+      })
+    );
+    return Promise.race([waitImages, new Promise<void>((resolve) => setTimeout(resolve, timeoutMs))]);
+  }, IMAGE_LOAD_TIMEOUT_MS);
+
+  // Real scroll-reveal libraries (WOW.js/AOS/ScrollTrigger — confirmed live: this repo's own
+  // templates ship `class="wow fadeUp"`) hide content until the viewport actually scrolls past it.
+  // A full-page screenshot on an unscrolled page captures those sections still at opacity:0 — large
+  // blank gaps that read as "the page is broken" when the real, scrolled page is not. Scrolling the
+  // whole document in steps (not one jump) fires the same intersection/scroll events a real visitor
+  // triggers, then returns to the top so the screenshot still starts from the hero.
+  await page.evaluate(async () => {
+    const step = 600;
+    const pause = 80;
+    const height = document.body.scrollHeight;
+    for (let y = 0; y < height; y += step) {
+      window.scrollTo(0, y);
+      await new Promise((resolve) => setTimeout(resolve, pause));
+    }
+    window.scrollTo(0, 0);
+    await new Promise((resolve) => setTimeout(resolve, pause));
+  });
+}
+
+async function screenshotPageDualInner(
+  html: string,
+  options: ScreenshotOptions
+): Promise<ViewportScreenshots> {
   const browser = await getBrowser();
   const desktopPage = await browser.newPage();
   await desktopPage.setViewportSize({ width: 1280, height: 800 });
-  await desktopPage.setContent(html, { waitUntil: "domcontentloaded", timeout: 15_000 });
+  if (options.pageUrl) {
+    await desktopPage.goto(options.pageUrl, { waitUntil: "domcontentloaded", timeout: 15_000 });
+  } else {
+    await desktopPage.setContent(html, { waitUntil: "domcontentloaded", timeout: 15_000 });
+  }
+  await waitForPageReady(desktopPage);
   const desktop = (await desktopPage.screenshot({ fullPage: true, type: "png" })).toString("base64");
   await desktopPage.close();
 
   const mobilePage = await browser.newPage();
   await mobilePage.setViewportSize({ width: 390, height: 844 });
-  await mobilePage.setContent(html, { waitUntil: "domcontentloaded", timeout: 15_000 });
+  if (options.pageUrl) {
+    await mobilePage.goto(options.pageUrl, { waitUntil: "domcontentloaded", timeout: 15_000 });
+  } else {
+    await mobilePage.setContent(html, { waitUntil: "domcontentloaded", timeout: 15_000 });
+  }
+  await waitForPageReady(mobilePage);
   const mobile = (await mobilePage.screenshot({ fullPage: true, type: "png" })).toString("base64");
   await mobilePage.close();
 

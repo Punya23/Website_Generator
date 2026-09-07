@@ -40,7 +40,13 @@ export interface VerbatimPipelineResult {
   state: VerbatimSiteState;
 }
 
-async function stageSite(
+/** Real files on disk with a real `file://` base for every page — required for anything that
+ *  renders this HTML and needs its external stylesheets/local images to actually resolve (they
+ *  never do against a bare `page.setContent()`, which leaves the document on `about:blank` with no
+ *  base URL at all). Exported so screenshot capture (`orchestrator.ts`'s debug artifacts + the
+ *  final vision-QA judge) can stage the exact same way `runCodeQA` already does below, instead of
+ *  rendering — and judging — a page with zero CSS and zero images loaded. */
+export async function stageSite(
   htmlPages: Record<string, string>,
   files: FileCopy[]
 ): Promise<string> {

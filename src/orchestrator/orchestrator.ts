@@ -57,7 +57,9 @@ import { requireLlm } from "../util/llm-required.js";
 import { persistDebugArtifacts } from "../util/debug-artifacts.js";
 import { getOutputMode, runReactPipeline } from "./react-pipeline.js";
 import { runSkinHtmlPipeline } from "./skin-html-pipeline.js";
-import { runVerbatimTemplatePipeline } from "./verbatim-template-pipeline.js";
+import { runVerbatimTemplatePipeline, stageSite } from "./verbatim-template-pipeline.js";
+import { pageFileName } from "../templates/compose.js";
+import { pathToFileURL } from "node:url";
 import type { VerbatimSiteState } from "../templates/revise.js";
 import { templateStore } from "../templates/store.js";
 import { VERBATIM_PLACEHOLDER_THEME } from "../templates/theme-placeholder.js";
@@ -94,6 +96,31 @@ export interface PagePipelineResult {
   html: string;
   qa: QAResult;
   retries: number;
+}
+
+/**
+ * Screenshots every verbatim-template page with a real `file://` base — the same staging
+ * `runVerbatimTemplatePipeline`'s own `runCodeQA` call already uses — instead of `screenshotPage`'s
+ * bare `page.setContent()`, which never resolves this output's external stylesheets or local
+ * `_tpl-assets/...` images (confirmed live: every debug screenshot and the final vision-QA verdict
+ * for the verbatim path were rendering, and judging, a page with zero CSS and zero images loaded).
+ * Cleans up its temp staging directory itself — this is the only consumer of it.
+ */
+async function screenshotVerbatimPages(
+  htmlPages: Record<string, string>,
+  files: FileCopy[]
+): Promise<Record<string, string>> {
+  const stageDir = await stageSite(htmlPages, files);
+  try {
+    const shots: Record<string, string> = {};
+    for (const slug of Object.keys(htmlPages).filter((s) => s !== "index")) {
+      const pageUrl = pathToFileURL(path.join(stageDir, pageFileName(slug))).href;
+      shots[slug] = await screenshotPage(htmlPages[slug]!, { pageUrl });
+    }
+    return shots;
+  } finally {
+    await fs.rm(stageDir, { recursive: true, force: true });
+  }
 }
 
 async function runPagePipeline(
@@ -708,6 +735,10 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
         `[pipeline] Debug screenshot server failed (${err instanceof Error ? err.message : String(err)}) — skipping debug screenshots`
       );
     }
+  } else if (!process.env.VITEST && verbatim) {
+    // See `screenshotVerbatimPages` — this output has external stylesheets and local images that
+    // never resolve without a real base URL.
+    Object.assign(screenshots, await screenshotVerbatimPages(htmlPages, verbatimFiles));
   } else if (!process.env.VITEST) {
     for (const slug of slugsToShoot) {
       screenshots[slug] = await screenshotPage(htmlPages[slug]!);
@@ -750,10 +781,7 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
             ...(options.consumerId ? { consumerId: options.consumerId } : {}),
             ...(verbatimAnchorTemplateId ? { excludeAnchorTemplateIds: [verbatimAnchorTemplateId] } : {}),
           });
-          const redoScreenshots: Record<string, string> = {};
-          for (const slug of Object.keys(redoResult.htmlPages).filter((s) => s !== "index")) {
-            redoScreenshots[slug] = await screenshotPage(redoResult.htmlPages[slug]!);
-          }
+          const redoScreenshots = await screenshotVerbatimPages(redoResult.htmlPages, redoResult.files);
           const redoVerdict = await judgeFinalScreenshots(redoScreenshots, designSystem, redoResult.blockManifests);
           const redoCodeQaHard = summarizeQaResults(redoResult.qaResults).hardCount;
           // Compared combined (vision + code-qa) so a redo triggered by a code-qa-only failure

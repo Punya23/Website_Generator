@@ -1,17 +1,22 @@
 /**
  * Cross-template section selection — locks one ANCHOR template's identity for the whole site (its
- * chrome and its hero), then fills every other role from a pool that mixes in a DIFFERENT template
- * only when a design-fingerprint compatibility check says the mix will not visibly clash.
+ * chrome and its hero) and, BY DEFAULT, builds the entire rest of the site from that same anchor
+ * too. A role the anchor has nothing for is dropped from the page rather than borrowed from
+ * elsewhere — one template, one design language, the whole way through.
  *
- * This has gone through three shapes. Originally `pick()` actively preferred whichever template the
+ * This has gone through four shapes. Originally `pick()` actively preferred whichever template the
  * site had NOT drawn from yet, so a typical site ended up with 16-18 distinct source templates
  * across ~24 sections — nav from one, hero from another, footer from a third, every section its own
  * design system, boxes and corners disagreeing everywhere. That was fixed by locking one anchor
- * template and only reaching into another when the anchor had nothing at all for a role — safe, but
- * it also meant genuine mixing almost never happened (one real generation drew 23 of 24 sections
- * from a single template), which defeated the actual point of ingesting a corpus of hundreds of
- * templates in the first place: this shape is the fix for THAT — mixing is scored, not
- * either-banned-or-unbounded.
+ * template and only reaching into another when the anchor had nothing at all for a role. A later
+ * pass tried scoring cross-template mixing by design-fingerprint compatibility instead of banning
+ * it outright — but even fingerprint-gated, a mixed site still visibly clashed often enough (and
+ * confirmed live: mixing kept firing for *optional* roles like stats/pricing/faq/contact even with
+ * `TEMPLATE_MIX_SECTIONS=0`, because the old "nothing compatible? fall back to the WHOLE corpus"
+ * last resort ran unconditionally, not just when mixing was actually enabled) that this shape turns
+ * it off by default: `templateMixEnabled()` (`config.ts`) gates it, default OFF, opt in with
+ * `TEMPLATE_MIX_SECTIONS=1` — the scored-mixing machinery (`mixScore`, `fingerprintCompatibility`,
+ * `templateMixCompatibilityThreshold()`) still exists and still runs when that flag is set.
  *
  * The mix is bounded four times before any ranking runs:
  *   1. taxonomy — the site is scoped to one tier of the brief's vertical (`taxonomy-scope.ts`),
@@ -19,18 +24,20 @@
  *   2. theme — one original light/dark origin for the whole site, never both;
  *   3. identity roles (nav/footer/hero) — always anchor-first, any-template-fallback only when the
  *      anchor has nothing: a nav or hero that changes between pages, or a chrome/hero swap mid-site,
- *      reads as broken regardless of how compatible the two templates' design languages are. See
- *      `IDENTITY_ROLES` and `pick()` below.
- *   4. mixable roles (everything else) — a combined pool of the anchor's own sections PLUS any other
- *      template's sections whose `fingerprintCompatibility` against the anchor clears
- *      `templateMixCompatibilityThreshold()`; below that bar a candidate is not a lower-ranked
+ *      reads as broken regardless of how compatible the two templates' design languages are, so
+ *      these fall back to the full corpus even with mixing off — a page with literally no nav is
+ *      worse than one whose nav came from elsewhere. See `IDENTITY_ROLES` and `pick()` below.
+ *   4. every other role — anchor-only when mixing is off (no candidate: the role is dropped, not
+ *      borrowed); with `TEMPLATE_MIX_SECTIONS=1`, a combined pool of the anchor's own sections PLUS
+ *      any other template's sections whose `fingerprintCompatibility` against the anchor clears
+ *      `templateMixCompatibilityThreshold()` — below that bar a candidate is not a lower-ranked
  *      option, it is not a candidate. See `mixScore()`.
  * Ranking (`rankByTaxonomy`, `scoreSection`, `mixScore`) then orders what is left within whichever
  * tier wins.
  *
  * Determinism and the per-consumer history mirror `src/skins/picker.ts` so repeat generations for
- * one customer keep varying — a different anchor and a different accepted mix next time, not
- * different sections within one site on the same seed.
+ * one customer keep varying — a different anchor next time (and, with mixing on, a different
+ * accepted mix), not different sections within one site on the same seed.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -490,11 +497,25 @@ export async function selectSiteSections(options: SelectSiteOptions): Promise<Se
               fingerprintCompatibility(anchorFingerprint, section.designFingerprint) >= mixThreshold
           )
         : [];
-    // Neither the anchor nor anything compatible has a candidate here (a cold corpus with no
-    // fingerprints backfilled yet, or an anchor genuinely uncovered for this role): fall back to
-    // the full pool, unfiltered, exactly like the identity-role branch's own last resort — a
-    // worse-but-real section beats an empty one.
-    const combinedPool = anchorPool.length + compatiblePool.length > 0 ? [...anchorPool, ...compatiblePool] : pool;
+    // The anchor has nothing for this role (and, with mixing off, nothing compatible either —
+    // `compatiblePool` is always empty then). The identity-role branch above still falls back to
+    // the full cross-template pool because a page with no nav/hero/footer at all reads as broken —
+    // but every mixable role is, by construction, one this site can do without (`OPTIONAL_ROLES`).
+    // Falling back to "any other template has one" here is exactly the cross-template mixing
+    // TEMPLATE_MIX_SECTIONS=0 is supposed to turn off — confirmed live: with mixing disabled, a
+    // site's stats/pricing/faq/contact sections were STILL drawing from three other templates,
+    // because this fallback fired unconditionally regardless of the mixing flag. A required
+    // (non-optional) role still falls back — dropping a role the page structurally needs would be
+    // worse than borrowing it — but no currently-planned role is both non-identity and required, so
+    // in practice this only guards against that shape being added later.
+    const requiredRole = !OPTIONAL_ROLES.has(role);
+    const combinedPool =
+      anchorPool.length + compatiblePool.length > 0
+        ? [...anchorPool, ...compatiblePool]
+        : mixEnabled || requiredRole
+          ? pool
+          : [];
+    if (combinedPool.length === 0) return null;
     const scorer = (section: IndexedSection): number =>
       mixScore(section, anchorTemplateId, anchorFingerprint, taxonomyMatch);
     const chosen = pickFrom(seed, key, byBestOf(preferenceTier(combinedPool), scorer));

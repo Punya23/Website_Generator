@@ -7,11 +7,11 @@ import type { QAIssue, QAResult, SiteContext } from "../types.js";
 import { extractTemplateSectionManifestFromUrl, runCodeQA, type BlockManifestEntry } from "../qa/code-qa.js";
 import { timedStep } from "../util/timed.js";
 import { pipelineLog, updatePipelineContext } from "../util/pipeline-log.js";
-import { composeSite, pageFileName, type FileCopy } from "../templates/compose.js";
+import { composeSite, pageFileName, type ComposedSite, type FileCopy } from "../templates/compose.js";
 import { selectSiteSections } from "../templates/select.js";
 import { polishComposedCopy } from "../agents/copy-polish-agent.js";
 import { repairFlaggedSections } from "../agents/section-repair-agent.js";
-import { recordGeneration, type GenerationRecord } from "../templates/generation-store.js";
+import type { GenerationRecord } from "../templates/generation-store.js";
 import type { VerbatimSiteState } from "../templates/revise.js";
 import type { PlacedSection } from "../templates/types.js";
 import type { MediaRegistry } from "../media/media-registry.js";
@@ -32,12 +32,23 @@ export interface VerbatimPipelineResult {
    *  final-visual-QA redo passes this back as `excludeAnchorTemplateIds` to force a genuinely
    *  different anchor on the next attempt rather than re-deriving the same one. */
   anchorTemplateId?: string;
-  generation: GenerationRecord;
   /** Everything an edit needs to recompose this exact site without re-running selection: the
    *  brief, the placed sections, the palette/logo it was rendered with, and the theme lock. Kept
    *  on the result (and on the editor session) because selection is seeded and history-aware —
    *  re-deriving it would not reproduce the same site. */
   state: VerbatimSiteState;
+  /** Everything `recordGeneration` (`templates/generation-store.ts`) needs — this function no
+   *  longer calls it. A final-visual-QA redo runs this whole function a SECOND time for one
+   *  generation request, and each call used to independently `recordGeneration` itself: when the
+   *  redo did not improve and got discarded, its record was still written, orphaned, with a LATER
+   *  timestamp than the one actually shipped — the admin Generations list (sorted newest-first)
+   *  showed the discarded attempt above the real one. The orchestrator now collects this from
+   *  whichever attempt (this one, or a redo) ends up kept, and calls `recordGeneration` exactly
+   *  once per user-facing request, after that decision is final. */
+  theme?: "light" | "dark";
+  themeConfidence?: "confirmed" | "partial-fallback";
+  taxonomy?: GenerationRecord["taxonomy"];
+  composed: Pick<ComposedSite, "provenance" | "stats">;
 }
 
 /** Real files on disk with a real `file://` base for every page — required for anything that
@@ -307,20 +318,6 @@ export async function runVerbatimTemplatePipeline(
 
   await fs.rm(stageDir, { recursive: true, force: true });
 
-  const generation = await recordGeneration({
-    businessName: ctx.expandedBrief.businessName,
-    rawBrief: ctx.businessBrief,
-    ...(options.consumerId ? { consumerId: options.consumerId } : {}),
-    ...(selected.theme ? { theme: selected.theme } : {}),
-    ...(selected.themeConfidence ? { themeConfidence: selected.themeConfidence } : {}),
-    ...(selected.taxonomy ? { taxonomy: selected.taxonomy } : {}),
-    composed: finalComposed,
-  });
-  const themeLabel = selected.theme
-    ? ` (${selected.theme}-theme mix${selected.themeConfidence === "partial-fallback" ? ", some sections theme-unknown" : ""})`
-    : "";
-  pipelineLog(`[pipeline] Generation logged: ${generation.id}${themeLabel}`);
-
   return {
     htmlPages: finalComposed.htmlPages,
     qaResults,
@@ -329,7 +326,10 @@ export async function runVerbatimTemplatePipeline(
     pages: selected.pages,
     templateIds: selected.templateIds,
     ...(selected.anchorTemplateId ? { anchorTemplateId: selected.anchorTemplateId } : {}),
-    generation,
     state,
+    ...(selected.theme ? { theme: selected.theme } : {}),
+    ...(selected.themeConfidence ? { themeConfidence: selected.themeConfidence } : {}),
+    ...(selected.taxonomy ? { taxonomy: selected.taxonomy } : {}),
+    composed: { provenance: finalComposed.provenance, stats: finalComposed.stats },
   };
 }

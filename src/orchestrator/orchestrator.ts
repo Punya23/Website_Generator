@@ -51,13 +51,14 @@ import path from "path";
 import { llm } from "../llm/client.js";
 import { timedStep } from "../util/timed.js";
 import { pipelineLog, pipelineStructured, setPipelineContext, clearPipelineContext } from "../util/pipeline-log.js";
+import { recordGeneration } from "../templates/generation-store.js";
 import { resetFallbackTracker, getFallbackSummary, totalFallbacks } from "../util/fallback-tracker.js";
 import { summarizeQaResults, hasHardQaFailures } from "../qa/qa-summary.js";
 import { requireLlm } from "../util/llm-required.js";
 import { persistDebugArtifacts } from "../util/debug-artifacts.js";
 import { getOutputMode, runReactPipeline } from "./react-pipeline.js";
 import { runSkinHtmlPipeline } from "./skin-html-pipeline.js";
-import { runVerbatimTemplatePipeline, stageSite } from "./verbatim-template-pipeline.js";
+import { runVerbatimTemplatePipeline, stageSite, type VerbatimPipelineResult } from "./verbatim-template-pipeline.js";
 import { pageFileName } from "../templates/compose.js";
 import { pathToFileURL } from "node:url";
 import type { VerbatimSiteState } from "../templates/revise.js";
@@ -353,6 +354,11 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   let verbatimState: VerbatimSiteState | undefined;
   let verbatimAnchorTemplateId: string | undefined;
   let verbatimBlockManifests: Record<string, BlockManifestEntry[]> = {};
+  // Tracks whichever verbatim attempt (this one, or a final-QA redo that improved on it) ends up
+  // shipped, so `recordGeneration` runs exactly once per user-facing request instead of once per
+  // attempt — see `VerbatimPipelineResult`'s own comment on why a discarded redo used to leave an
+  // orphaned record with a later timestamp than the one actually shipped.
+  let verbatimRecordInput: Pick<VerbatimPipelineResult, "theme" | "themeConfidence" | "taxonomy" | "composed"> | undefined;
   let finalVision: GenerationResult["finalVision"];
 
   try {
@@ -539,6 +545,12 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     verbatimState = verbatimResult.state;
     verbatimAnchorTemplateId = verbatimResult.anchorTemplateId;
     verbatimBlockManifests = verbatimResult.blockManifests;
+    verbatimRecordInput = {
+      theme: verbatimResult.theme,
+      themeConfidence: verbatimResult.themeConfidence,
+      taxonomy: verbatimResult.taxonomy,
+      composed: verbatimResult.composed,
+    };
     pageResults = pageResultsFromHtmlPages(htmlPages, qaResults, ctx);
   } else if (skinFill && outputMode !== "react") {
     if (!pickedSkin) throw new Error("HTML skin path requires a picked site skin");
@@ -806,6 +818,12 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
             verbatimState = redoResult.state;
             verbatimAnchorTemplateId = redoResult.anchorTemplateId;
             verbatimBlockManifests = redoResult.blockManifests;
+            verbatimRecordInput = {
+              theme: redoResult.theme,
+              themeConfidence: redoResult.themeConfidence,
+              taxonomy: redoResult.taxonomy,
+              composed: redoResult.composed,
+            };
             pageResults = pageResultsFromHtmlPages(htmlPages, qaResults, ctx);
             Object.assign(screenshots, redoScreenshots);
             const redoDebugDir = await persistDebugArtifacts(ctx, screenshots);
@@ -883,6 +901,28 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
           : `[pipeline] Final visual QA: ${verdict.hardIssueCount} hard issue(s) across ${Object.keys(verdict.perPage).length} page(s) — no redo available for this output mode`
       );
     }
+  }
+
+  // Exactly once per user-facing request, using whichever attempt (the original, or a final-QA
+  // redo that improved on it — `verbatimRecordInput` was reassigned above only when one did) ends
+  // up shipped. See `VerbatimPipelineResult`'s own comment: this used to run once per ATTEMPT
+  // inside `runVerbatimTemplatePipeline`, so a redo that was tried and then discarded still wrote
+  // its own generation record, with a later timestamp than the one actually shipped — the admin
+  // Generations list (sorted newest-first) showed the discarded attempt above the real one.
+  if (verbatim && verbatimRecordInput) {
+    const generation = await recordGeneration({
+      businessName: ctx.expandedBrief.businessName,
+      rawBrief: ctx.businessBrief,
+      ...(options.consumerId ? { consumerId: options.consumerId } : {}),
+      ...(verbatimRecordInput.theme ? { theme: verbatimRecordInput.theme } : {}),
+      ...(verbatimRecordInput.themeConfidence ? { themeConfidence: verbatimRecordInput.themeConfidence } : {}),
+      ...(verbatimRecordInput.taxonomy ? { taxonomy: verbatimRecordInput.taxonomy } : {}),
+      composed: verbatimRecordInput.composed,
+    });
+    const themeLabel = verbatimRecordInput.theme
+      ? ` (${verbatimRecordInput.theme}-theme mix${verbatimRecordInput.themeConfidence === "partial-fallback" ? ", some sections theme-unknown" : ""})`
+      : "";
+    pipelineLog(`[pipeline] Generation logged: ${generation.id}${themeLabel}`);
   }
 
   const qaSummary = summarizeQaResults(qaResults);

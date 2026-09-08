@@ -16,18 +16,31 @@ function stripTags(html: string): string {
   return decodeEntities(html.replace(/<[^>]+>/g, " "));
 }
 
+// Bare-singular keywords miss their own plural in real headings: "s"/"_" are both `\w` chars, so
+// `\bfaq\b` finds no word boundary immediately before the "s" in "FAQs" and never matches it.
+// Confirmed live against the real corpus: a template's own "<h1>FAQs</h1>" inner-page header
+// landed in role "other" — an entire real page's content invisible to selection — purely because
+// of this. `s?` on each regular noun below fixes that class of miss; irregular plurals (gallery)
+// get an explicit alternative instead of a wrong `s` suffix. Also added a few common
+// vertical-specific synonyms found the same way (a fitness template's own "Classes"/"Instructors"
+// inner pages, which the previous generic-only vocabulary had no entry for at all) — full
+// per-vertical vocabulary is a bigger, separate piece of work (see the "dynamic page curation"
+// discussion this was found alongside), but these cost nothing to add now.
 const LANDMARK_RULES: Array<{ landmark: Landmark; re: RegExp }> = [
-  { landmark: "hero", re: /\b(hero|welcome|masthead|headline|start bootstrap)\b/i },
-  { landmark: "features", re: /\b(feature|service|offer|what we|capabilities|solution)\b/i },
+  { landmark: "hero", re: /\b(hero|welcome|masthead|headlines?|start bootstrap)\b/i },
+  {
+    landmark: "features",
+    re: /\b(features?|services?|offers?|what we|capabilit(?:y|ies)|solutions?|classes)\b/i,
+  },
   { landmark: "story", re: /\b(about|story|showcase|how it works|process)\b/i },
-  { landmark: "gallery", re: /\b(gallery|portfolio|work|lookbook|project)\b/i },
-  { landmark: "testimonials", re: /\b(testimonial|review|quote|customer|client say)\b/i },
-  { landmark: "pricing", re: /\b(pricing|plan|package|membership)\b/i },
-  { landmark: "faq", re: /\b(faq|question|answer)\b/i },
-  { landmark: "contact", re: /\b(contact|enquiry|get in touch)\b/i },
+  { landmark: "gallery", re: /\b(gallery|galleries|portfolios?|work|lookbook|projects?)\b/i },
+  { landmark: "testimonials", re: /\b(testimonials?|reviews?|quotes?|customers?|client say)\b/i },
+  { landmark: "pricing", re: /\b(pricing|plans?|packages?|membership)\b/i },
+  { landmark: "faq", re: /\b(faqs?|questions?|answers?)\b/i },
+  { landmark: "contact", re: /\b(contact|enquir(?:y|ies)|get in touch)\b/i },
   { landmark: "cta", re: /\b(get started|sign up|book|call to action|ready to|try it)\b/i },
-  { landmark: "team", re: /\b(team|people|founders|staff)\b/i },
-  { landmark: "stats", re: /\b(stat|number|metric|proof)\b/i },
+  { landmark: "team", re: /\b(teams?|people|founders?|staff|instructors?|trainers?)\b/i },
+  { landmark: "stats", re: /\b(stats?|numbers?|metrics?|proof)\b/i },
 ];
 
 export function inferLandmark(text: string): Landmark {

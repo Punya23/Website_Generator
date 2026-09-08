@@ -1,21 +1,27 @@
 /**
  * Backfill section ROLE classification for already-ingested templates, without a full re-ingest.
+ * Two independent classifier fixes live behind this, both found live against the real corpus:
  *
- * `classifyRoleHeuristically`'s `<header>`-tag branch only recognised "nav"/"menu"/"header" as
- * whole words in a section's id+class (see `classify-section.ts`). Two real, common naming
- * patterns slipped through — Bootstrap's own canonical nav class "navbar" (glued to "nav" with no
- * separator) and an underscore-joined prefix like "site_header" (underscore is a `\w` character,
- * so the old regex found no word boundary before "header"). Confirmed live: real templates' own
- * nav bar was landing as an extra "hero" section instead of "nav", which made them ineligible to
- * ever anchor a site at all (an anchor needs nav+hero+footer coverage — see `select.ts`) even
- * though a real, usable nav existed on disk the whole time.
+ * 1. `classifyRoleHeuristically`'s `<header>`-tag branch only recognised "nav"/"menu"/"header" as
+ *    whole words in a section's id+class. Bootstrap's own canonical nav class "navbar" (glued to
+ *    "nav", no separator) and an underscore-joined prefix like "site_header" ("_" is a `\w`
+ *    character, no boundary before "header") both slipped through — a real, usable nav was landing
+ *    as an extra "hero" instead, making the template ineligible to ever anchor a site at all (needs
+ *    nav+hero+footer — see `select.ts`). LLM-free: this branch always resolves at 0.6 or 0.9.
+ * 2. The bare-singular keywords in `ID_CLASS_RULES` / `LANDMARK_RULES` (`admin/extract-outline.ts`)
+ *    missed their own plural the same way ("s" is a `\w` char too) — a template's own "<h1>FAQs</h1>"
+ *    inner-page header landed in role "other", an entire real page invisible to selection, purely
+ *    because `\bfaq\b` cannot match inside "FAQs". Widened with `s?`/irregular alternatives plus a
+ *    few vertical-specific synonyms (class/instructor/trainer) found the same way. This one CAN
+ *    reach for the LLM (`classifySection` falls back to it below 0.6 confidence, and a newly-
+ *    matched-only-at-the-0.45-text-fallback-tier section stays under that bar) — bounded, though:
+ *    scoped below to only previously-"other" sections, so it costs nothing for the ~99% of the
+ *    corpus these two fixes don't touch at all.
  *
  * Every already-ingested template's raw section fragments are still sitting in its cache exactly
- * as extracted — this only needs to re-run the role heuristic against every already-`<header>`-
- * tagged fragment and patch the manifest in place if the verdict changed. No zip, no
- * re-extraction, no recolor, no asset re-collection — and no network call either: `classifySection`
- * only reaches for the LLM when heuristic confidence is below 0.6, and the `<header>` branch always
- * resolves at 0.6 or 0.9, so this never triggers one.
+ * as extracted — this only needs to re-run the role heuristic against the affected subset and
+ * patch the manifest in place if the verdict changed. No zip, no re-extraction, no recolor, no
+ * asset re-collection.
  *
  * Idempotent: re-running after a real re-ingest (which now classifies correctly itself) or a
  * partial prior backfill run finds nothing left to change for templates it already patched.
@@ -53,7 +59,7 @@ function rawSectionFromFragment(html: string): RawSection | undefined {
 
 export interface RoleBackfillSummary {
   scanned: number;
-  reclassified: Array<{ templateId: string; sectionId: string; from: string; to: string }>;
+  reclassified: Array<{ templateId: string; sectionId: string; from: string; to: string; source: "heuristic" | "llm" }>;
   errors: Array<{ templateId: string; sectionId: string; reason: string }>;
 }
 
@@ -91,15 +97,29 @@ export async function backfillRoles(options: { onProgress?: (line: string) => vo
         continue; // fragment missing on disk — leave the recorded classification alone
       }
       const raw = rawSectionFromFragment(fragment);
-      // Only the fixed branch (tag === "header") can possibly produce a different verdict now —
-      // every other tag's classification path is unchanged, so re-testing it would only waste time.
-      if (!raw || raw.tag !== "header") continue;
+      if (!raw) continue;
+      // Two independent fixes live behind this heuristic now: the tag === "header" branch (nav vs
+      // hero — see the file header above) can change verdict for any section with that tag; the
+      // ID_CLASS_RULES / LANDMARK_RULES plural-boundary + vocabulary widening can only ever turn a
+      // previously-UNCLASSIFIED ("other", confidence 0.2 — nothing matched at all) section into a
+      // real role, never change an already-classified one (the fixes only ADD alternatives, they
+      // remove none, and rule order is unchanged). So: always re-test "other" sections (bounded,
+      // cheap even where it falls through to an LLM call — see below), and header-tag sections
+      // regardless of current role (that fix's own scope). Every other combination is provably
+      // unaffected, so skipping it isn't a shortcut, it's correct.
+      if (section.role !== "other" && raw.tag !== "header") continue;
       const reheuristic = classifyRoleHeuristically(raw);
       if (reheuristic.role === section.role) continue;
 
       try {
         const reclassification = await classifySection(raw, fragment);
-        reclassified.push({ templateId, sectionId: section.id, from: section.role, to: reclassification.role });
+        reclassified.push({
+          templateId,
+          sectionId: section.id,
+          from: section.role,
+          to: reclassification.role,
+          source: reclassification.source,
+        });
         section.role = reclassification.role;
         section.roleConfidence = reclassification.confidence;
         section.roleSource = reclassification.source;
@@ -126,11 +146,13 @@ if (isDirectRun) {
   backfillRoles()
     .then(async (summary) => {
       for (const r of summary.reclassified) {
-        console.log(`  ${r.templateId} ${r.sectionId}: ${r.from} -> ${r.to}`);
+        console.log(`  ${r.templateId} ${r.sectionId}: ${r.from} -> ${r.to} (${r.source})`);
       }
       for (const e of summary.errors) {
         console.log(`  ERROR ${e.templateId} ${e.sectionId}: ${e.reason}`);
       }
+      const llmCalls = summary.reclassified.filter((r) => r.source === "llm").length;
+      console.log(`[role-backfill] of those, ${llmCalls} needed an LLM call (still under 0.6 heuristic confidence)`);
       // Selection reads the flat index, not the manifests — a backfill that does not rebuild it
       // patches files nobody reads until the next unrelated cache invalidation happens to occur
       // (the exact gotcha backfill-theme.ts's own history already ran into).

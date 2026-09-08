@@ -40,18 +40,22 @@ const ROLE_FROM_LANDMARK: Record<string, SectionRole> = {
   other: "other",
 };
 
-/** Direct id/class evidence beats heading text — template authors name the wrapper for what it is. */
+/** Direct id/class evidence beats heading text — template authors name the wrapper for what it is.
+ *  Same plural-boundary gap as `LANDMARK_RULES` (`admin/extract-outline.ts`) — a bare singular noun
+ *  never matches its own plural, since "s" is a `\w` character and leaves no boundary right before
+ *  it. Widened the same way, plus a couple of common vertical-specific synonyms found the same
+ *  live-corpus way ("member(s)"/"instructor(s)"/"trainer(s)" for team, "class(es)" for features). */
 const ID_CLASS_RULES: Array<{ role: SectionRole; re: RegExp }> = [
-  { role: "hero", re: /\b(hero|banner|masthead|jumbotron|slider|intro-area)\b/i },
-  { role: "features", re: /\b(service|feature|offer|what-we|solution|expertise|skill)\b/i },
+  { role: "hero", re: /\b(hero|banners?|masthead|jumbotron|sliders?|intro-area)\b/i },
+  { role: "features", re: /\b(services?|features?|offers?|what-we|solutions?|expertise|skills?|classes)\b/i },
   { role: "story", re: /\b(about|story|process|how-it-works|why-us|resume|experience)\b/i },
-  { role: "gallery", re: /\b(gallery|portfolio|project|work|case-stud|showcase)\b/i },
-  { role: "testimonials", re: /\b(testimonial|review|feedback|client-say)\b/i },
-  { role: "pricing", re: /\b(pricing|price|plan|package)\b/i },
-  { role: "faq", re: /\b(faq|question|accordion)\b/i },
-  { role: "team", re: /\b(team|staff|member|people)\b/i },
-  { role: "stats", re: /\b(counter|stat|fact|achievement|number)\b/i },
-  { role: "contact", re: /\b(contact|enquiry|get-in-touch|appointment|book)\b/i },
+  { role: "gallery", re: /\b(gallery|galleries|portfolios?|projects?|work|case-stud(?:y|ies)|showcase)\b/i },
+  { role: "testimonials", re: /\b(testimonials?|reviews?|feedback|client-say)\b/i },
+  { role: "pricing", re: /\b(pricing|prices?|plans?|packages?)\b/i },
+  { role: "faq", re: /\b(faqs?|questions?|accordion)\b/i },
+  { role: "team", re: /\b(teams?|staff|members?|people|instructors?|trainers?)\b/i },
+  { role: "stats", re: /\b(counters?|stats?|facts?|achievements?|numbers?)\b/i },
+  { role: "contact", re: /\b(contact|enquir(?:y|ies)|get-in-touch|appointments?|book)\b/i },
   { role: "cta", re: /\b(cta|subscribe|newsletter|call-to-action|get-started)\b/i },
 ];
 

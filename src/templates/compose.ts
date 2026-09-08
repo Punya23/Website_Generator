@@ -469,6 +469,21 @@ function pageTitle(slug: string, businessName: string, tagline: string): string 
   return `${businessName} — ${cleanTagline}`;
 }
 
+/** A stock/AI photo replacing a template's own placeholder image is requested at least this large
+ *  on its shorter axis — see the call site's comment for why: a measured original this small is
+ *  almost always a legacy avatar/thumbnail placeholder, not a statement about how large the CSS box
+ *  displaying it actually is (confirmed live, a ~128px team-photo placeholder stretched into a
+ *  280px-tall card via `object-fit:cover`). 480 comfortably covers typical responsive card/thumbnail
+ *  sizes even at 2x pixel density; `object-fit:cover` crops whatever the CSS box doesn't need. */
+const MIN_PHOTO_REQUEST_DIMENSION = 480;
+
+function withMinPhotoDimension(width: number, height: number): { width: number; height: number } {
+  const shorter = Math.min(width, height);
+  if (shorter >= MIN_PHOTO_REQUEST_DIMENSION || shorter <= 0) return { width, height };
+  const scale = MIN_PHOTO_REQUEST_DIMENSION / shorter;
+  return { width: Math.round(width * scale), height: Math.round(height * scale) };
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -680,23 +695,23 @@ export async function composeSite(options: ComposeOptions): Promise<ComposedSite
         }
         const query = (photoQueries[index] || `${industry} ${section.role}`).trim();
         const cacheKey = `${section.templateId}:${section.sectionId}:${index}`;
+        // `slot.width`/`slot.height` are the ORIGINAL placeholder image's measured pixel size
+        // (photo-slots.ts), not the CSS box it's displayed in — confirmed live: a template's own
+        // fabricated-headshot placeholder was a small ~128x128 avatar image, but the section's own
+        // CSS stretches that slot to a 280px-tall card (`width:100%;height:100%;object-fit:cover`
+        // scaling a 128px source up ~2-3x, visibly blurred). Requesting the replacement AT the tiny
+        // original's size reproduces that placeholder's blur on every real generated site, forever
+        // — `withMinPhotoDimension` scales the REQUEST size up (preserving aspect ratio; the CSS
+        // box crops any excess via object-fit exactly as it already does) so the delivered photo is
+        // sharp at typical card/thumbnail sizes without needing to know the actual rendered size.
+        const { width, height } = withMinPhotoDimension(slot.width, slot.height);
         // `resolveUniqueImage` already does everything the old inline block did by hand — the
         // business's own uploaded photo first, then a stock lookup deduped against every other
         // photo this render has already resolved (registry-wide, not just within this section) —
         // plus registration, in one call, matching what the react/skin-fill pipelines already get.
         const url = options.registry
-          ? await resolveUniqueImage(
-              query,
-              cacheKey,
-              options.registry,
-              cacheKey,
-              section.sectionId,
-              slug,
-              slot.width,
-              slot.height,
-              industry
-            )
-          : await stockImageUrl(query, cacheKey, industry, slot.width, slot.height);
+          ? await resolveUniqueImage(query, cacheKey, options.registry, cacheKey, section.sectionId, slug, width, height, industry)
+          : await stockImageUrl(query, cacheKey, industry, width, height);
         resolvedPhotos[photoKey] = url;
         return url;
       });

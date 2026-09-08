@@ -338,19 +338,33 @@ function templateCssFileName(templateId: string): string {
   return `${templateId}.css`;
 }
 
-const PAGE_ORDER = ["home", "about", "services", "contact"];
+// Pricing/FAQ/Gallery are placed after Contact, not interleaved with the fixed four — they are
+// bonus pages this specific site happens to have (select.ts's `DYNAMIC_PAGE_ROLE_PLAN`), not part
+// of every site's core structure, and a nav reads more predictably with "extras" grouped at the end.
+const PAGE_ORDER = ["home", "about", "services", "contact", "pricing", "faq", "gallery"];
 const PAGE_LABELS: Record<string, string> = {
   home: "Home",
   about: "About",
   services: "Services",
   contact: "Contact",
+  pricing: "Pricing",
+  faq: "FAQ",
+  gallery: "Gallery",
 };
 
 const NAV_TARGETS: Array<{ slug: string; re: RegExp }> = [
   { slug: "home", re: /^(home|start)$/i },
   { slug: "about", re: /\b(about|story|team|who we are)\b/i },
+  // Checked before "services" below: a template's own "Pricing"/"FAQ"/"Gallery" nav link should
+  // point at ITS dedicated page when this site has one, not get folded into Services the way it
+  // used to (NAV_TARGETS.find takes the first match, so order here is what decides it) — falls
+  // through to the generic "services" match below when this site has no such dedicated page
+  // (`availableSlugs` filters below still apply, same as every other target).
+  { slug: "pricing", re: /\b(pricing|plans?|packages?|membership)\b/i },
+  { slug: "faq", re: /\b(faqs?|questions?)\b/i },
+  { slug: "gallery", re: /\b(gallery|galleries|portfolios?)\b/i },
   // Plural forms matter: `\bservice\b` does not match the "Services" label every template uses.
-  { slug: "services", re: /\b(services?|what we do|offers?|work|portfolio|pricing|plans?)\b/i },
+  { slug: "services", re: /\b(services?|what we do|offers?|work)\b/i },
   { slug: "contact", re: /\b(contacts?|get in touch|enquir\w*|book|appointments?)\b/i },
 ];
 

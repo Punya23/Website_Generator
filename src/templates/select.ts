@@ -107,6 +107,43 @@ export const PAGE_ROLE_PLAN: Record<string, SectionRole[]> = {
 };
 
 /**
+ * Optional extra pages, added past the fixed four ABOVE only when the anchor template
+ * demonstrably has enough real content for one — never guessed per business vertical (see
+ * `DYNAMIC_PAGE_MIN_CANDIDATES` below for exactly what "enough" means and why). Confirmed live:
+ * a real template shipped 9 distinct inner pages (About, Vinyasa Flow, Gallery, Pricing,
+ * Instructors, Classes, Contact, Blog, FAQs) while this file only ever built 4 — pricing/faq/
+ * gallery are the three of those that (a) already have a `SectionRole` to classify into and (b)
+ * carry no fabricated-content risk (`PEOPLE_ROLES` below is what still gates team/testimonials
+ * pages for that reason — a dedicated page of invented staff or reviews is worse than none).
+ * "Vinyasa Flow", "Instructors"-as-their-own-page, "Blog" stay unaddressed here: they would need
+ * either a new `SectionRole` or a business-vertical-aware page catalog this file deliberately
+ * does not invent without real per-vertical grounding.
+ */
+const DYNAMIC_PAGE_ROLE_PLAN: Record<string, SectionRole[]> = {
+  pricing: ["nav", "hero", "pricing", "cta", "footer"],
+  faq: ["nav", "hero", "faq", "cta", "footer"],
+  gallery: ["nav", "hero", "gallery", "cta", "footer"],
+};
+/** The one substantive (non-chrome) role each dynamic page above exists to show — kept as its own
+ *  explicit map rather than derived from `DYNAMIC_PAGE_ROLE_PLAN` by filtering out nav/hero/cta/
+ *  footer, so a future page plan with more than one real role per page fails loudly (a missing map
+ *  entry) instead of silently picking whichever role happened to come first. */
+const DYNAMIC_PAGE_ROLE: Record<string, SectionRole> = {
+  pricing: "pricing",
+  faq: "faq",
+  gallery: "gallery",
+};
+/** A role already used by one of the fixed four pages (pricing on `services`, gallery on `home`,
+ *  faq on `services`) needs a SECOND distinct section before a whole dedicated page for it is
+ *  worth adding — one candidate would mean either an empty page (the fixed page's pick already
+ *  claimed it — `preferenceTier`'s own "unseen before reused" ordering means the dedicated page's
+ *  pick naturally avoids re-choosing the exact same section once a second one exists, so no extra
+ *  bookkeeping is needed here beyond this count) or a page whose one real section is a duplicate
+ *  of content already shown elsewhere. Two is the bar for "this template treats the topic as
+ *  substantial enough to deserve its own page", not just "happens to have one candidate". */
+const DYNAMIC_PAGE_MIN_CANDIDATES = 2;
+
+/**
  * Testimonials and team sections are skipped by default. The brief carries no real customer
  * quotes and no real staff, so placing those sections means shipping either the template
  * author's invented people or newly invented ones — fake reviews and fake staff on a real
@@ -119,7 +156,7 @@ function fabricatedPeopleAllowed(): boolean {
 const PEOPLE_ROLES = new Set<SectionRole>(["testimonials", "team"]);
 
 function planForPage(slug: string): SectionRole[] {
-  const plan = PAGE_ROLE_PLAN[slug] ?? PAGE_ROLE_PLAN.home!;
+  const plan = PAGE_ROLE_PLAN[slug] ?? DYNAMIC_PAGE_ROLE_PLAN[slug] ?? PAGE_ROLE_PLAN.home!;
   return fabricatedPeopleAllowed() ? plan : plan.filter((role) => !PEOPLE_ROLES.has(role));
 }
 
@@ -220,6 +257,11 @@ export interface SelectedSite {
    *  the anchor had nothing for. `undefined` only when the scoped pool has no single template
    *  covering all required roles (nav/hero/footer) at all. */
   anchorTemplateId?: string;
+  /** Extra pages built past the fixed four, because the anchor demonstrably had enough real
+   *  content for them (see `DYNAMIC_PAGE_ROLE_PLAN`) — `undefined`/empty when the caller passed
+   *  an explicit `pages` list (only the default page set is ever curated this way) or the anchor
+   *  simply did not have a second distinct candidate for any of pricing/faq/gallery. */
+  dynamicPages?: string[];
   /** Every qualifying anchor candidate this run actually compared, sorted best-first, with the
    *  composite score (coverage + section quality + taxonomy fit) that decided the shortlist a
    *  final anchor was drawn from — the "what else was considered" record for the admin
@@ -303,6 +345,11 @@ export async function selectSiteSections(options: SelectSiteOptions): Promise<Se
   const taxonomyMatch = options.brief ? classifyBriefTaxonomy(options.brief) : undefined;
 
   const seed = options.variationSeed;
+  // Dynamic extra pages (below, once the anchor is known) are curated based on what the DEFAULT
+  // page set's own anchor actually has to offer — a caller asking for a specific, explicit page
+  // list (every test in this file does) means exactly that list, no additions, so `usingDefaultPages`
+  // gates the whole feature off for that case.
+  const usingDefaultPages = options.pages === undefined;
   const slugs = options.pages ?? Object.keys(PAGE_ROLE_PLAN);
   const plannedRoles = [...new Set(slugs.flatMap(planForPage))];
   const requiredRoles = plannedRoles.filter((role) => !OPTIONAL_ROLES.has(role));
@@ -492,6 +539,25 @@ export async function selectSiteSections(options: SelectSiteOptions): Promise<Se
   const mixEnabled = templateMixEnabled();
   const mixThreshold = templateMixCompatibilityThreshold();
 
+  // Curated, not guessed: a dynamic page only gets built when the ALREADY-CHOSEN anchor has at
+  // least DYNAMIC_PAGE_MIN_CANDIDATES real, distinct, quality-gated sections for that role — the
+  // exact same `themedPoolFor` every other role goes through, so it inherits the taxonomy/theme/
+  // confidence/quality gates for free. Deliberately computed AFTER anchor selection (never fed
+  // into `plannedRoles`/`requiredRoles`/anchor scoring above): a template's pricing/faq/gallery
+  // richness should add a bonus page on top of whichever anchor best serves the four pages every
+  // site needs, not skew which anchor wins those in the first place.
+  const dynamicPages: string[] = usingDefaultPages && anchorTemplateId
+    ? Object.entries(DYNAMIC_PAGE_ROLE).filter(([, role]) => {
+        const distinctSections = new Set(
+          themedPoolFor(role)
+            .filter((section) => section.templateId === anchorTemplateId)
+            .map((section) => section.sectionId)
+        );
+        return distinctSections.size >= DYNAMIC_PAGE_MIN_CANDIDATES;
+      }).map(([slug]) => slug)
+    : [];
+  const buildSlugs = [...slugs, ...dynamicPages];
+
   const usedThisRun = new Set<string>();
   const templatesUsed = new Map<string, number>();
   const pages: Record<string, PlacedSection[]> = {};
@@ -604,7 +670,7 @@ export async function selectSiteSections(options: SelectSiteOptions): Promise<Se
     return chosen ? place(chosen) : null;
   };
 
-  for (const slug of slugs) {
+  for (const slug of buildSlugs) {
     const plan = planForPage(slug);
     const placed: PlacedSection[] = [];
     for (const role of plan) {
@@ -634,6 +700,7 @@ export async function selectSiteSections(options: SelectSiteOptions): Promise<Se
     templateIds: [...templatesUsed.keys()],
     ...(lockedTheme ? { theme: lockedTheme, themeConfidence: themeFallbackUsed ? "partial-fallback" : "confirmed" } : {}),
     ...(anchorTemplateId ? { anchorTemplateId } : {}),
+    ...(dynamicPages.length > 0 ? { dynamicPages } : {}),
     ...(anchorCandidateReport.length > 0 ? { anchorCandidates: anchorCandidateReport } : {}),
     ...(taxonomyMatch
       ? {

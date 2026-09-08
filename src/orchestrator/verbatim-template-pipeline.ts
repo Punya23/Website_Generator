@@ -97,6 +97,11 @@ export async function runVerbatimTemplatePipeline(
   // with the theme actually recorded on the generation.
   updatePipelineContext({ profileId: selected.theme ? `verbatim-${selected.theme}` : "verbatim" });
   pipelineLog(`[pipeline] Theme locked: ${selected.theme ?? "none (no dominant theme in the selected mix)"}`);
+  if (selected.dynamicPages && selected.dynamicPages.length > 0) {
+    pipelineLog(
+      `[pipeline] Added ${selected.dynamicPages.join(", ")} page(s) — the anchor had real, distinct content for ${selected.dynamicPages.length > 1 ? "them" : "it"}`
+    );
+  }
 
   for (const [slug, sections] of Object.entries(selected.pages)) {
     pipelineLog(
@@ -287,11 +292,15 @@ export async function runVerbatimTemplatePipeline(
     pipelineLog(`[pipeline] Section repair: attempted ${sectionsAttempted} flagged run(s), none fixed`);
   }
 
+  // "faq" is the one dynamic-page slug (see select.ts's DYNAMIC_PAGE_ROLE_PLAN) that plain
+  // capitalize-the-first-letter gets wrong ("Faq" instead of "FAQ") — everything else, fixed pages
+  // and "pricing"/"gallery" alike, reads fine that way.
+  const pageLabel = (slug: string): string => (slug === "faq" ? "FAQ" : `${slug[0]!.toUpperCase()}${slug.slice(1)}`);
   for (const slug of Object.keys(finalComposed.htmlPages)) {
     ctx.pages[slug] = {
       slug,
-      title: slug === "home" ? ctx.expandedBrief.businessName : `${slug[0]!.toUpperCase()}${slug.slice(1)}`,
-      navLabel: slug === "home" ? "Home" : `${slug[0]!.toUpperCase()}${slug.slice(1)}`,
+      title: slug === "home" ? ctx.expandedBrief.businessName : pageLabel(slug),
+      navLabel: slug === "home" ? "Home" : pageLabel(slug),
       sections: [],
     };
   }

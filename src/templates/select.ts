@@ -44,10 +44,12 @@ import path from "node:path";
 import { pickFrom, hashString } from "../design/variation.js";
 import { classifyBriefTaxonomy } from "../skins/picker.js";
 import { taxonomyAffinity, type TaxonomyMatch } from "../skins/taxonomy.js";
+import { pipelineLog } from "../util/pipeline-log.js";
 import type { ExpandedBrief } from "../types.js";
 import {
   anchorExploreBand,
   strictTaxonomyScope,
+  templateAnchorAllowlist,
   templateMixCompatibilityThreshold,
   templateMixEnabled,
   templateQualityGateEnabled,
@@ -330,10 +332,21 @@ function mixScore(
 export async function selectSiteSections(options: SelectSiteOptions): Promise<SelectedSite> {
   const store = options.store ?? templateStore();
   const index = await store.index();
-  const ready = index.sections;
+  // Testing-only hard restriction (see templateAnchorAllowlist's own doc comment) — filtered here,
+  // once, before anything else reads the index, so taxonomy scope, theme lock, anchor scoring and
+  // mixing all see only this set, exactly as if the rest of the corpus did not exist.
+  const allowlist = templateAnchorAllowlist();
+  const ready = allowlist ? index.sections.filter((section) => allowlist.has(section.templateId)) : index.sections;
+  if (allowlist) {
+    pipelineLog(
+      `[pipeline] TEMPLATE_ANCHOR_ALLOWLIST active — restricted to ${allowlist.size} template(s): ${[...allowlist].join(", ")}`
+    );
+  }
   if (ready.length === 0) {
     throw new Error(
-      "No ingested templates available. Run `npm run templates:ingest` over templates_bundle/ first."
+      allowlist
+        ? "TEMPLATE_ANCHOR_ALLOWLIST matched nothing in the ingested corpus — check the template ids."
+        : "No ingested templates available. Run `npm run templates:ingest` over templates_bundle/ first."
     );
   }
 

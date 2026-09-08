@@ -121,6 +121,26 @@ export function templateMixEnabled(): boolean {
   return v === "1" || v === "true";
 }
 
+/** Testing-only hard restriction: when set, selection sees ONLY these templates — every other
+ *  template in the corpus is treated as if it did not exist (taxonomy scope, theme lock, anchor
+ *  scoring, mixing, all computed over just this set). Unset by default (whole corpus eligible).
+ *  Comma-separated `templateId`s, e.g.
+ *  `TEMPLATE_ANCHOR_ALLOWLIST=tpl_0b9a454d38f4,tpl_8d1070dac98f npm run generate -- "..."`.
+ *  A global env var, not a per-request option, because nothing in the UI can set one — this is for
+ *  locking a local run to a handful of just-ingested templates while testing them, not a feature a
+ *  real generation request would ever set. Restricting to templates outside the brief's own
+ *  vertical (or too few of them to cover nav+hero+footer) degrades exactly like a thin corpus does
+ *  elsewhere in this file — a worse-but-real site, or none, never a silent ignore of the setting. */
+export function templateAnchorAllowlist(): Set<string> | undefined {
+  const raw = (process.env.TEMPLATE_ANCHOR_ALLOWLIST ?? "").trim();
+  if (!raw) return undefined;
+  const ids = raw
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  return ids.length > 0 ? new Set(ids) : undefined;
+}
+
 /** Default ON: a template with 2 or more `qualityFlags` (see `ingest/quality-score.ts`) is never
  *  selected — thin content, weak classification confidence, and no real animation are each common
  *  enough alone in a perfectly fine simple template that any ONE flag should not disqualify it, but

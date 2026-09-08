@@ -37,7 +37,13 @@ const LANDMARK_RULES: Array<{ landmark: Landmark; re: RegExp }> = [
   { landmark: "testimonials", re: /\b(testimonials?|reviews?|quotes?|customers?|client say)\b/i },
   { landmark: "pricing", re: /\b(pricing|plans?|packages?|membership)\b/i },
   { landmark: "faq", re: /\b(faqs?|questions?|answers?)\b/i },
-  { landmark: "contact", re: /\b(contact|enquir(?:y|ies)|get in touch)\b/i },
+  // "office hours" added after tracing a real miss: a template's contact-page form section led
+  // with three info-cards (Office Address / Phone & Email / Office Hours) before its own "Send Us
+  // a Message" heading — `headingText` (extract-sections.ts) is only ever the FIRST h1/h2/h3 in the
+  // section, so the real identifying heading was invisible to that check; "office hours" survives
+  // because the 200-char text fallback below reaches it (confirmed: it sits at ~140 chars in, well
+  // inside the window) even when the heading check can't.
+  { landmark: "contact", re: /\b(contact|enquir(?:y|ies)|get in touch|office hours)\b/i },
   { landmark: "cta", re: /\b(get started|sign up|book|call to action|ready to|try it)\b/i },
   { landmark: "team", re: /\b(teams?|people|founders?|staff|instructors?|trainers?)\b/i },
   { landmark: "stats", re: /\b(stats?|numbers?|metrics?|proof)\b/i },

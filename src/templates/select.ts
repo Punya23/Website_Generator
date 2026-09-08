@@ -138,11 +138,14 @@ const OPTIONAL_ROLES = new Set<SectionRole>([
 ]);
 
 export interface SectionHistoryFile {
-  consumers: Record<string, { used: string[]; updatedAt: number }>;
+  consumers: Record<string, { used: string[]; lastTheme?: "light" | "dark"; updatedAt: number }>;
 }
 
 /** Per-consumer memory of placed sections, so the same customer regenerating does not get the
- *  same hero twice. Same shape as `SkinHistoryStore`. */
+ *  same hero twice. Same shape as `SkinHistoryStore`. Also remembers the single most recent theme
+ *  lock (`lastTheme`) — with only ever two possible values, "prefer anything not already used" (the
+ *  shape `used` gives every other preference in this file) degrades to a coin flip after just one
+ *  repeat; explicitly avoiding only the LAST one guarantees strict alternation forever instead. */
 export class SectionHistoryStore {
   constructor(private readonly filePath = templateSectionHistoryPath()) {}
 
@@ -151,12 +154,18 @@ export class SectionHistoryStore {
     return data.consumers[consumerId]?.used ?? [];
   }
 
-  async record(consumerId: string, keys: string[]): Promise<void> {
-    if (keys.length === 0) return;
+  async getLastTheme(consumerId: string): Promise<"light" | "dark" | undefined> {
     const data = await this.read();
-    const prev = data.consumers[consumerId]?.used ?? [];
+    return data.consumers[consumerId]?.lastTheme;
+  }
+
+  async record(consumerId: string, keys: string[], theme?: "light" | "dark"): Promise<void> {
+    if (keys.length === 0 && !theme) return;
+    const data = await this.read();
+    const prevEntry = data.consumers[consumerId];
+    const prev = prevEntry?.used ?? [];
     const used = [...new Set([...prev, ...keys])].slice(-500);
-    data.consumers[consumerId] = { used, updatedAt: Date.now() };
+    data.consumers[consumerId] = { used, lastTheme: theme ?? prevEntry?.lastTheme, updatedAt: Date.now() };
     await fs.mkdir(path.dirname(this.filePath), { recursive: true });
     await fs.writeFile(this.filePath, JSON.stringify(data, null, 2), "utf8");
   }
@@ -290,6 +299,7 @@ export async function selectSiteSections(options: SelectSiteOptions): Promise<Se
   const previouslyUsed = new Set(
     options.consumerId ? await history.getUsed(options.consumerId) : []
   );
+  const lastTheme = options.consumerId ? await history.getLastTheme(options.consumerId) : undefined;
   const taxonomyMatch = options.brief ? classifyBriefTaxonomy(options.brief) : undefined;
 
   const seed = options.variationSeed;
@@ -328,7 +338,16 @@ export async function selectSiteSections(options: SelectSiteOptions): Promise<Se
   const viableThemes = availableThemes.filter((theme) =>
     requiredRoles.every((role) => scope.poolFor(role, compatibleWith(theme)).some(compatibleWith(theme)))
   );
-  const lockedTheme = viableThemes.length > 0 ? pickFrom(seed, "site:theme", viableThemes) : undefined;
+  // Same gap the anchor pick had before its own fix above, but sharper here: with only ever two
+  // possible values (light/dark), a seed-only pick means a repeat customer sees the SAME theme
+  // every time the coin flip happens to land the same way — confirmed live, a real generated site
+  // kept coming back dark across regenerations for the same consumer. Excluding just the single
+  // most recent theme (`lastTheme`, tracked on `SectionHistoryStore`) rather than "anything ever
+  // used" guarantees strict alternation forever in a two-value domain, not just "different from
+  // last time, then back to chance" — every regeneration flips.
+  const themeShortlist = lastTheme ? viableThemes.filter((theme) => theme !== lastTheme) : viableThemes;
+  const themeCandidates = themeShortlist.length > 0 ? themeShortlist : viableThemes;
+  const lockedTheme = themeCandidates.length > 0 ? pickFrom(seed, "site:theme", themeCandidates) : undefined;
 
   // `classifyRoleHeuristically`'s last-resort tier (`ingest/classify-section.ts`) tags a role from
   // a single generic keyword found anywhere in a section's first 200 characters of text (e.g. the
@@ -607,7 +626,7 @@ export async function selectSiteSections(options: SelectSiteOptions): Promise<Se
   }
 
   if (options.consumerId) {
-    await history.record(options.consumerId, [...usedThisRun]);
+    await history.record(options.consumerId, [...usedThisRun], lockedTheme);
   }
 
   return {

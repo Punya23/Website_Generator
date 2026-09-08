@@ -30,6 +30,13 @@ export function setPipelineContext(ctx: PipelineContext): void {
   pipelineContext = { ...ctx };
 }
 
+/** Merges into the current context instead of replacing it — for refining a field (e.g.
+ *  `profileId`) once a later pipeline step resolves it, without dropping `jobId`/`seed` that
+ *  `setPipelineContext` already stamped at job start. */
+export function updatePipelineContext(patch: Partial<PipelineContext>): void {
+  pipelineContext = { ...pipelineContext, ...patch };
+}
+
 export function clearPipelineContext(): void {
   pipelineContext = {};
 }

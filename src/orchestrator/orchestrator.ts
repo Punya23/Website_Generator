@@ -492,13 +492,20 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   }
   setPipelineContext({
     jobId: options.jobId,
-    profileId: ctx.verticalProfile?.profileId,
+    // Verbatim mode's `ctx.verticalProfile` is a placeholder (see the `else if (verbatim)` branch
+    // above) needed only to satisfy SiteContext's shape — it is not a real theme decision, so it
+    // must not be stamped into every structured log line as if it were one. The real theme is
+    // resolved inside `selectSiteSections`; `runVerbatimTemplatePipeline` calls
+    // `updatePipelineContext` with it as soon as it's known.
+    profileId: verbatim ? undefined : ctx.verticalProfile?.profileId,
     seed: variationSeed,
   });
   pipelineLog(
     pickedSkin
       ? `[pipeline] Skin ${pickedSkin.id} look (${ctx.designSystem.fontHeading}, ${ctx.designSystem.pageTone}) — seed ${variationSeed}`
-      : `[pipeline] Vertical profile: ${ctx.verticalProfile?.profileId} (${ctx.verticalProfile?.pageTone}) — seed ${variationSeed}`
+      : verbatim
+        ? `[pipeline] Verbatim template pipeline — seed ${variationSeed} (theme resolves during template selection)`
+        : `[pipeline] Vertical profile: ${ctx.verticalProfile?.profileId} (${ctx.verticalProfile?.pageTone}) — seed ${variationSeed}`
   );
   ctx.cmsCollections = skinFill || verbatim ? [] : generateCmsCollections(expanded);
   ctx.reactPages = {};

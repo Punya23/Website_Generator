@@ -125,7 +125,12 @@ export function templateMixEnabled(): boolean {
  *  (source: user-supplied Etsy zips, licensing status "mixed, unverified" per the user). */
 export function templateMaxUncompressedBytes(): number {
   const n = Number.parseInt(process.env.TEMPLATE_MAX_UNCOMPRESSED_BYTES ?? "", 10);
-  return Number.isFinite(n) && n > 0 ? n : 500 * 1024 * 1024; // 500MB per archive
+  // 500MB rejected two genuine templates_bundle/ templates outright (esports/magazine and
+  // ecommerce showcase packs with heavy video/image assets, 950MB and 609MB uncompressed — real
+  // content, not zip bombs: both well under 2,006-3,145 entries, nowhere near templateMaxEntries).
+  // 2GB keeps real headroom above both while still bounding a genuine bomb (those inflate to many
+  // GB-PB from a tiny file, not ~2x their own archive size the way these two real templates do).
+  return Number.isFinite(n) && n > 0 ? n : 2 * 1024 * 1024 * 1024; // 2GB per archive
 }
 
 export function templateMaxEntries(): number {

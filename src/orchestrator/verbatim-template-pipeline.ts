@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 import type { QAIssue, QAResult, SiteContext } from "../types.js";
 import { extractTemplateSectionManifestFromUrl, runCodeQA, type BlockManifestEntry } from "../qa/code-qa.js";
 import { timedStep } from "../util/timed.js";
-import { pipelineLog } from "../util/pipeline-log.js";
+import { pipelineLog, updatePipelineContext } from "../util/pipeline-log.js";
 import { composeSite, pageFileName, type FileCopy } from "../templates/compose.js";
 import { selectSiteSections } from "../templates/select.js";
 import { polishComposedCopy } from "../agents/copy-polish-agent.js";
@@ -88,6 +88,15 @@ export async function runVerbatimTemplatePipeline(
       ...(options.excludeAnchorTemplateIds ? { excludeAnchorTemplateIds: options.excludeAnchorTemplateIds } : {}),
     })
   );
+
+  // The orchestrator's initial pipeline-log context carries no profileId for verbatim runs (it's
+  // genuinely unknown before selection). Now that selection has locked a theme, refine the
+  // context so every structured log line from here on (compose, section-repair, etc.) reports the
+  // real theme instead of leaving the earlier undefined/placeholder value stamped for the rest of
+  // the run — this is what was previously surfacing as a hardcoded "luxury-dark" that disagreed
+  // with the theme actually recorded on the generation.
+  updatePipelineContext({ profileId: selected.theme ? `verbatim-${selected.theme}` : "verbatim" });
+  pipelineLog(`[pipeline] Theme locked: ${selected.theme ?? "none (no dominant theme in the selected mix)"}`);
 
   for (const [slug, sections] of Object.entries(selected.pages)) {
     pipelineLog(

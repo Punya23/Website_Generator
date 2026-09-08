@@ -323,13 +323,31 @@ export async function selectSiteSections(options: SelectSiteOptions): Promise<Se
   );
   const lockedTheme = viableThemes.length > 0 ? pickFrom(seed, "site:theme", viableThemes) : undefined;
 
+  // `classifyRoleHeuristically`'s last-resort tier (`ingest/classify-section.ts`) tags a role from
+  // a single generic keyword found anywhere in a section's first 200 characters of text (e.g. the
+  // "stats" landmark matches the bare word "number") at confidence 0.45 — one step above
+  // "unclassified" (0.2), not a real content match. Confirmed live: a template's own CHECKOUT/
+  // PAYMENT FORM ("Billing address", "Card number", "CVC") got tagged role "stats" at exactly this
+  // confidence purely because a card-number field's label contains the word "number", and — having
+  // zero real copy slots of its own — was then composed verbatim onto a customer's "About" page.
+  // Optional roles can simply be dropped when the corpus has nothing better (`OPTIONAL_ROLES`), so
+  // there is no reason to ever hand one a guess this weak. Identity roles (nav/footer/hero) are
+  // deliberately exempt: those already resolve at 0.6-0.95 via tag/id/class evidence in the
+  // overwhelming majority of real templates, and unlike an optional role they fall back to the
+  // whole corpus rather than being dropped — excluding their rare low-confidence pick could leave a
+  // page with no hero at all, which is worse than a low-confidence one.
+  const MIN_OPTIONAL_ROLE_CONFIDENCE = 0.5;
   const poolCache = new Map<SectionRole, IndexedSection[]>();
   const themedPoolFor = (role: SectionRole): IndexedSection[] => {
     const cached = poolCache.get(role);
     if (cached) return cached;
     // Widening is told about the theme lock, so a role whose own-industry candidates are all the
     // wrong theme descends a tier rather than coming back empty.
-    const pool = lockedTheme ? scope.poolFor(role, compatibleWith(lockedTheme)) : scope.poolFor(role);
+    const scoped = lockedTheme ? scope.poolFor(role, compatibleWith(lockedTheme)) : scope.poolFor(role);
+    const pool =
+      OPTIONAL_ROLES.has(role) && !IDENTITY_ROLES.has(role)
+        ? scoped.filter((section) => section.roleConfidence >= MIN_OPTIONAL_ROLE_CONFIDENCE)
+        : scoped;
     // Within the tier: same-theme first, and only sections with no theme at all as a fallback.
     // A section whose origin theme is the opposite of the lock is never a candidate.
     const onTheme = lockedTheme ? pool.filter((section) => section.theme === lockedTheme) : pool;
@@ -407,8 +425,20 @@ export async function selectSiteSections(options: SelectSiteOptions): Promise<Se
   const band = anchorExploreBand();
   const topScore = scored.length > 0 ? scored[0]!.score : 0;
   const shortlist = scored.filter((c) => c.score >= topScore - band).map((c) => c.templateId);
+  // Prefer an anchor this consumer has not already been given — same "unseen before everything"
+  // tiering `preferenceTier` applies to section choice *within* a fixed anchor (line ~447), but
+  // until now never applied to the anchor choice itself, so a consumer regenerating always got the
+  // same anchor back whenever it was the shortlist's clear top scorer (e.g. a taxonomy tier thin
+  // enough that only one or two templates qualify at all). This is what the module doc comment at
+  // the top of the file already promises ("a different anchor next time"); it just wasn't wired in.
+  // Falls straight back to the full shortlist when every qualifier has already been used, so a
+  // thin corpus (the only real fix for which is ingesting/classifying more templates for that
+  // vertical) still ships the best real anchor instead of forcing a worse one for novelty's sake.
+  const previouslyUsedTemplateIds = new Set([...previouslyUsed].map((key) => key.split(":")[0]!));
+  const unseenShortlist = shortlist.filter((templateId) => !previouslyUsedTemplateIds.has(templateId));
+  const anchorShortlist = unseenShortlist.length > 0 ? unseenShortlist : shortlist;
   const anchorTemplateId: string | undefined =
-    shortlist.length > 0 ? pickFrom(seed, "site:anchor", shortlist) : undefined;
+    anchorShortlist.length > 0 ? pickFrom(seed, "site:anchor", anchorShortlist) : undefined;
   const anchorCandidateReport = scored.map((c) => ({ templateId: c.templateId, score: c.score }));
   // Every section of a template carries the same fingerprint (duplicated at index time, same
   // pattern as `theme`/`category`) — any one of the anchor's sections in the raw, unscoped index

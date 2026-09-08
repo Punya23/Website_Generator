@@ -76,7 +76,14 @@ export function classifyRoleHeuristically(section: RawSection): { role: SectionR
     // nav+hero+footer coverage, see select.ts's `fullyCoversRequired`) even though a real nav
     // existed on disk the whole time. Normalized the same way `ID_CLASS_RULES` below already does.
     const idClass = `${section.id} ${section.className}`.replace(/[_]+/g, "-");
-    const looksLikeNav = /\b(nav|navbar|menu|header)\b/i.test(idClass);
+    // A third real pattern, confirmed live: a completely bare `<header>` (no id, no class at all)
+    // wrapping a real `<nav class="navbar">` as its child — extraction correctly keeps only the
+    // OUTERMOST of the two (`<header>`), so the class that actually identifies this as chrome lives
+    // on a descendant the id/class check above never looks at. A `<header>` that wraps a real `<nav>`
+    // (or an element with a nav-like class) is chrome regardless of what its own id/class say —
+    // checked against the section's full markup, not just its own opening tag.
+    const looksLikeNav =
+      /\b(nav|navbar|menu|header)\b/i.test(idClass) || /<nav\b|class="[^"]*\bnavbar\b/i.test(section.html);
     return { role: looksLikeNav ? "nav" : "hero", confidence: looksLikeNav ? 0.9 : 0.6 };
   }
 

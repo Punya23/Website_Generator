@@ -201,6 +201,12 @@ export interface SelectedSite {
   /** The site-wide original-theme lock every picked section was filtered by, or `undefined` when
    *  nothing in the (taxonomy-scoped) pool carried a `theme` tag to lock onto. */
   theme?: "light" | "dark";
+  /** "confirmed": every placed section's own origin theme matched `theme`. "partial-fallback": at
+   *  least one role had no on-theme candidate and fell back to a themeless (not yet backfilled)
+   *  section — see `themedPoolFor`. `undefined` when `theme` itself is unset. Lets the admin
+   *  Generations tab distinguish "every section confirmed light" from "locked light, one or more
+   *  sections theme-unknown" instead of showing one label for both. */
+  themeConfidence?: "confirmed" | "partial-fallback";
   /** The template every role-pick preferred, before falling back to another template for a role
    *  the anchor had nothing for. `undefined` only when the scoped pool has no single template
    *  covering all required roles (nav/hero/footer) at all. */
@@ -470,6 +476,14 @@ export async function selectSiteSections(options: SelectSiteOptions): Promise<Se
   const usedThisRun = new Set<string>();
   const templatesUsed = new Map<string, number>();
   const pages: Record<string, PlacedSection[]> = {};
+  // Whether every section actually placed carries the locked theme, or the site's theme label is
+  // only true of the LOCK, not of every section on the page — `themedPoolFor` falls back to a
+  // themeless (un-backfilled) section when nothing on-theme exists for a role (see its own comment
+  // above), and that fallback is invisible in the final "(light-theme mix)" label today: the admin
+  // Generations tab has no way to tell "every section confirmed light" from "locked light, some
+  // sections theme-unknown, used anyway as fallback" apart. Tracked here, where the actual picked
+  // section's own `.theme` is available, and reported on `SelectedSite.themeConfidence`.
+  let themeFallbackUsed = false;
 
   // Chrome is picked once per site: a nav that changes between pages reads as broken, not varied.
   const chrome = new Map<SectionRole, PlacedSection | null>();
@@ -508,6 +522,7 @@ export async function selectSiteSections(options: SelectSiteOptions): Promise<Se
     const place = (chosen: IndexedSection): PlacedSection => {
       usedThisRun.add(sectionKey(chosen));
       templatesUsed.set(chosen.templateId, (templatesUsed.get(chosen.templateId) ?? 0) + 1);
+      if (lockedTheme && !chosen.theme) themeFallbackUsed = true;
       return { templateId: chosen.templateId, sectionId: chosen.sectionId, role: chosen.role };
     };
 
@@ -598,7 +613,7 @@ export async function selectSiteSections(options: SelectSiteOptions): Promise<Se
   return {
     pages,
     templateIds: [...templatesUsed.keys()],
-    ...(lockedTheme ? { theme: lockedTheme } : {}),
+    ...(lockedTheme ? { theme: lockedTheme, themeConfidence: themeFallbackUsed ? "partial-fallback" : "confirmed" } : {}),
     ...(anchorTemplateId ? { anchorTemplateId } : {}),
     ...(anchorCandidateReport.length > 0 ? { anchorCandidates: anchorCandidateReport } : {}),
     ...(taxonomyMatch

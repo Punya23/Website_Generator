@@ -303,10 +303,14 @@ export async function runVerbatimTemplatePipeline(
     rawBrief: ctx.businessBrief,
     ...(options.consumerId ? { consumerId: options.consumerId } : {}),
     ...(selected.theme ? { theme: selected.theme } : {}),
+    ...(selected.themeConfidence ? { themeConfidence: selected.themeConfidence } : {}),
     ...(selected.taxonomy ? { taxonomy: selected.taxonomy } : {}),
     composed: finalComposed,
   });
-  pipelineLog(`[pipeline] Generation logged: ${generation.id}${selected.theme ? ` (${selected.theme}-theme mix)` : ""}`);
+  const themeLabel = selected.theme
+    ? ` (${selected.theme}-theme mix${selected.themeConfidence === "partial-fallback" ? ", some sections theme-unknown" : ""})`
+    : "";
+  pipelineLog(`[pipeline] Generation logged: ${generation.id}${themeLabel}`);
 
   return {
     htmlPages: finalComposed.htmlPages,

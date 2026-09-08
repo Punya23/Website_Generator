@@ -48,6 +48,12 @@ export const IndexedSectionSchema = z.object({
    *  section of the same template, same pattern as `theme`/`category`) so `select.ts` can score
    *  cross-template compatibility without loading the full manifest per candidate. */
   designFingerprint: DesignFingerprintSchema.optional(),
+  /** See `TemplateManifestSchema.qualityFlags` / `ingest/quality-score.ts`. Duplicated per-section,
+   *  same pattern as `theme`/`designFingerprint`, so `select.ts` can gate a low-quality template
+   *  out of selection without loading the full manifest per candidate. */
+  qualityFlags: z
+    .object({ thinContent: z.boolean(), lowConfidence: z.boolean(), noAnimation: z.boolean() })
+    .optional(),
 });
 export type IndexedSection = z.infer<typeof IndexedSectionSchema>;
 
@@ -71,6 +77,10 @@ export const TemplateIndexSchema = z.object({
         taxonomySource: z.enum(["folder", "content", "combined", "none"]).optional(),
         theme: z.enum(["light", "dark"]).optional(),
         designFingerprint: DesignFingerprintSchema.optional(),
+        qualityScore: z.number().optional(),
+        qualityFlags: z
+          .object({ thinContent: z.boolean(), lowConfidence: z.boolean(), noAnimation: z.boolean() })
+          .optional(),
       })
     )
     .default([]),
@@ -130,6 +140,8 @@ export class TemplateStore {
         ...(manifest.taxonomySource ? { taxonomySource: manifest.taxonomySource } : {}),
         ...(manifest.theme ? { theme: manifest.theme } : {}),
         ...(manifest.designFingerprint ? { designFingerprint: manifest.designFingerprint } : {}),
+        ...(manifest.qualityScore !== undefined ? { qualityScore: manifest.qualityScore } : {}),
+        ...(manifest.qualityFlags ? { qualityFlags: manifest.qualityFlags } : {}),
       });
       if (manifest.status !== "ready") continue;
       for (const section of manifest.sections) {
@@ -148,6 +160,7 @@ export class TemplateStore {
           universalFit: manifest.universalFit,
           ...(manifest.theme ? { theme: manifest.theme } : {}),
           ...(manifest.designFingerprint ? { designFingerprint: manifest.designFingerprint } : {}),
+          ...(manifest.qualityFlags ? { qualityFlags: manifest.qualityFlags } : {}),
         });
       }
     }

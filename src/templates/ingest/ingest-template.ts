@@ -23,6 +23,7 @@ import { collectIdRenames, namespaceIds } from "./id-rewrite.js";
 import { extractNestedZips, extractZipSafely, pickTemplateRoot } from "./normalize-archive.js";
 import { recolorCss } from "./recolor-css.js";
 import { extractDesignFingerprint } from "./design-fingerprint.js";
+import { computeTemplateQuality } from "./quality-score.js";
 import { sanitizeCss, scopeCss } from "./scope-css.js";
 
 /** Pages parsed per template. Multi-page templates repeat their nav/footer/hero shapes, so the
@@ -305,6 +306,8 @@ export async function ingestTemplateZip(zipPath: string, options: IngestOptions 
           universalFit: false,
         };
 
+  const quality = computeTemplateQuality(sections, finalCss);
+
   return writeManifest({
     ...base,
     ...tagged,
@@ -317,6 +320,8 @@ export async function ingestTemplateZip(zipPath: string, options: IngestOptions 
     sourceCssHash,
     theme,
     designFingerprint,
+    qualityScore: quality.score,
+    qualityFlags: quality.flags,
     assets: collector.manifest(),
     sections,
   });

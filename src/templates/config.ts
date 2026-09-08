@@ -121,6 +121,17 @@ export function templateMixEnabled(): boolean {
   return v === "1" || v === "true";
 }
 
+/** Default ON: a template with 2 or more `qualityFlags` (see `ingest/quality-score.ts`) is never
+ *  selected — thin content, weak classification confidence, and no real animation are each common
+ *  enough alone in a perfectly fine simple template that any ONE flag should not disqualify it, but
+ *  two together is a real, corpus-confirmed "this was never going to read as a usable business
+ *  site" signal. Set TEMPLATE_QUALITY_GATE=0 to disable (e.g. while testing against a corpus that
+ *  hasn't been backfilled yet and you want to see the raw pool). */
+export function templateQualityGateEnabled(): boolean {
+  const v = (process.env.TEMPLATE_QUALITY_GATE ?? "1").trim().toLowerCase();
+  return v !== "0" && v !== "false";
+}
+
 /** Zip-bomb / zip-slip guardrails for extracting templates from an unaudited local bundle
  *  (source: user-supplied Etsy zips, licensing status "mixed, unverified" per the user). */
 export function templateMaxUncompressedBytes(): number {

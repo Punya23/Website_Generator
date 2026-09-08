@@ -50,6 +50,7 @@ import {
   strictTaxonomyScope,
   templateMixCompatibilityThreshold,
   templateMixEnabled,
+  templateQualityGateEnabled,
   templateSectionHistoryPath,
 } from "./config.js";
 import { fingerprintCompatibility } from "./ingest/design-fingerprint.js";
@@ -337,6 +338,17 @@ export async function selectSiteSections(options: SelectSiteOptions): Promise<Se
   // whole corpus rather than being dropped — excluding their rare low-confidence pick could leave a
   // page with no hero at all, which is worse than a low-confidence one.
   const MIN_OPTIONAL_ROLE_CONFIDENCE = 0.5;
+  // No quality gate existed anywhere before this: a technically-successful-but-thin/static
+  // template ingested to "ready" exactly like a rich one and was fully eligible for selection —
+  // this is the first (and only) point that ever excludes one. Two or more flags together, not
+  // one alone — see `templateQualityGateEnabled`'s own doc comment for why. A template with no
+  // `qualityFlags` yet (not backfilled) passes: absence of data is not evidence of low quality.
+  const MIN_QUALITY_FLAGS_TO_EXCLUDE = 2;
+  const passesQualityGate = (section: IndexedSection): boolean => {
+    if (!templateQualityGateEnabled() || !section.qualityFlags) return true;
+    const flagCount = Object.values(section.qualityFlags).filter(Boolean).length;
+    return flagCount < MIN_QUALITY_FLAGS_TO_EXCLUDE;
+  };
   const poolCache = new Map<SectionRole, IndexedSection[]>();
   const themedPoolFor = (role: SectionRole): IndexedSection[] => {
     const cached = poolCache.get(role);
@@ -344,10 +356,16 @@ export async function selectSiteSections(options: SelectSiteOptions): Promise<Se
     // Widening is told about the theme lock, so a role whose own-industry candidates are all the
     // wrong theme descends a tier rather than coming back empty.
     const scoped = lockedTheme ? scope.poolFor(role, compatibleWith(lockedTheme)) : scope.poolFor(role);
+    // A thin/corpus-wide-poor vertical (see select.ts's own header comment on repeat generations)
+    // must still ship a real site — a quality-filtered pool that comes back empty falls back to the
+    // unfiltered one rather than leaving the role with nothing, same "a worse-but-real candidate
+    // beats none" idiom `excludeAnchorTemplateIds` and the theme fallback below already use.
+    const qualityFiltered = scoped.filter(passesQualityGate);
+    const afterQuality = qualityFiltered.length > 0 ? qualityFiltered : scoped;
     const pool =
       OPTIONAL_ROLES.has(role) && !IDENTITY_ROLES.has(role)
-        ? scoped.filter((section) => section.roleConfidence >= MIN_OPTIONAL_ROLE_CONFIDENCE)
-        : scoped;
+        ? afterQuality.filter((section) => section.roleConfidence >= MIN_OPTIONAL_ROLE_CONFIDENCE)
+        : afterQuality;
     // Within the tier: same-theme first, and only sections with no theme at all as a fallback.
     // A section whose origin theme is the opposite of the lock is never a candidate.
     const onTheme = lockedTheme ? pool.filter((section) => section.theme === lockedTheme) : pool;

@@ -34,7 +34,8 @@
     "templates:backfill-design-tokens": "tsx src/templates/ingest/backfill-design-tokens.ts",
     "templates:backfill-taxonomy": "tsx src/templates/ingest/backfill-taxonomy.ts",
     "templates:backfill-photo-slots": "tsx src/templates/ingest/backfill-photo-slots.ts",
-    "templates:backfill-roles": "tsx src/templates/ingest/backfill-roles.ts"
+    "templates:backfill-roles": "tsx src/templates/ingest/backfill-roles.ts",
+    "templates:backfill-quality": "tsx src/templates/ingest/backfill-quality.ts"
   },
   "keywords": [
     "website-generator",

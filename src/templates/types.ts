@@ -191,6 +191,20 @@ export const TemplateManifestSchema = z.object({
   paletteId: z.string().optional(),
   assets: z.array(AssetManifestEntrySchema).default([]),
   sections: z.array(TemplateSectionSchema).default([]),
+  /** See `ingest/quality-score.ts`. A cheap, explainable "is this even worth using" signal — no
+   *  quality gate existed before this; a technically-successful-but-thin/static template ingested
+   *  to `ready` exactly like a rich one and was fully eligible for selection. Optional: unset for
+   *  anything ingested before this field existed, until the backfill
+   *  (`ingest/backfill-quality.ts`) or a re-ingest fills it in — `select.ts` treats a template with
+   *  no quality data as passing the gate (innocent until backfilled), not as failing it. */
+  qualityScore: z.number().min(0).max(1).optional(),
+  qualityFlags: z
+    .object({
+      thinContent: z.boolean(),
+      lowConfidence: z.boolean(),
+      noAnimation: z.boolean(),
+    })
+    .optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });

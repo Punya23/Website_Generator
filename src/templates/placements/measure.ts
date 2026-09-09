@@ -113,6 +113,37 @@ export function proseConstraints(
   };
 }
 
+/** Roughly what a mid-size body-copy line holds on a typical desktop content column — used only
+ *  when there is no real font-size/width to measure (see `genericProseConstraints`). Deliberately
+ *  the SAME safety-floor construction as `proseConstraints` (never below the original's own
+ *  length), just without a verified box behind the ceiling. */
+const GENERIC_CHARS_PER_LINE = 60;
+
+/**
+ * `proseConstraints`'s counterpart for a placement with no verified CSS box behind it — an
+ * auto-discovered slot from the scraped-template corpus (`SlotLocator`) records WHERE the text is
+ * and what it currently says, but not the selector's real font-size/container width the way the
+ * hand-mapped real-estate templates do (see `real-estate-map.ts`'s own `TYPE_SCALE`). Rather than
+ * guess a font-size, this assumes a generic desktop body-copy line length and leans on the same
+ * safety floor `proseConstraints` uses: the ceiling can never be below the length already shipping
+ * there, so it is impossible to under-constrain relative to what the box has already proven it
+ * holds, even though the estimate is coarser than a measured one.
+ */
+export function genericProseConstraints(original: string, allowedLines: number): TextConstraints {
+  const originalLen = original.trim().length;
+  const geometricCeiling = GENERIC_CHARS_PER_LINE * allowedLines;
+  const maxChars = Math.max(geometricCeiling, originalLen);
+  const minChars = Math.max(4, Math.round(originalLen * 0.4));
+  const wordCount = Math.max(1, original.trim().split(/\s+/).filter(Boolean).length);
+  return {
+    minChars,
+    maxChars,
+    minWords: Math.max(1, Math.round(wordCount * 0.5)),
+    maxWords: Math.max(wordCount, Math.round(maxChars / 6)),
+    maxLines: allowedLines,
+  };
+}
+
 /**
  * Character/word budget for a label-shaped placement (a nav link, a button, a badge) — text short
  * enough that "does it read as a label" matters more than literal pixel width, so this bounds word

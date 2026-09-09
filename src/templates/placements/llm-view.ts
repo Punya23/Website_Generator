@@ -256,3 +256,84 @@ export function applyLlmResponse(view: LlmTemplateView, response: unknown): Reco
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
+
+// ---------------------------------------------------------------------------
+// Flat contract — id-keyed, no nesting. Recommended for a real LLM call.
+// ---------------------------------------------------------------------------
+
+/**
+ * Confirmed live against `google/gemini-3.5-flash-lite` on OpenRouter: asked to preserve
+ * `buildPromptPayload`'s nested `{sections:{instances:[{field:{...}}]}}` shape exactly, the SAME
+ * page, same prompt, same model, back-to-back calls — sometimes came back complete, sometimes came
+ * back with entire sections silently missing (valid JSON, wrong shape, no parse error to catch).
+ * Fast/small models are simply less reliable at preserving deep nesting than at flat key→value
+ * completion, which is closer to their common fine-tuning shape. `buildFlatPromptPayload` keeps
+ * `id` as the key instead of a `page/section/instance` path — nothing to nest, nothing to drop.
+ *
+ * `buildLlmView`'s nested shape is still what gets saved as `placements.llm.json` (a human reading
+ * "does the nav section need anything" wants the grouping); this is only how a MODEL is asked.
+ */
+export interface FlatPromptField {
+  type: "text" | "image";
+  current: string;
+  minChars?: number;
+  maxChars?: number;
+  aspectRatio?: string;
+  minWidthPx?: number;
+  minHeightPx?: number;
+  subject?: string;
+}
+
+/** Every editable field in one page, keyed by its real placement id. Pass `view.pages[pageKey]` for
+ *  one page at a time (recommended — keeps each request small and independently retryable) or walk
+ *  every page yourself for a single whole-template request. */
+export function buildFlatPromptPayload(page: LlmPageView): Record<string, FlatPromptField> {
+  const out: Record<string, FlatPromptField> = {};
+  for (const section of Object.values(page.sections)) {
+    for (const field of Object.values(section.fields ?? {})) {
+      if (field.editable) out[field.id] = toPromptField(field);
+    }
+    for (const instance of section.instances ?? []) {
+      for (const field of Object.values(instance)) {
+        if (field.editable) out[field.id] = toPromptField(field);
+      }
+    }
+  }
+  return out;
+}
+
+/** Every editable id anywhere in `view`, regardless of page — for validating a flat response
+ *  against the full template rather than one page at a time. */
+function allEditableIds(view: LlmTemplateView): Set<string> {
+  const ids = new Set<string>();
+  for (const page of Object.values(view.pages)) {
+    for (const section of Object.values(page.sections)) {
+      for (const field of Object.values(section.fields ?? {})) if (field.editable) ids.add(field.id);
+      for (const instance of section.instances ?? []) {
+        for (const field of Object.values(instance)) if (field.editable) ids.add(field.id);
+      }
+    }
+  }
+  return ids;
+}
+
+/**
+ * Resolves a model's flat `{"<id>": "<value>", ...}` answer (or `{"values": {...}}` — both
+ * accepted, since models asked for "a JSON object" inconsistently wrap it one level) against
+ * `view`, keeping only values for ids that are real AND editable. Ready to pass straight to
+ * `fill.ts`'s `applyPlacements` as `llmValues` — no further transformation needed.
+ */
+export function applyFlatLlmResponse(view: LlmTemplateView, response: unknown): Record<string, string> {
+  const editable = allEditableIds(view);
+  const values: Record<string, string> = {};
+  const source =
+    isRecord(response) && isRecord(response.values)
+      ? response.values
+      : isRecord(response)
+        ? response
+        : {};
+  for (const [id, value] of Object.entries(source)) {
+    if (editable.has(id) && typeof value === "string") values[id] = value;
+  }
+  return values;
+}

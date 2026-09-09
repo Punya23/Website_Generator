@@ -24,3 +24,4 @@ data/thumbs/
 # Demo output from scripts/demo-placements-fill.ts — throwaway proof-of-concept renders, not the
 # shipped pipeline's output (that's placements.json, which IS committed).
 real-estate/*/*.filled.html
+real-estate/*/*.generated.html

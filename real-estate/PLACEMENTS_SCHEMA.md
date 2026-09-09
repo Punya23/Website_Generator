@@ -161,6 +161,19 @@ For an `image` field, the value is a short plain-English stock-photo search quer
 suburban home exterior dusk"`), not a URL — resolve it through your own stock-photo provider before
 handing the result to `applyPlacements`.
 
+**Recommended in practice: the flat variant.** `buildFlatPromptPayload(page)` /
+`applyFlatLlmResponse(view, response)` do the identical job but key every editable field by its real
+placement id instead of nesting it under page/section/instance — `{"home.hero.title": {"current":
+"...", "maxChars": 54}, ...}` in, `{"values": {"home.hero.title": "..."}}` back. Confirmed live
+against `google/gemini-3.5-flash-lite`: asked to preserve the nested shape exactly, the same page/
+prompt/model sometimes came back with entire sections silently missing — valid JSON, wrong shape, no
+parse error to catch it. Flat key→value completion doesn't give a model anywhere to drop a nested
+array or rename a wrapper key; a real run against all 8 pages went from as low as ~75% field
+coverage (nested) to 135/135 (100%, flat) with zero prompt/model changes otherwise. `scripts/
+generate-real-site.ts` uses the flat variant for exactly this reason — treat it as the default,
+and keep the nested one for what it's actually good at: a human (or your orchestration's own
+"does this section need anything" check) reading `placements.llm.json`.
+
 **`applyLlmResponse(view, response)`** takes that answer back (same nested shape, against the
 FULL `view` — not the stripped prompt) and resolves every value to its real placement id, ready for
 `fill.ts`. A value offered for a path that doesn't exist, or a field the view marks non-editable, is

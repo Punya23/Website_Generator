@@ -3,7 +3,13 @@ import path from "node:path";
 import * as cheerio from "cheerio";
 import { extractRealEstateTemplate } from "../src/templates/placements/extract.js";
 import { applyPlacements } from "../src/templates/placements/fill.js";
-import { applyLlmResponse, buildLlmView, buildPromptPayload } from "../src/templates/placements/llm-view.js";
+import {
+  applyFlatLlmResponse,
+  applyLlmResponse,
+  buildFlatPromptPayload,
+  buildLlmView,
+  buildPromptPayload,
+} from "../src/templates/placements/llm-view.js";
 import type { ImagePlacement, PagePlacements, TextPlacement } from "../src/templates/placements/schema.js";
 
 const REAL_ESTATE_DIR = path.resolve(process.cwd(), "real-estate");
@@ -238,6 +244,36 @@ describe("llm-view: the nested page -> section -> field contract", () => {
     const response = { pages: { chrome: { sections: { nav: { fields: { brand: "Sneaky Rebrand" } } } } } };
     const values = applyLlmResponse(view, response);
     expect(values).toEqual({});
+  });
+});
+
+describe("llm-view: the flat id-keyed contract (recommended for a real LLM call)", () => {
+  it("keys every editable field by its real placement id, with no page/section nesting", async () => {
+    const file = await extractRealEstateTemplate(path.join(REAL_ESTATE_DIR, "real-estate-agency"), "real-estate-agency");
+    const view = buildLlmView(file);
+    const payload = buildFlatPromptPayload(view.pages["index.html"]!);
+    expect(payload["home.hero.title"]).toEqual({
+      type: "text",
+      current: "Find the home that fits your next chapter",
+      minChars: 16,
+      maxChars: 54,
+    });
+    expect(payload["chrome.nav.link.0"]).toBeUndefined(); // that field lives on "chrome", not "index.html"
+    expect(payload["home.featured.0.price"]).toBeUndefined(); // data-sourced, not editable
+  });
+
+  it("accepts a flat {values:{...}} response and resolves it to real ids", async () => {
+    const file = await extractRealEstateTemplate(path.join(REAL_ESTATE_DIR, "real-estate-agency"), "real-estate-agency");
+    const view = buildLlmView(file);
+    const values = applyFlatLlmResponse(view, { values: { "home.hero.title": "New headline", "chrome.nav.brand": "Sneaky Rebrand" } });
+    expect(values).toEqual({ "home.hero.title": "New headline" }); // nav.brand is locked — dropped
+  });
+
+  it("also accepts a bare {\"<id>\": \"...\"} response without the values wrapper", async () => {
+    const file = await extractRealEstateTemplate(path.join(REAL_ESTATE_DIR, "real-estate-agency"), "real-estate-agency");
+    const view = buildLlmView(file);
+    const values = applyFlatLlmResponse(view, { "home.hero.title": "New headline" });
+    expect(values).toEqual({ "home.hero.title": "New headline" });
   });
 });
 

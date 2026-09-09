@@ -247,8 +247,8 @@ export function chromeDescriptors(): PageDescriptorSet {
   NAV_PAGES.forEach((pageName, i) => {
     text.push({
       id: `chrome.nav.link.${i}`, selector: `.navbar__links li:nth-of-type(${i + 1}) a`,
-      role: "navLink", fillSource: "llm", text: label(2),
-      notes: `Flavor wording for the link to the ${pageName} page — must still clearly read as "${pageName}" to a visitor.`,
+      role: "navLink", fillSource: "fixed", text: label(2),
+      notes: `Site navigation to the ${pageName} page — structural, never rewritten.`,
     });
   });
 
@@ -266,8 +266,8 @@ export function chromeDescriptors(): PageDescriptorSet {
   for (let i = 1; i <= 5; i++) {
     text.push({
       id: `chrome.footer.col2.link.${i - 1}`, selector: `.footer__col:nth-of-type(2) li:nth-of-type(${i}) a`,
-      role: "footerLink", fillSource: "llm", text: label(3),
-      notes: "Flavor label over a fixed navigation target — see the matching nav link's note.",
+      role: "footerLink", fillSource: "fixed", text: label(3),
+      notes: "Site navigation, mirrored in the footer — structural, never rewritten.",
     });
   }
 
@@ -584,3 +584,122 @@ export const REAL_ESTATE_PAGE_ORDER = [
   "index.html", "about.html", "services.html", "listings.html",
   "property-detail.html", "agents.html", "agent-detail.html", "contact.html",
 ];
+
+// ---------------------------------------------------------------------------
+// Section grouping — the human/LLM-facing "which visual block is this in" answer.
+// ---------------------------------------------------------------------------
+
+/**
+ * Maps a placement `id` to the section it visually belongs to (`"hero"`, `"featuredListings"`,
+ * `"nav"`, ...) — what `llm-view.ts` groups by so an LLM (or a human) sees "the hero section needs
+ * these 5 fields" / "the nav never needs anything" instead of a flat list of 404 ids.
+ *
+ * A lookup table against `id`, not a live property on every descriptor above: every id already
+ * begins with the exact string chosen for its group (`"home.featured.0.title"`,
+ * `"chrome.nav.link.3"`, ...) precisely because the id itself was designed as `<group>.<field>` /
+ * `<group>.<index>.<field>` — so grouping is a pure function of the id, and adding it here costs
+ * one small, reviewable table instead of touching all ~450 descriptor literals above. Checked in
+ * declaration order, first match wins — more specific rules (`"chrome.footer.col2."`) are listed
+ * before the general fallback they'd otherwise be shadowed by (`"chrome.footer."`).
+ */
+interface SectionRule {
+  match: string;
+  section: string;
+  /** Match the id exactly rather than as a prefix — for a handful of ids that are themselves a
+   *  complete field name today (`"property.title"`) and would otherwise swallow an unrelated,
+   *  longer id that happens to start the same way (`"property.location"` the address field vs.
+   *  `"property.location.heading"` the unrelated "Location" detail-section's own heading). */
+  exact?: boolean;
+}
+
+const SECTION_RULES: SectionRule[] = [
+  // Chrome
+  { match: "chrome.nav.link.", section: "nav" },
+  { match: "chrome.nav.brand", section: "nav", exact: true },
+  // Deliberately its own section, not "nav": the CTA button is marketing copy that happens to sit
+  // in the nav bar, not site navigation — keeping it separate means the "nav" section itself is
+  // 100% locked (every field editable:false), which is the literal, unambiguous answer to "does
+  // the navigation bar ever need to change".
+  { match: "chrome.nav.cta", section: "navCta", exact: true },
+  { match: "chrome.topbar.", section: "topbar" },
+  { match: "chrome.footer.col2.", section: "footerQuickLinks" },
+  { match: "chrome.footer.col3.", section: "footerCategories" },
+  { match: "chrome.footer.col4.", section: "footerNewsletter" },
+  { match: "chrome.footer.newsletterText", section: "footerNewsletter", exact: true },
+  { match: "chrome.footer.", section: "footer" },
+
+  // index.html
+  { match: "home.hero.", section: "hero" },
+  { match: "home.featured.", section: "featuredListings" },
+  { match: "home.stats.", section: "stats" },
+  { match: "home.why.", section: "whyUs" },
+  { match: "home.how.", section: "howItWorks" },
+  { match: "home.testimonials.", section: "testimonials" },
+  { match: "home.cta.", section: "cta" },
+
+  // about.html
+  { match: "about.banner.", section: "banner" },
+  { match: "about.story.", section: "story" },
+  { match: "about.values.", section: "values" },
+  { match: "about.stats.", section: "stats" },
+  { match: "about.team.", section: "team" },
+  { match: "about.cta.", section: "cta" },
+
+  // services.html
+  { match: "services.banner.", section: "banner" },
+  { match: "services.offers.", section: "services" },
+  { match: "services.process.", section: "process" },
+  { match: "services.faq.", section: "faq" },
+  { match: "services.cta.", section: "cta" },
+
+  // listings.html
+  { match: "listings.banner.", section: "banner" },
+  { match: "listings.card.", section: "listings" },
+
+  // property-detail.html — the 4 exact rules must stay ahead of any prefix rule that could
+  // otherwise shadow them (none currently would, but exact keeps this order-independent).
+  { match: "property.badge", section: "listing", exact: true },
+  { match: "property.title", section: "listing", exact: true },
+  { match: "property.price", section: "listing", exact: true },
+  { match: "property.location", section: "listing", exact: true },
+  { match: "property.gallery.", section: "gallery" },
+  { match: "property.facts.", section: "keyFacts" },
+  { match: "property.description.", section: "description" },
+  { match: "property.amenities.", section: "amenities" },
+  { match: "property.location.", section: "location" },
+  { match: "property.sidebar.", section: "sidebar" },
+  { match: "property.tour.", section: "sidebar" },
+  { match: "property.similar.", section: "similarListings" },
+
+  // agents.html
+  { match: "agents.banner.", section: "banner" },
+  { match: "agents.team.", section: "team" },
+  { match: "agents.roster.", section: "team" },
+  { match: "agents.cta.", section: "cta" },
+
+  // agent-detail.html
+  { match: "agentDetail.name", section: "profile", exact: true },
+  { match: "agentDetail.role", section: "profile", exact: true },
+  { match: "agentDetail.contact", section: "profile", exact: true },
+  { match: "agentDetail.photo", section: "profile", exact: true },
+  { match: "agentDetail.aboutHeading", section: "bio", exact: true },
+  { match: "agentDetail.bio.", section: "bio" },
+  { match: "agentDetail.facts.", section: "keyFacts" },
+  { match: "agentDetail.listingsHeading", section: "listings", exact: true },
+  { match: "agentDetail.listings.", section: "listings" },
+  { match: "agentDetail.testimonial.", section: "testimonials" },
+  { match: "agentDetail.contactHeading", section: "sidebar", exact: true },
+
+  // contact.html
+  { match: "contact.banner.", section: "banner" },
+  { match: "contact.info.", section: "contactInfo" },
+  { match: "contact.form.", section: "form" },
+  { match: "contact.sidebar.", section: "sidebar" },
+];
+
+export function sectionForId(id: string): string {
+  for (const rule of SECTION_RULES) {
+    if (rule.exact ? id === rule.match : id.startsWith(rule.match)) return rule.section;
+  }
+  return "misc";
+}

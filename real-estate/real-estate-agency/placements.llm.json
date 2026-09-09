@@ -1,0 +1,3811 @@
+{
+  "template": "real-estate-agency",
+  "pages": {
+    "chrome": {
+      "sections": {
+        "nav": {
+          "instances": [
+            {
+              "text": {
+                "id": "chrome.nav.link.0",
+                "type": "text",
+                "editable": false,
+                "current": "Home",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.nav.link.1",
+                "type": "text",
+                "editable": false,
+                "current": "About",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.nav.link.2",
+                "type": "text",
+                "editable": false,
+                "current": "Listings",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.nav.link.3",
+                "type": "text",
+                "editable": false,
+                "current": "Agents",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.nav.link.4",
+                "type": "text",
+                "editable": false,
+                "current": "Services",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.nav.link.5",
+                "type": "text",
+                "editable": false,
+                "current": "Contact",
+                "reason": "structural/UI text — never rewritten"
+              }
+            }
+          ],
+          "fields": {
+            "brand": {
+              "id": "chrome.nav.brand",
+              "type": "text",
+              "editable": false,
+              "current": "PrestigeRealty",
+              "reason": "comes from the business's own profile, not the model"
+            }
+          }
+        },
+        "footer": {
+          "fields": {
+            "brand": {
+              "id": "chrome.footer.brand",
+              "type": "text",
+              "editable": false,
+              "current": "PrestigeRealty",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "about": {
+              "id": "chrome.footer.about",
+              "type": "text",
+              "editable": true,
+              "current": "A boutique San Francisco Bay Area brokerage helping buyers, sellers, and investors move with confidence since 2011.",
+              "minChars": 46,
+              "maxChars": 120
+            },
+            "copyright": {
+              "id": "chrome.footer.copyright",
+              "type": "text",
+              "editable": false,
+              "current": "© 2026 Prestige Realty. All rights reserved.",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "license": {
+              "id": "chrome.footer.license",
+              "type": "text",
+              "editable": false,
+              "current": "DRE #01923847 · Privacy Policy · Terms",
+              "reason": "comes from the business's own profile, not the model"
+            }
+          }
+        },
+        "navCta": {
+          "fields": {
+            "cta": {
+              "id": "chrome.nav.cta",
+              "type": "text",
+              "editable": true,
+              "current": "Get a Free Valuation",
+              "minChars": 10,
+              "maxChars": 40
+            }
+          }
+        },
+        "topbar": {
+          "fields": {
+            "address": {
+              "id": "chrome.topbar.address",
+              "type": "text",
+              "editable": false,
+              "current": "1450 Market Street, Suite 400, San Francisco, CA",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "phone": {
+              "id": "chrome.topbar.phone",
+              "type": "text",
+              "editable": false,
+              "current": "(415) 555-0182",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "email": {
+              "id": "chrome.topbar.email",
+              "type": "text",
+              "editable": false,
+              "current": "hello@prestigerealty.com",
+              "reason": "comes from the business's own profile, not the model"
+            }
+          }
+        },
+        "footerQuickLinks": {
+          "fields": {
+            "heading": {
+              "id": "chrome.footer.col2.heading",
+              "type": "text",
+              "editable": false,
+              "current": "Quick Links",
+              "reason": "structural/UI text — never rewritten"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "chrome.footer.col2.link.0",
+                "type": "text",
+                "editable": false,
+                "current": "About Us",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col2.link.1",
+                "type": "text",
+                "editable": false,
+                "current": "Property Listings",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col2.link.2",
+                "type": "text",
+                "editable": false,
+                "current": "Our Agents",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col2.link.3",
+                "type": "text",
+                "editable": false,
+                "current": "Services",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col2.link.4",
+                "type": "text",
+                "editable": false,
+                "current": "Contact",
+                "reason": "structural/UI text — never rewritten"
+              }
+            }
+          ]
+        },
+        "footerCategories": {
+          "fields": {
+            "heading": {
+              "id": "chrome.footer.col3.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Property Types",
+              "minChars": 7,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "chrome.footer.col3.link.0",
+                "type": "text",
+                "editable": true,
+                "current": "Single-Family Homes",
+                "minChars": 10,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col3.link.1",
+                "type": "text",
+                "editable": true,
+                "current": "Condos & Townhomes",
+                "minChars": 9,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col3.link.2",
+                "type": "text",
+                "editable": true,
+                "current": "Luxury Estates",
+                "minChars": 7,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col3.link.3",
+                "type": "text",
+                "editable": true,
+                "current": "Investment Properties",
+                "minChars": 11,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col3.link.4",
+                "type": "text",
+                "editable": true,
+                "current": "New Construction",
+                "minChars": 8,
+                "maxChars": 32
+              }
+            }
+          ]
+        },
+        "footerNewsletter": {
+          "fields": {
+            "heading": {
+              "id": "chrome.footer.col4.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Stay Updated",
+              "minChars": 6,
+              "maxChars": 32
+            },
+            "newsletterText": {
+              "id": "chrome.footer.newsletterText",
+              "type": "text",
+              "editable": true,
+              "current": "Get new listings and market updates in your inbox every week.",
+              "minChars": 24,
+              "maxChars": 68
+            }
+          }
+        }
+      }
+    },
+    "index.html": {
+      "sections": {
+        "hero": {
+          "fields": {
+            "eyebrow": {
+              "id": "home.hero.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Bay Area Real Estate",
+              "minChars": 10,
+              "maxChars": 32
+            },
+            "title": {
+              "id": "home.hero.title",
+              "type": "text",
+              "editable": true,
+              "current": "Find the home that fits your next chapter",
+              "minChars": 16,
+              "maxChars": 54
+            },
+            "subtitle": {
+              "id": "home.hero.subtitle",
+              "type": "text",
+              "editable": true,
+              "current": "Prestige Realty has guided Bay Area buyers and sellers for over 15 years — local expertise, honest advice, and a network of the best homes before they hit the open market.",
+              "minChars": 68,
+              "maxChars": 183
+            },
+            "background": {
+              "id": "home.hero.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "home.hero.cta.0",
+                "type": "text",
+                "editable": true,
+                "current": "Browse Listings",
+                "minChars": 8,
+                "maxChars": 24
+              }
+            },
+            {
+              "text": {
+                "id": "home.hero.cta.1",
+                "type": "text",
+                "editable": true,
+                "current": "Talk to an Agent",
+                "minChars": 8,
+                "maxChars": 24
+              }
+            }
+          ]
+        },
+        "featuredListings": {
+          "fields": {
+            "title": {
+              "id": "home.featured.title",
+              "type": "text",
+              "editable": true,
+              "current": "Handpicked homes on the market now",
+              "minChars": 14,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "home.featured.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Featured Properties",
+              "minChars": 10,
+              "maxChars": 24
+            },
+            "viewAll": {
+              "id": "home.featured.viewAll",
+              "type": "text",
+              "editable": true,
+              "current": "View All Listings",
+              "minChars": 9,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "badge": {
+                "id": "home.featured.0.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.0.price",
+                "type": "text",
+                "editable": false,
+                "current": "$2,450,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.0.location",
+                "type": "text",
+                "editable": false,
+                "current": "482 Willow Creek Lane, Palo Alto, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.0.title",
+                "type": "text",
+                "editable": false,
+                "current": "Modern Family Home",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.0.beds",
+                "type": "text",
+                "editable": false,
+                "current": "4 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.0.baths",
+                "type": "text",
+                "editable": false,
+                "current": "3 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.0.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "2,850 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "home.featured.1.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.1.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,275,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.1.location",
+                "type": "text",
+                "editable": false,
+                "current": "88 Beale Street #1204, San Francisco, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.1.title",
+                "type": "text",
+                "editable": false,
+                "current": "Downtown Luxury Condo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.1.beds",
+                "type": "text",
+                "editable": false,
+                "current": "2 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.1.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.1.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,180 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "home.featured.2.badge",
+                "type": "text",
+                "editable": false,
+                "current": "New Listing",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.2.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,690,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.2.location",
+                "type": "text",
+                "editable": false,
+                "current": "214 Elm Street, Berkeley, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.2.title",
+                "type": "text",
+                "editable": false,
+                "current": "Craftsman Bungalow",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.2.beds",
+                "type": "text",
+                "editable": false,
+                "current": "3 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.2.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.2.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,920 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "home.featured.3.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.3.price",
+                "type": "text",
+                "editable": false,
+                "current": "$3,150,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.3.location",
+                "type": "text",
+                "editable": false,
+                "current": "76 Skyline Drive, Oakland, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.3.title",
+                "type": "text",
+                "editable": false,
+                "current": "Hillside View Estate",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.3.beds",
+                "type": "text",
+                "editable": false,
+                "current": "5 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.3.baths",
+                "type": "text",
+                "editable": false,
+                "current": "4.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.3.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "4,200 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.3.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "home.featured.4.badge",
+                "type": "text",
+                "editable": false,
+                "current": "New Listing",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.4.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,895,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.4.location",
+                "type": "text",
+                "editable": false,
+                "current": "509 Oak Grove Ave, Menlo Park, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.4.title",
+                "type": "text",
+                "editable": false,
+                "current": "Charming Cottage",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.4.beds",
+                "type": "text",
+                "editable": false,
+                "current": "3 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.4.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.4.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,760 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.4.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "home.featured.5.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.5.price",
+                "type": "text",
+                "editable": false,
+                "current": "$4,750,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.5.location",
+                "type": "text",
+                "editable": false,
+                "current": "900 Harbor View Dr #PH2, San Francisco, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.5.title",
+                "type": "text",
+                "editable": false,
+                "current": "Bayview Penthouse",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.5.beds",
+                "type": "text",
+                "editable": false,
+                "current": "3 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.5.baths",
+                "type": "text",
+                "editable": false,
+                "current": "3.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.5.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "2,980 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.5.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "stats": {
+          "instances": [
+            {
+              "number": {
+                "id": "home.stats.0.number",
+                "type": "text",
+                "editable": false,
+                "current": "15+",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "home.stats.0.label",
+                "type": "text",
+                "editable": false,
+                "current": "Years in Business",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "home.stats.1.number",
+                "type": "text",
+                "editable": false,
+                "current": "2,300+",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "home.stats.1.label",
+                "type": "text",
+                "editable": false,
+                "current": "Properties Sold",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "home.stats.2.number",
+                "type": "text",
+                "editable": false,
+                "current": "98%",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "home.stats.2.label",
+                "type": "text",
+                "editable": false,
+                "current": "Client Satisfaction",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "home.stats.3.number",
+                "type": "text",
+                "editable": false,
+                "current": "32",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "home.stats.3.label",
+                "type": "text",
+                "editable": false,
+                "current": "Expert Agents",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "whyUs": {
+          "fields": {
+            "title": {
+              "id": "home.why.title",
+              "type": "text",
+              "editable": true,
+              "current": "Full-service support, from search to signing",
+              "minChars": 18,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "home.why.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Why Prestige Realty",
+              "minChars": 10,
+              "maxChars": 24
+            },
+            "subtitle": {
+              "id": "home.why.subtitle",
+              "type": "text",
+              "editable": true,
+              "current": "Whether you're buying your first home or growing an investment portfolio, our team handles every detail.",
+              "minChars": 42,
+              "maxChars": 146
+            }
+          },
+          "instances": [
+            {
+              "title": {
+                "id": "home.why.0.title",
+                "type": "text",
+                "editable": true,
+                "current": "Local Market Expertise",
+                "minChars": 9,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "home.why.0.text",
+                "type": "text",
+                "editable": true,
+                "current": "Deep knowledge of every Bay Area neighborhood, from pricing trends to school districts.",
+                "minChars": 35,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "home.why.1.title",
+                "type": "text",
+                "editable": true,
+                "current": "Off-Market Access",
+                "minChars": 7,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "home.why.1.text",
+                "type": "text",
+                "editable": true,
+                "current": "Our network surfaces homes before they're publicly listed, giving you the first look.",
+                "minChars": 34,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "home.why.2.title",
+                "type": "text",
+                "editable": true,
+                "current": "Negotiation That Wins",
+                "minChars": 8,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "home.why.2.text",
+                "type": "text",
+                "editable": true,
+                "current": "We negotiate every offer like it's our own money on the table, so you keep more of yours.",
+                "minChars": 36,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "home.why.3.title",
+                "type": "text",
+                "editable": true,
+                "current": "Support After Closing",
+                "minChars": 8,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "home.why.3.text",
+                "type": "text",
+                "editable": true,
+                "current": "From contractors to moving crews, our concierge team is one call away even after the keys change hands.",
+                "minChars": 41,
+                "maxChars": 136
+              }
+            }
+          ]
+        },
+        "howItWorks": {
+          "fields": {
+            "title": {
+              "id": "home.how.title",
+              "type": "text",
+              "editable": true,
+              "current": "A simple path to your next address",
+              "minChars": 14,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "home.how.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "How It Works",
+              "minChars": 6,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "title": {
+                "id": "home.how.0.title",
+                "type": "text",
+                "editable": true,
+                "current": "Tell Us Your Goals",
+                "minChars": 7,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "home.how.0.text",
+                "type": "text",
+                "editable": true,
+                "current": "A quick consultation to understand your budget, timeline and must-haves.",
+                "minChars": 29,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "home.how.1.title",
+                "type": "text",
+                "editable": true,
+                "current": "Tour Curated Homes",
+                "minChars": 7,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "home.how.1.text",
+                "type": "text",
+                "editable": true,
+                "current": "We shortlist and schedule tours for properties that actually match your criteria.",
+                "minChars": 32,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "home.how.2.title",
+                "type": "text",
+                "editable": true,
+                "current": "Make a Confident Offer",
+                "minChars": 9,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "home.how.2.text",
+                "type": "text",
+                "editable": true,
+                "current": "Data-backed pricing guidance and negotiation strategy tailored to the property.",
+                "minChars": 32,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "home.how.3.title",
+                "type": "text",
+                "editable": true,
+                "current": "Close With Ease",
+                "minChars": 6,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "home.how.3.text",
+                "type": "text",
+                "editable": true,
+                "current": "We coordinate inspections, paperwork and lenders so closing day is stress-free.",
+                "minChars": 32,
+                "maxChars": 108
+              }
+            }
+          ]
+        },
+        "testimonials": {
+          "fields": {
+            "title": {
+              "id": "home.testimonials.title",
+              "type": "text",
+              "editable": true,
+              "current": "Trusted by Bay Area families and investors",
+              "minChars": 17,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "home.testimonials.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Client Stories",
+              "minChars": 7,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "quote": {
+                "id": "home.testimonials.0.quote",
+                "type": "text",
+                "editable": false,
+                "current": "\"Prestige Realty found us a home in Palo Alto we didn't even know was coming to market. Sarah's negotiation saved us over $80,000.\"",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorName": {
+                "id": "home.testimonials.0.authorName",
+                "type": "text",
+                "editable": false,
+                "current": "Jennifer Lawson",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorRole": {
+                "id": "home.testimonials.0.authorRole",
+                "type": "text",
+                "editable": false,
+                "current": "Homebuyer, Palo Alto",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "avatar": {
+                "id": "home.testimonials.0.avatar",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/12.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "quote": {
+                "id": "home.testimonials.1.quote",
+                "type": "text",
+                "editable": false,
+                "current": "\"We sold our Oakland home 12% above asking in nine days. The marketing and staging advice made all the difference.\"",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorName": {
+                "id": "home.testimonials.1.authorName",
+                "type": "text",
+                "editable": false,
+                "current": "Marcus Diaz",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorRole": {
+                "id": "home.testimonials.1.authorRole",
+                "type": "text",
+                "editable": false,
+                "current": "Home Seller, Oakland",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "avatar": {
+                "id": "home.testimonials.1.avatar",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/41.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "quote": {
+                "id": "home.testimonials.2.quote",
+                "type": "text",
+                "editable": false,
+                "current": "\"As out-of-state investors, we needed a team we could trust completely. Prestige has managed three acquisitions for us flawlessly.\"",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorName": {
+                "id": "home.testimonials.2.authorName",
+                "type": "text",
+                "editable": false,
+                "current": "Angela Foster",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorRole": {
+                "id": "home.testimonials.2.authorRole",
+                "type": "text",
+                "editable": false,
+                "current": "Investor, Remote Client",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "avatar": {
+                "id": "home.testimonials.2.avatar",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/65.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "cta": {
+          "fields": {
+            "heading": {
+              "id": "home.cta.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Ready to find your next home?",
+              "minChars": 12,
+              "maxChars": 76
+            },
+            "body": {
+              "id": "home.cta.body",
+              "type": "text",
+              "editable": true,
+              "current": "Schedule a free, no-pressure consultation with one of our local agents today.",
+              "minChars": 31,
+              "maxChars": 134
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "home.cta.button.0",
+                "type": "text",
+                "editable": true,
+                "current": "Schedule a Consultation",
+                "minChars": 12,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "home.cta.button.1",
+                "type": "text",
+                "editable": true,
+                "current": "Browse Listings",
+                "minChars": 8,
+                "maxChars": 32
+              }
+            }
+          ]
+        }
+      }
+    },
+    "about.html": {
+      "sections": {
+        "banner": {
+          "fields": {
+            "title": {
+              "id": "about.banner.title",
+              "type": "text",
+              "editable": true,
+              "current": "About Prestige Realty",
+              "minChars": 8,
+              "maxChars": 76
+            },
+            "background": {
+              "id": "about.banner.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "story": {
+          "fields": {
+            "eyebrow": {
+              "id": "about.story.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Our Story",
+              "minChars": 5,
+              "maxChars": 24
+            },
+            "title": {
+              "id": "about.story.title",
+              "type": "text",
+              "editable": true,
+              "current": "Built on local knowledge and honest advice",
+              "minChars": 17,
+              "maxChars": 80
+            },
+            "photo": {
+              "id": "about.story.photo",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1524230572899-a752b3835840?auto=format&fit=crop&w=800&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "about.story.paragraph.0",
+                "type": "text",
+                "editable": true,
+                "current": "Prestige Realty was founded in 2011 by Sarah Whitman, a third-generation San Franciscan who was tired of watching friends get outbid by cash offers and confused by inconsistent advice. She built a small brokerage around one idea: agents should act like advisors, not salespeople.",
+                "minChars": 112,
+                "maxChars": 352
+              }
+            },
+            {
+              "text": {
+                "id": "about.story.paragraph.1",
+                "type": "text",
+                "editable": true,
+                "current": "Fifteen years later, our team of 32 agents has helped more than 2,300 households buy, sell, and invest across San Francisco, the Peninsula, and the East Bay. We're still independently owned, still local, and still answer our own phones.",
+                "minChars": 94,
+                "maxChars": 352
+              }
+            },
+            {
+              "text": {
+                "id": "about.story.paragraph.2",
+                "type": "text",
+                "editable": true,
+                "current": "Today, Prestige Realty is known for deep neighborhood expertise, a strong off-market network, and a support team that stays involved long after closing day.",
+                "minChars": 62,
+                "maxChars": 352
+              }
+            }
+          ]
+        },
+        "values": {
+          "fields": {
+            "title": {
+              "id": "about.values.title",
+              "type": "text",
+              "editable": true,
+              "current": "Our mission and values",
+              "minChars": 9,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "about.values.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "What Drives Us",
+              "minChars": 7,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "title": {
+                "id": "about.values.0.title",
+                "type": "text",
+                "editable": true,
+                "current": "Transparency First",
+                "minChars": 7,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "about.values.0.text",
+                "type": "text",
+                "editable": true,
+                "current": "Clear pricing guidance and honest timelines, even when the answer isn't what you hoped to hear.",
+                "minChars": 38,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "about.values.1.title",
+                "type": "text",
+                "editable": true,
+                "current": "Neighborhood Depth",
+                "minChars": 7,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "about.values.1.text",
+                "type": "text",
+                "editable": true,
+                "current": "Every agent specializes in specific Bay Area neighborhoods, not the whole map at once.",
+                "minChars": 34,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "about.values.2.title",
+                "type": "text",
+                "editable": true,
+                "current": "Client for Life",
+                "minChars": 6,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "about.values.2.text",
+                "type": "text",
+                "editable": true,
+                "current": "We measure success by referrals and repeat clients, not single transactions.",
+                "minChars": 30,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "about.values.3.title",
+                "type": "text",
+                "editable": true,
+                "current": "Community Minded",
+                "minChars": 6,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "about.values.3.text",
+                "type": "text",
+                "editable": true,
+                "current": "Prestige Realty sponsors local schools and housing-access nonprofits across the Bay Area.",
+                "minChars": 36,
+                "maxChars": 136
+              }
+            }
+          ]
+        },
+        "stats": {
+          "instances": [
+            {
+              "number": {
+                "id": "about.stats.0.number",
+                "type": "text",
+                "editable": false,
+                "current": "15+",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "about.stats.0.label",
+                "type": "text",
+                "editable": false,
+                "current": "Years in Business",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "about.stats.1.number",
+                "type": "text",
+                "editable": false,
+                "current": "2,300+",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "about.stats.1.label",
+                "type": "text",
+                "editable": false,
+                "current": "Properties Sold",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "about.stats.2.number",
+                "type": "text",
+                "editable": false,
+                "current": "98%",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "about.stats.2.label",
+                "type": "text",
+                "editable": false,
+                "current": "Client Satisfaction",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "about.stats.3.number",
+                "type": "text",
+                "editable": false,
+                "current": "32",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "about.stats.3.label",
+                "type": "text",
+                "editable": false,
+                "current": "Expert Agents",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "team": {
+          "fields": {
+            "title": {
+              "id": "about.team.title",
+              "type": "text",
+              "editable": true,
+              "current": "The people behind Prestige Realty",
+              "minChars": 13,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "about.team.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Meet the Team",
+              "minChars": 7,
+              "maxChars": 24
+            },
+            "viewAll": {
+              "id": "about.team.viewAll",
+              "type": "text",
+              "editable": true,
+              "current": "Meet All Agents",
+              "minChars": 8,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "name": {
+                "id": "about.team.0.name",
+                "type": "text",
+                "editable": false,
+                "current": "Sarah Whitman",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "about.team.0.role",
+                "type": "text",
+                "editable": false,
+                "current": "Founder & Principal Broker",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "about.team.0.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(415) 555-0101",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "about.team.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/68.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "about.team.1.name",
+                "type": "text",
+                "editable": false,
+                "current": "Marcus Chen",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "about.team.1.role",
+                "type": "text",
+                "editable": false,
+                "current": "Senior Listing Agent",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "about.team.1.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(415) 555-0112",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "about.team.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/32.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "about.team.2.name",
+                "type": "text",
+                "editable": false,
+                "current": "Elena Rodriguez",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "about.team.2.role",
+                "type": "text",
+                "editable": false,
+                "current": "Buyer Specialist",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "about.team.2.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(415) 555-0134",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "about.team.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/44.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "cta": {
+          "fields": {
+            "heading": {
+              "id": "about.cta.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Let's talk about your move",
+              "minChars": 10,
+              "maxChars": 76
+            },
+            "body": {
+              "id": "about.cta.body",
+              "type": "text",
+              "editable": true,
+              "current": "Whether you're buying, selling, or just exploring options, our team is ready to help.",
+              "minChars": 34,
+              "maxChars": 134
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "about.cta.button.0",
+                "type": "text",
+                "editable": true,
+                "current": "Contact Us",
+                "minChars": 5,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "about.cta.button.1",
+                "type": "text",
+                "editable": true,
+                "current": "View Listings",
+                "minChars": 7,
+                "maxChars": 32
+              }
+            }
+          ]
+        }
+      }
+    },
+    "services.html": {
+      "sections": {
+        "banner": {
+          "fields": {
+            "title": {
+              "id": "services.banner.title",
+              "type": "text",
+              "editable": true,
+              "current": "Our Services",
+              "minChars": 5,
+              "maxChars": 76
+            },
+            "background": {
+              "id": "services.banner.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "services": {
+          "fields": {
+            "title": {
+              "id": "services.offers.title",
+              "type": "text",
+              "editable": true,
+              "current": "Support for every stage of your real estate journey",
+              "minChars": 20,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "services.offers.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "What We Offer",
+              "minChars": 7,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "title": {
+                "id": "services.offers.0.title",
+                "type": "text",
+                "editable": true,
+                "current": "Home Buying Assistance",
+                "minChars": 9,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.0.text",
+                "type": "text",
+                "editable": true,
+                "current": "From your first search to final walkthrough, we guide you through every step of buying a home, including off-market opportunities.",
+                "minChars": 52,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.0.link",
+                "type": "text",
+                "editable": false,
+                "current": "Get Started →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "title": {
+                "id": "services.offers.1.title",
+                "type": "text",
+                "editable": true,
+                "current": "Home Selling & Listing",
+                "minChars": 9,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.1.text",
+                "type": "text",
+                "editable": true,
+                "current": "Professional photography, staging guidance, and targeted marketing to sell your home for top dollar, fast.",
+                "minChars": 42,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.1.link",
+                "type": "text",
+                "editable": false,
+                "current": "Get Started →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "title": {
+                "id": "services.offers.2.title",
+                "type": "text",
+                "editable": true,
+                "current": "Property Valuation",
+                "minChars": 7,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.2.text",
+                "type": "text",
+                "editable": true,
+                "current": "A free, data-backed home valuation using recent comparable sales and current market conditions.",
+                "minChars": 38,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.2.link",
+                "type": "text",
+                "editable": false,
+                "current": "Get Started →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "title": {
+                "id": "services.offers.3.title",
+                "type": "text",
+                "editable": true,
+                "current": "Investment Consulting",
+                "minChars": 8,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.3.text",
+                "type": "text",
+                "editable": true,
+                "current": "Portfolio strategy, rental yield analysis, and acquisition support for Bay Area real estate investors.",
+                "minChars": 41,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.3.link",
+                "type": "text",
+                "editable": false,
+                "current": "Get Started →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "title": {
+                "id": "services.offers.4.title",
+                "type": "text",
+                "editable": true,
+                "current": "Relocation Services",
+                "minChars": 8,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.4.text",
+                "type": "text",
+                "editable": true,
+                "current": "Moving to the Bay Area? We handle virtual tours, neighborhood guides, and school district research remotely.",
+                "minChars": 43,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.4.link",
+                "type": "text",
+                "editable": false,
+                "current": "Get Started →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "title": {
+                "id": "services.offers.5.title",
+                "type": "text",
+                "editable": true,
+                "current": "New Construction Sales",
+                "minChars": 9,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.5.text",
+                "type": "text",
+                "editable": true,
+                "current": "Direct access to new-build communities across the Peninsula and East Bay, with builder-incentive negotiation.",
+                "minChars": 44,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.5.link",
+                "type": "text",
+                "editable": false,
+                "current": "Get Started →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            }
+          ]
+        },
+        "process": {
+          "fields": {
+            "title": {
+              "id": "services.process.title",
+              "type": "text",
+              "editable": true,
+              "current": "How we work with you",
+              "minChars": 8,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "services.process.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Our Process",
+              "minChars": 6,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "title": {
+                "id": "services.process.0.title",
+                "type": "text",
+                "editable": true,
+                "current": "Consultation",
+                "minChars": 5,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "services.process.0.text",
+                "type": "text",
+                "editable": true,
+                "current": "We start with a conversation about your goals, timeline, and budget.",
+                "minChars": 27,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "services.process.1.title",
+                "type": "text",
+                "editable": true,
+                "current": "Strategy",
+                "minChars": 4,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "services.process.1.text",
+                "type": "text",
+                "editable": true,
+                "current": "A tailored plan — search criteria, pricing strategy, or marketing calendar.",
+                "minChars": 30,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "services.process.2.title",
+                "type": "text",
+                "editable": true,
+                "current": "Execution",
+                "minChars": 4,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "services.process.2.text",
+                "type": "text",
+                "editable": true,
+                "current": "Tours, showings, offers, or negotiations — we handle the details.",
+                "minChars": 26,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "services.process.3.title",
+                "type": "text",
+                "editable": true,
+                "current": "Closing & Beyond",
+                "minChars": 6,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "services.process.3.text",
+                "type": "text",
+                "editable": true,
+                "current": "We coordinate closing logistics and stay available long after the deal is done.",
+                "minChars": 32,
+                "maxChars": 108
+              }
+            }
+          ]
+        },
+        "faq": {
+          "fields": {
+            "title": {
+              "id": "services.faq.title",
+              "type": "text",
+              "editable": true,
+              "current": "Common questions",
+              "minChars": 6,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "services.faq.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "FAQ",
+              "minChars": 2,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "question": {
+                "id": "services.faq.0.question",
+                "type": "text",
+                "editable": true,
+                "current": "How much does it cost to work with an agent as a buyer?",
+                "minChars": 22,
+                "maxChars": 172
+              },
+              "answer": {
+                "id": "services.faq.0.answer",
+                "type": "text",
+                "editable": true,
+                "current": "In most cases, buyer representation is paid by the seller as part of the transaction, so there's no direct cost to you. We'll walk through the specifics during your consultation.",
+                "minChars": 71,
+                "maxChars": 273
+              }
+            },
+            {
+              "question": {
+                "id": "services.faq.1.question",
+                "type": "text",
+                "editable": true,
+                "current": "How long does it typically take to sell a home?",
+                "minChars": 19,
+                "maxChars": 172
+              },
+              "answer": {
+                "id": "services.faq.1.answer",
+                "type": "text",
+                "editable": true,
+                "current": "Well-priced Bay Area homes in good condition typically go under contract within 2-3 weeks of listing, though timelines vary by neighborhood and season.",
+                "minChars": 60,
+                "maxChars": 273
+              }
+            },
+            {
+              "question": {
+                "id": "services.faq.2.question",
+                "type": "text",
+                "editable": true,
+                "current": "Do I need to be pre-approved before touring homes?",
+                "minChars": 20,
+                "maxChars": 172
+              },
+              "answer": {
+                "id": "services.faq.2.answer",
+                "type": "text",
+                "editable": true,
+                "current": "We recommend getting pre-approved early so you can move quickly when you find the right home — we can connect you with trusted local lenders.",
+                "minChars": 56,
+                "maxChars": 273
+              }
+            },
+            {
+              "question": {
+                "id": "services.faq.3.question",
+                "type": "text",
+                "editable": true,
+                "current": "What areas does Prestige Realty serve?",
+                "minChars": 15,
+                "maxChars": 172
+              },
+              "answer": {
+                "id": "services.faq.3.answer",
+                "type": "text",
+                "editable": true,
+                "current": "We serve San Francisco, the Peninsula (Palo Alto, Menlo Park, Redwood City), and the East Bay (Oakland, Berkeley, Alameda).",
+                "minChars": 49,
+                "maxChars": 273
+              }
+            },
+            {
+              "question": {
+                "id": "services.faq.4.question",
+                "type": "text",
+                "editable": true,
+                "current": "Can you help with investment or out-of-state purchases?",
+                "minChars": 22,
+                "maxChars": 172
+              },
+              "answer": {
+                "id": "services.faq.4.answer",
+                "type": "text",
+                "editable": true,
+                "current": "Yes — our investment team regularly represents remote buyers and can manage the entire process, including inspections and closing, on your behalf.",
+                "minChars": 58,
+                "maxChars": 273
+              }
+            }
+          ]
+        },
+        "cta": {
+          "fields": {
+            "heading": {
+              "id": "services.cta.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Not sure where to start?",
+              "minChars": 10,
+              "maxChars": 76
+            },
+            "body": {
+              "id": "services.cta.body",
+              "type": "text",
+              "editable": true,
+              "current": "Book a free consultation and we'll help you figure out the right next step.",
+              "minChars": 30,
+              "maxChars": 134
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "services.cta.button.0",
+                "type": "text",
+                "editable": true,
+                "current": "Book a Consultation",
+                "minChars": 10,
+                "maxChars": 32
+              }
+            }
+          ]
+        }
+      }
+    },
+    "listings.html": {
+      "sections": {
+        "banner": {
+          "fields": {
+            "title": {
+              "id": "listings.banner.title",
+              "type": "text",
+              "editable": true,
+              "current": "Property Listings",
+              "minChars": 7,
+              "maxChars": 76
+            },
+            "background": {
+              "id": "listings.banner.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "listings": {
+          "instances": [
+            {
+              "badge": {
+                "id": "listings.card.0.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.0.price",
+                "type": "text",
+                "editable": false,
+                "current": "$2,450,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.0.location",
+                "type": "text",
+                "editable": false,
+                "current": "482 Willow Creek Lane, Palo Alto, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.0.title",
+                "type": "text",
+                "editable": false,
+                "current": "Modern Family Home",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.0.beds",
+                "type": "text",
+                "editable": false,
+                "current": "4 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.0.baths",
+                "type": "text",
+                "editable": false,
+                "current": "3 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.0.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "2,850 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.1.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.1.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,275,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.1.location",
+                "type": "text",
+                "editable": false,
+                "current": "88 Beale Street #1204, San Francisco, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.1.title",
+                "type": "text",
+                "editable": false,
+                "current": "Downtown Luxury Condo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.1.beds",
+                "type": "text",
+                "editable": false,
+                "current": "2 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.1.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.1.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,180 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.2.badge",
+                "type": "text",
+                "editable": false,
+                "current": "New Listing",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.2.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,690,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.2.location",
+                "type": "text",
+                "editable": false,
+                "current": "214 Elm Street, Berkeley, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.2.title",
+                "type": "text",
+                "editable": false,
+                "current": "Craftsman Bungalow",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.2.beds",
+                "type": "text",
+                "editable": false,
+                "current": "3 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.2.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.2.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,920 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.3.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.3.price",
+                "type": "text",
+                "editable": false,
+                "current": "$3,150,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.3.location",
+                "type": "text",
+                "editable": false,
+                "current": "76 Skyline Drive, Oakland, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.3.title",
+                "type": "text",
+                "editable": false,
+                "current": "Hillside View Estate",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.3.beds",
+                "type": "text",
+                "editable": false,
+                "current": "5 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.3.baths",
+                "type": "text",
+                "editable": false,
+                "current": "4.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.3.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "4,200 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.3.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.4.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Rent",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.4.price",
+                "type": "text",
+                "editable": false,
+                "current": "$5,400 / mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.4.location",
+                "type": "text",
+                "editable": false,
+                "current": "33 Marina Court, San Rafael, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.4.title",
+                "type": "text",
+                "editable": false,
+                "current": "Modern Townhome",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.4.beds",
+                "type": "text",
+                "editable": false,
+                "current": "3 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.4.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.4.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,640 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.4.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1615874959474-d609969a20ed?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.5.badge",
+                "type": "text",
+                "editable": false,
+                "current": "New Listing",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.5.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,895,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.5.location",
+                "type": "text",
+                "editable": false,
+                "current": "509 Oak Grove Ave, Menlo Park, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.5.title",
+                "type": "text",
+                "editable": false,
+                "current": "Charming Cottage",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.5.beds",
+                "type": "text",
+                "editable": false,
+                "current": "3 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.5.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.5.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,760 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.5.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.6.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.6.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,980,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.6.location",
+                "type": "text",
+                "editable": false,
+                "current": "145 Cedar Ridge Rd, San Jose, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.6.title",
+                "type": "text",
+                "editable": false,
+                "current": "Contemporary New Build",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.6.beds",
+                "type": "text",
+                "editable": false,
+                "current": "4 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.6.baths",
+                "type": "text",
+                "editable": false,
+                "current": "3 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.6.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "2,410 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.6.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1558036117-15d82a90b9b1?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.7.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.7.price",
+                "type": "text",
+                "editable": false,
+                "current": "$4,750,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.7.location",
+                "type": "text",
+                "editable": false,
+                "current": "900 Harbor View Dr #PH2, San Francisco, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.7.title",
+                "type": "text",
+                "editable": false,
+                "current": "Bayview Penthouse",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.7.beds",
+                "type": "text",
+                "editable": false,
+                "current": "3 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.7.baths",
+                "type": "text",
+                "editable": false,
+                "current": "3.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.7.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "2,980 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.7.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.8.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.8.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,340,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.8.location",
+                "type": "text",
+                "editable": false,
+                "current": "27 Rosewood Ave, Alameda, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.8.title",
+                "type": "text",
+                "editable": false,
+                "current": "Garden Duplex",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.8.beds",
+                "type": "text",
+                "editable": false,
+                "current": "4 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.8.baths",
+                "type": "text",
+                "editable": false,
+                "current": "3 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.8.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "2,100 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.8.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "property-detail.html": {
+      "sections": {
+        "listing": {
+          "fields": {
+            "badge": {
+              "id": "property.badge",
+              "type": "text",
+              "editable": false,
+              "current": "For Sale",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "title": {
+              "id": "property.title",
+              "type": "text",
+              "editable": false,
+              "current": "Modern Family Home",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "location": {
+              "id": "property.location",
+              "type": "text",
+              "editable": false,
+              "current": "482 Willow Creek Lane, Palo Alto, CA 94301",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "price": {
+              "id": "property.price",
+              "type": "text",
+              "editable": false,
+              "current": "$2,450,000",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "keyFacts": {
+          "instances": [
+            {
+              "value": {
+                "id": "property.facts.0.value",
+                "type": "text",
+                "editable": false,
+                "current": "4",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "property.facts.0.label",
+                "type": "text",
+                "editable": false,
+                "current": "Bedrooms",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "property.facts.1.value",
+                "type": "text",
+                "editable": false,
+                "current": "3",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "property.facts.1.label",
+                "type": "text",
+                "editable": false,
+                "current": "Bathrooms",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "property.facts.2.value",
+                "type": "text",
+                "editable": false,
+                "current": "2,850",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "property.facts.2.label",
+                "type": "text",
+                "editable": false,
+                "current": "Sqft",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "property.facts.3.value",
+                "type": "text",
+                "editable": false,
+                "current": "2016",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "property.facts.3.label",
+                "type": "text",
+                "editable": false,
+                "current": "Year Built",
+                "reason": "structural/UI text — never rewritten"
+              }
+            }
+          ]
+        },
+        "description": {
+          "fields": {
+            "heading": {
+              "id": "property.description.heading",
+              "type": "text",
+              "editable": false,
+              "current": "Description",
+              "reason": "structural/UI text — never rewritten"
+            },
+            "body": {
+              "id": "property.description.body",
+              "type": "text",
+              "editable": true,
+              "current": "Tucked at the end of a quiet cul-de-sac, this beautifully updated home blends clean modern architecture with warm, livable spaces. The open-concept main floor features wide-plank oak flooring, a chef's kitchen with quartz countertops, and floor-to-ceiling windows that fill the living area with natural light. Upstairs, the primary suite includes a private balcony and a spa-inspired bathroom. The landscaped backyard offers a covered patio, mature fruit trees, and plenty of room to entertain — all within walking distance of top-rated Palo Alto schools.",
+              "minChars": 222,
+              "maxChars": 704
+            }
+          }
+        },
+        "amenities": {
+          "fields": {
+            "heading": {
+              "id": "property.amenities.heading",
+              "type": "text",
+              "editable": false,
+              "current": "Amenities",
+              "reason": "structural/UI text — never rewritten"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "property.amenities.0",
+                "type": "text",
+                "editable": true,
+                "current": "Chef's kitchen with quartz counters",
+                "minChars": 18,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.1",
+                "type": "text",
+                "editable": true,
+                "current": "Attached 2-car garage",
+                "minChars": 11,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.2",
+                "type": "text",
+                "editable": true,
+                "current": "Primary suite with balcony",
+                "minChars": 13,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.3",
+                "type": "text",
+                "editable": true,
+                "current": "Landscaped backyard & patio",
+                "minChars": 14,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.4",
+                "type": "text",
+                "editable": true,
+                "current": "Owned solar panels",
+                "minChars": 9,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.5",
+                "type": "text",
+                "editable": true,
+                "current": "Smart thermostat & lighting",
+                "minChars": 14,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.6",
+                "type": "text",
+                "editable": true,
+                "current": "Hardwood floors throughout",
+                "minChars": 13,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.7",
+                "type": "text",
+                "editable": true,
+                "current": "Walking distance to top schools",
+                "minChars": 16,
+                "maxChars": 48
+              }
+            }
+          ]
+        },
+        "location": {
+          "fields": {
+            "heading": {
+              "id": "property.location.heading",
+              "type": "text",
+              "editable": false,
+              "current": "Location",
+              "reason": "structural/UI text — never rewritten"
+            }
+          }
+        },
+        "sidebar": {
+          "fields": {
+            "agentName": {
+              "id": "property.sidebar.agentName",
+              "type": "text",
+              "editable": false,
+              "current": "Sarah Whitman",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "agentRole": {
+              "id": "property.sidebar.agentRole",
+              "type": "text",
+              "editable": false,
+              "current": "Founder & Principal Broker",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "blurb": {
+              "id": "property.sidebar.blurb",
+              "type": "text",
+              "editable": true,
+              "current": "Listing agent for this property. Reach out to schedule a private tour.",
+              "minChars": 28,
+              "maxChars": 88
+            },
+            "callButton": {
+              "id": "property.sidebar.callButton",
+              "type": "text",
+              "editable": false,
+              "current": "Call (415) 555-0101",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "heading": {
+              "id": "property.tour.heading",
+              "type": "text",
+              "editable": false,
+              "current": "Request a Tour",
+              "reason": "structural/UI text — never rewritten"
+            },
+            "agentPhoto": {
+              "id": "property.sidebar.agentPhoto",
+              "type": "image",
+              "editable": false,
+              "current": "https://randomuser.me/api/portraits/women/68.jpg",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "similarListings": {
+          "fields": {
+            "title": {
+              "id": "property.similar.title",
+              "type": "text",
+              "editable": true,
+              "current": "Similar properties nearby",
+              "minChars": 10,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "property.similar.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "You May Also Like",
+              "minChars": 9,
+              "maxChars": 24
+            },
+            "viewAll": {
+              "id": "property.similar.viewAll",
+              "type": "text",
+              "editable": true,
+              "current": "View All Listings",
+              "minChars": 9,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "badge": {
+                "id": "property.similar.0.badge",
+                "type": "text",
+                "editable": false,
+                "current": "New Listing",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "property.similar.0.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,895,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "property.similar.0.location",
+                "type": "text",
+                "editable": false,
+                "current": "509 Oak Grove Ave, Menlo Park, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "property.similar.0.title",
+                "type": "text",
+                "editable": false,
+                "current": "Charming Cottage",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "property.similar.0.beds",
+                "type": "text",
+                "editable": false,
+                "current": "3 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "property.similar.0.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "property.similar.0.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,760 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "property.similar.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "property.similar.1.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "property.similar.1.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,980,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "property.similar.1.location",
+                "type": "text",
+                "editable": false,
+                "current": "145 Cedar Ridge Rd, San Jose, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "property.similar.1.title",
+                "type": "text",
+                "editable": false,
+                "current": "Contemporary New Build",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "property.similar.1.beds",
+                "type": "text",
+                "editable": false,
+                "current": "4 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "property.similar.1.baths",
+                "type": "text",
+                "editable": false,
+                "current": "3 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "property.similar.1.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "2,410 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "property.similar.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1558036117-15d82a90b9b1?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "property.similar.2.badge",
+                "type": "text",
+                "editable": false,
+                "current": "New Listing",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "property.similar.2.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,690,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "property.similar.2.location",
+                "type": "text",
+                "editable": false,
+                "current": "214 Elm Street, Berkeley, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "property.similar.2.title",
+                "type": "text",
+                "editable": false,
+                "current": "Craftsman Bungalow",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "property.similar.2.beds",
+                "type": "text",
+                "editable": false,
+                "current": "3 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "property.similar.2.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "property.similar.2.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,920 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "property.similar.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "gallery": {
+          "fields": {
+            "main": {
+              "id": "property.gallery.main",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=75",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "property.gallery.side.0",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=700&q=75",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "text": {
+                "id": "property.gallery.side.1",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1571939228382-b2f2b585ce15?auto=format&fit=crop&w=700&q=75",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "agents.html": {
+      "sections": {
+        "banner": {
+          "fields": {
+            "title": {
+              "id": "agents.banner.title",
+              "type": "text",
+              "editable": true,
+              "current": "Meet Our Agents",
+              "minChars": 6,
+              "maxChars": 76
+            },
+            "background": {
+              "id": "agents.banner.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "team": {
+          "fields": {
+            "title": {
+              "id": "agents.team.title",
+              "type": "text",
+              "editable": true,
+              "current": "32 local experts, one shared standard",
+              "minChars": 15,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "agents.team.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Our Team",
+              "minChars": 4,
+              "maxChars": 24
+            },
+            "subtitle": {
+              "id": "agents.team.subtitle",
+              "type": "text",
+              "editable": true,
+              "current": "Every Prestige Realty agent specializes in a specific set of Bay Area neighborhoods and property types.",
+              "minChars": 41,
+              "maxChars": 146
+            }
+          },
+          "instances": [
+            {
+              "name": {
+                "id": "agents.roster.0.name",
+                "type": "text",
+                "editable": false,
+                "current": "Sarah Whitman",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.0.role",
+                "type": "text",
+                "editable": false,
+                "current": "Founder & Principal Broker",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.0.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(415) 555-0101 · sarah@prestigerealty.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/68.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "agents.roster.1.name",
+                "type": "text",
+                "editable": false,
+                "current": "Marcus Chen",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.1.role",
+                "type": "text",
+                "editable": false,
+                "current": "Senior Listing Agent",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.1.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(415) 555-0112 · marcus@prestigerealty.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/32.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "agents.roster.2.name",
+                "type": "text",
+                "editable": false,
+                "current": "Elena Rodriguez",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.2.role",
+                "type": "text",
+                "editable": false,
+                "current": "Buyer Specialist",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.2.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(415) 555-0134 · elena@prestigerealty.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/44.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "agents.roster.3.name",
+                "type": "text",
+                "editable": false,
+                "current": "David Okafor",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.3.role",
+                "type": "text",
+                "editable": false,
+                "current": "Luxury Homes Advisor",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.3.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(415) 555-0145 · david@prestigerealty.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.3.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/76.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "agents.roster.4.name",
+                "type": "text",
+                "editable": false,
+                "current": "Priya Nair",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.4.role",
+                "type": "text",
+                "editable": false,
+                "current": "Relocation & New Construction",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.4.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(415) 555-0156 · priya@prestigerealty.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.4.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/21.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "agents.roster.5.name",
+                "type": "text",
+                "editable": false,
+                "current": "James Park",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.5.role",
+                "type": "text",
+                "editable": false,
+                "current": "Investment Properties",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.5.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(415) 555-0167 · james@prestigerealty.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.5.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/54.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "cta": {
+          "fields": {
+            "heading": {
+              "id": "agents.cta.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Want to join the team?",
+              "minChars": 9,
+              "maxChars": 76
+            },
+            "body": {
+              "id": "agents.cta.body",
+              "type": "text",
+              "editable": true,
+              "current": "We're always looking for experienced agents who share our commitment to honest, local advice.",
+              "minChars": 37,
+              "maxChars": 134
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "agents.cta.button.0",
+                "type": "text",
+                "editable": true,
+                "current": "Get in Touch",
+                "minChars": 6,
+                "maxChars": 32
+              }
+            }
+          ]
+        }
+      }
+    },
+    "agent-detail.html": {
+      "sections": {
+        "profile": {
+          "fields": {
+            "name": {
+              "id": "agentDetail.name",
+              "type": "text",
+              "editable": false,
+              "current": "Sarah Whitman",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "role": {
+              "id": "agentDetail.role",
+              "type": "text",
+              "editable": false,
+              "current": "Founder & Principal Broker",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "contact": {
+              "id": "agentDetail.contact",
+              "type": "text",
+              "editable": false,
+              "current": "(415) 555-0101 · sarah@prestigerealty.com · DRE #01234567",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "photo": {
+              "id": "agentDetail.photo",
+              "type": "image",
+              "editable": false,
+              "current": "https://randomuser.me/api/portraits/women/68.jpg",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "bio": {
+          "fields": {
+            "aboutHeading": {
+              "id": "agentDetail.aboutHeading",
+              "type": "text",
+              "editable": false,
+              "current": "About Sarah",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "agentDetail.bio.0",
+                "type": "text",
+                "editable": true,
+                "current": "Sarah founded Prestige Realty in 2011 after a decade working in commercial real estate finance. A third-generation San Franciscan, she specializes in the Peninsula market — Palo Alto, Menlo Park, and Atherton — and has personally closed over 400 transactions. Sarah is known for her calm, data-driven negotiation style and her insistence that every client understand exactly what they're signing.",
+                "minChars": 158,
+                "maxChars": 396
+              }
+            },
+            {
+              "text": {
+                "id": "agentDetail.bio.1",
+                "type": "text",
+                "editable": true,
+                "current": "Outside the office, Sarah serves on the board of a Peninsula housing-access nonprofit and mentors new agents entering the brokerage.",
+                "minChars": 53,
+                "maxChars": 264
+              }
+            }
+          ]
+        },
+        "keyFacts": {
+          "instances": [
+            {
+              "value": {
+                "id": "agentDetail.facts.0.value",
+                "type": "text",
+                "editable": false,
+                "current": "15",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "agentDetail.facts.0.label",
+                "type": "text",
+                "editable": false,
+                "current": "Years Experience",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "agentDetail.facts.1.value",
+                "type": "text",
+                "editable": false,
+                "current": "400+",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "agentDetail.facts.1.label",
+                "type": "text",
+                "editable": false,
+                "current": "Homes Sold",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "agentDetail.facts.2.value",
+                "type": "text",
+                "editable": false,
+                "current": "$620M",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "agentDetail.facts.2.label",
+                "type": "text",
+                "editable": false,
+                "current": "Career Volume",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "agentDetail.facts.3.value",
+                "type": "text",
+                "editable": false,
+                "current": "4.9",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "agentDetail.facts.3.label",
+                "type": "text",
+                "editable": false,
+                "current": "Client Rating",
+                "reason": "structural/UI text — never rewritten"
+              }
+            }
+          ]
+        },
+        "listings": {
+          "fields": {
+            "listingsHeading": {
+              "id": "agentDetail.listingsHeading",
+              "type": "text",
+              "editable": false,
+              "current": "Current Listings by Sarah",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          },
+          "instances": [
+            {
+              "badge": {
+                "id": "agentDetail.listings.0.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "agentDetail.listings.0.price",
+                "type": "text",
+                "editable": false,
+                "current": "$2,450,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "agentDetail.listings.0.location",
+                "type": "text",
+                "editable": false,
+                "current": "Palo Alto, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "agentDetail.listings.0.title",
+                "type": "text",
+                "editable": false,
+                "current": "Modern Family Home",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "agentDetail.listings.0.beds",
+                "type": "text",
+                "editable": false,
+                "current": "4 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "agentDetail.listings.0.baths",
+                "type": "text",
+                "editable": false,
+                "current": "3 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "agentDetail.listings.0.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "2,850 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agentDetail.listings.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "agentDetail.listings.1.badge",
+                "type": "text",
+                "editable": false,
+                "current": "New Listing",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "agentDetail.listings.1.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,895,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "agentDetail.listings.1.location",
+                "type": "text",
+                "editable": false,
+                "current": "Menlo Park, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "agentDetail.listings.1.title",
+                "type": "text",
+                "editable": false,
+                "current": "Charming Cottage",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "agentDetail.listings.1.beds",
+                "type": "text",
+                "editable": false,
+                "current": "3 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "agentDetail.listings.1.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "agentDetail.listings.1.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,760 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agentDetail.listings.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "agentDetail.listings.2.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "agentDetail.listings.2.price",
+                "type": "text",
+                "editable": false,
+                "current": "$3,150,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "agentDetail.listings.2.location",
+                "type": "text",
+                "editable": false,
+                "current": "Oakland, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "agentDetail.listings.2.title",
+                "type": "text",
+                "editable": false,
+                "current": "Hillside View Estate",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "agentDetail.listings.2.beds",
+                "type": "text",
+                "editable": false,
+                "current": "5 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "agentDetail.listings.2.baths",
+                "type": "text",
+                "editable": false,
+                "current": "4.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "agentDetail.listings.2.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "4,200 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agentDetail.listings.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "testimonials": {
+          "instances": [
+            {
+              "quote": {
+                "id": "agentDetail.testimonial.0.quote",
+                "type": "text",
+                "editable": false,
+                "current": "\"Prestige Realty found us a home in Palo Alto we didn't even know was coming to market. Sarah's negotiation saved us over $80,000.\"",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorName": {
+                "id": "agentDetail.testimonial.0.authorName",
+                "type": "text",
+                "editable": false,
+                "current": "Jennifer Lawson",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorRole": {
+                "id": "agentDetail.testimonial.0.authorRole",
+                "type": "text",
+                "editable": false,
+                "current": "Homebuyer, Palo Alto",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "avatar": {
+                "id": "agentDetail.testimonial.0.avatar",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/12.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "sidebar": {
+          "fields": {
+            "contactHeading": {
+              "id": "agentDetail.contactHeading",
+              "type": "text",
+              "editable": false,
+              "current": "Contact Sarah",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        }
+      }
+    },
+    "contact.html": {
+      "sections": {
+        "banner": {
+          "fields": {
+            "title": {
+              "id": "contact.banner.title",
+              "type": "text",
+              "editable": true,
+              "current": "Get In Touch",
+              "minChars": 5,
+              "maxChars": 76
+            },
+            "background": {
+              "id": "contact.banner.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1524230572899-a752b3835840?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "contactInfo": {
+          "instances": [
+            {
+              "title": {
+                "id": "contact.info.0.title",
+                "type": "text",
+                "editable": false,
+                "current": "Office Address",
+                "reason": "structural/UI text — never rewritten"
+              },
+              "text": {
+                "id": "contact.info.0.text",
+                "type": "text",
+                "editable": false,
+                "current": "1450 Market Street, Suite 400San Francisco, CA 94102",
+                "reason": "comes from the business's own profile, not the model"
+              }
+            },
+            {
+              "title": {
+                "id": "contact.info.1.title",
+                "type": "text",
+                "editable": false,
+                "current": "Phone & Email",
+                "reason": "structural/UI text — never rewritten"
+              },
+              "text": {
+                "id": "contact.info.1.text",
+                "type": "text",
+                "editable": false,
+                "current": "(415) 555-0182hello@prestigerealty.com",
+                "reason": "comes from the business's own profile, not the model"
+              }
+            },
+            {
+              "title": {
+                "id": "contact.info.2.title",
+                "type": "text",
+                "editable": false,
+                "current": "Office Hours",
+                "reason": "structural/UI text — never rewritten"
+              },
+              "text": {
+                "id": "contact.info.2.text",
+                "type": "text",
+                "editable": false,
+                "current": "Mon - Fri: 8:00am - 7:00pmSat - Sun: 9:00am - 5:00pm",
+                "reason": "comes from the business's own profile, not the model"
+              }
+            }
+          ]
+        },
+        "form": {
+          "fields": {
+            "heading": {
+              "id": "contact.form.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Send Us a Message",
+              "minChars": 7,
+              "maxChars": 27
+            },
+            "intro": {
+              "id": "contact.form.intro",
+              "type": "text",
+              "editable": true,
+              "current": "Fill out the form and a Prestige Realty agent will get back to you within one business day.",
+              "minChars": 36,
+              "maxChars": 120
+            }
+          }
+        },
+        "sidebar": {
+          "fields": {
+            "heading": {
+              "id": "contact.sidebar.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Prefer to talk to someone directly?",
+              "minChars": 18,
+              "maxChars": 48
+            },
+            "agentName": {
+              "id": "contact.sidebar.agentName",
+              "type": "text",
+              "editable": false,
+              "current": "Sarah Whitman",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "agentRole": {
+              "id": "contact.sidebar.agentRole",
+              "type": "text",
+              "editable": false,
+              "current": "Founder & Principal Broker",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "callButton": {
+              "id": "contact.sidebar.callButton",
+              "type": "text",
+              "editable": false,
+              "current": "Call (415) 555-0182",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "agentPhoto": {
+              "id": "contact.sidebar.agentPhoto",
+              "type": "image",
+              "editable": false,
+              "current": "https://randomuser.me/api/portraits/women/68.jpg",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        }
+      }
+    }
+  }
+}

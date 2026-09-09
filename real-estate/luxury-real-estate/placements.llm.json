@@ -1,0 +1,3811 @@
+{
+  "template": "luxury-real-estate",
+  "pages": {
+    "chrome": {
+      "sections": {
+        "nav": {
+          "instances": [
+            {
+              "text": {
+                "id": "chrome.nav.link.0",
+                "type": "text",
+                "editable": false,
+                "current": "Home",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.nav.link.1",
+                "type": "text",
+                "editable": false,
+                "current": "About",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.nav.link.2",
+                "type": "text",
+                "editable": false,
+                "current": "Listings",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.nav.link.3",
+                "type": "text",
+                "editable": false,
+                "current": "Advisors",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.nav.link.4",
+                "type": "text",
+                "editable": false,
+                "current": "Services",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.nav.link.5",
+                "type": "text",
+                "editable": false,
+                "current": "Contact",
+                "reason": "structural/UI text — never rewritten"
+              }
+            }
+          ],
+          "fields": {
+            "brand": {
+              "id": "chrome.nav.brand",
+              "type": "text",
+              "editable": false,
+              "current": "AureliaEstates",
+              "reason": "comes from the business's own profile, not the model"
+            }
+          }
+        },
+        "footer": {
+          "fields": {
+            "brand": {
+              "id": "chrome.footer.brand",
+              "type": "text",
+              "editable": false,
+              "current": "AureliaEstates",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "about": {
+              "id": "chrome.footer.about",
+              "type": "text",
+              "editable": true,
+              "current": "A private Los Angeles brokerage representing exceptional properties in Bel Air, Beverly Hills, Malibu, Aspen, and the Hamptons since 2014.",
+              "minChars": 55,
+              "maxChars": 138
+            },
+            "copyright": {
+              "id": "chrome.footer.copyright",
+              "type": "text",
+              "editable": false,
+              "current": "© 2026 Aurelia Estates. All rights reserved.",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "license": {
+              "id": "chrome.footer.license",
+              "type": "text",
+              "editable": false,
+              "current": "CA DRE #01987654 · Privacy Policy · Terms",
+              "reason": "comes from the business's own profile, not the model"
+            }
+          }
+        },
+        "navCta": {
+          "fields": {
+            "cta": {
+              "id": "chrome.nav.cta",
+              "type": "text",
+              "editable": true,
+              "current": "Request a Private Consultation",
+              "minChars": 15,
+              "maxChars": 40
+            }
+          }
+        },
+        "topbar": {
+          "fields": {
+            "address": {
+              "id": "chrome.topbar.address",
+              "type": "text",
+              "editable": false,
+              "current": "456 North Canon Drive, Suite 300, Beverly Hills, CA",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "phone": {
+              "id": "chrome.topbar.phone",
+              "type": "text",
+              "editable": false,
+              "current": "(310) 555-0199",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "email": {
+              "id": "chrome.topbar.email",
+              "type": "text",
+              "editable": false,
+              "current": "hello@aureliaestates.com",
+              "reason": "comes from the business's own profile, not the model"
+            }
+          }
+        },
+        "footerQuickLinks": {
+          "fields": {
+            "heading": {
+              "id": "chrome.footer.col2.heading",
+              "type": "text",
+              "editable": false,
+              "current": "Quick Links",
+              "reason": "structural/UI text — never rewritten"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "chrome.footer.col2.link.0",
+                "type": "text",
+                "editable": false,
+                "current": "About Us",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col2.link.1",
+                "type": "text",
+                "editable": false,
+                "current": "Exclusive Listings",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col2.link.2",
+                "type": "text",
+                "editable": false,
+                "current": "Our Advisors",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col2.link.3",
+                "type": "text",
+                "editable": false,
+                "current": "Services",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col2.link.4",
+                "type": "text",
+                "editable": false,
+                "current": "Contact",
+                "reason": "structural/UI text — never rewritten"
+              }
+            }
+          ]
+        },
+        "footerCategories": {
+          "fields": {
+            "heading": {
+              "id": "chrome.footer.col3.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Signature Markets",
+              "minChars": 9,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "chrome.footer.col3.link.0",
+                "type": "text",
+                "editable": true,
+                "current": "Bel Air & Holmby Hills",
+                "minChars": 11,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col3.link.1",
+                "type": "text",
+                "editable": true,
+                "current": "Beverly Hills",
+                "minChars": 7,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col3.link.2",
+                "type": "text",
+                "editable": true,
+                "current": "Malibu Coastline",
+                "minChars": 8,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col3.link.3",
+                "type": "text",
+                "editable": true,
+                "current": "Aspen, Colorado",
+                "minChars": 8,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col3.link.4",
+                "type": "text",
+                "editable": true,
+                "current": "The Hamptons",
+                "minChars": 6,
+                "maxChars": 32
+              }
+            }
+          ]
+        },
+        "footerNewsletter": {
+          "fields": {
+            "heading": {
+              "id": "chrome.footer.col4.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Stay Ahead of the Market",
+              "minChars": 12,
+              "maxChars": 32
+            },
+            "newsletterText": {
+              "id": "chrome.footer.newsletterText",
+              "type": "text",
+              "editable": true,
+              "current": "Receive private listings and market intelligence before they're public.",
+              "minChars": 28,
+              "maxChars": 71
+            }
+          }
+        }
+      }
+    },
+    "index.html": {
+      "sections": {
+        "hero": {
+          "fields": {
+            "eyebrow": {
+              "id": "home.hero.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Los Angeles · Malibu · Aspen · The Hamptons",
+              "minChars": 22,
+              "maxChars": 43
+            },
+            "title": {
+              "id": "home.hero.title",
+              "type": "text",
+              "editable": true,
+              "current": "Where exceptional properties find exceptional owners",
+              "minChars": 21,
+              "maxChars": 54
+            },
+            "subtitle": {
+              "id": "home.hero.subtitle",
+              "type": "text",
+              "editable": true,
+              "current": "Aurelia Estates represents the most private and prestigious addresses in Southern California — from Bel Air compounds to Malibu shoreline, with select representation in Aspen and the Hamptons. Our advisors work by referral, discretion, and results.",
+              "minChars": 99,
+              "maxChars": 248
+            },
+            "background": {
+              "id": "home.hero.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "home.hero.cta.0",
+                "type": "text",
+                "editable": true,
+                "current": "View Exclusive Listings",
+                "minChars": 12,
+                "maxChars": 24
+              }
+            },
+            {
+              "text": {
+                "id": "home.hero.cta.1",
+                "type": "text",
+                "editable": true,
+                "current": "Speak With an Advisor",
+                "minChars": 11,
+                "maxChars": 24
+              }
+            }
+          ]
+        },
+        "featuredListings": {
+          "fields": {
+            "title": {
+              "id": "home.featured.title",
+              "type": "text",
+              "editable": true,
+              "current": "Exceptional properties, privately represented",
+              "minChars": 18,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "home.featured.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Featured Listings",
+              "minChars": 9,
+              "maxChars": 24
+            },
+            "viewAll": {
+              "id": "home.featured.viewAll",
+              "type": "text",
+              "editable": true,
+              "current": "View All Listings",
+              "minChars": 9,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "badge": {
+                "id": "home.featured.0.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.0.price",
+                "type": "text",
+                "editable": false,
+                "current": "$12,500,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.0.location",
+                "type": "text",
+                "editable": false,
+                "current": "1685 Stradella Road, Bel Air, Los Angeles, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.0.title",
+                "type": "text",
+                "editable": false,
+                "current": "Bel Air Modern Compound",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.0.beds",
+                "type": "text",
+                "editable": false,
+                "current": "6 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.0.baths",
+                "type": "text",
+                "editable": false,
+                "current": "8 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.0.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "8,200 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "home.featured.1.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.1.price",
+                "type": "text",
+                "editable": false,
+                "current": "$8,950,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.1.location",
+                "type": "text",
+                "editable": false,
+                "current": "1201 Loma Vista Drive, Beverly Hills, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.1.title",
+                "type": "text",
+                "editable": false,
+                "current": "Beverly Hills Mediterranean Estate",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.1.beds",
+                "type": "text",
+                "editable": false,
+                "current": "5 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.1.baths",
+                "type": "text",
+                "editable": false,
+                "current": "6.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.1.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "6,400 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "home.featured.2.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Exclusive Listing",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.2.price",
+                "type": "text",
+                "editable": false,
+                "current": "$16,800,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.2.location",
+                "type": "text",
+                "editable": false,
+                "current": "21000 Pacific Coast Highway, Malibu, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.2.title",
+                "type": "text",
+                "editable": false,
+                "current": "Malibu Oceanfront Villa",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.2.beds",
+                "type": "text",
+                "editable": false,
+                "current": "5 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.2.baths",
+                "type": "text",
+                "editable": false,
+                "current": "7 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.2.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "7,100 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1615874959474-d609969a20ed?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "home.featured.3.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.3.price",
+                "type": "text",
+                "editable": false,
+                "current": "$18,500,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.3.location",
+                "type": "text",
+                "editable": false,
+                "current": "350 Delfern Drive, Holmby Hills, Los Angeles, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.3.title",
+                "type": "text",
+                "editable": false,
+                "current": "Holmby Hills Georgian Estate",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.3.beds",
+                "type": "text",
+                "editable": false,
+                "current": "7 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.3.baths",
+                "type": "text",
+                "editable": false,
+                "current": "9 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.3.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "9,000 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.3.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "home.featured.4.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Exclusive Listing",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.4.price",
+                "type": "text",
+                "editable": false,
+                "current": "$14,200,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.4.location",
+                "type": "text",
+                "editable": false,
+                "current": "145 Red Mountain Road, Aspen, CO",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.4.title",
+                "type": "text",
+                "editable": false,
+                "current": "Aspen Mountain Retreat",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.4.beds",
+                "type": "text",
+                "editable": false,
+                "current": "5 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.4.baths",
+                "type": "text",
+                "editable": false,
+                "current": "6 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.4.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "6,800 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.4.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "home.featured.5.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.5.price",
+                "type": "text",
+                "editable": false,
+                "current": "$10,750,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.5.location",
+                "type": "text",
+                "editable": false,
+                "current": "88 Further Lane, East Hampton, NY",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.5.title",
+                "type": "text",
+                "editable": false,
+                "current": "Hamptons Shingle-Style Estate",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.5.beds",
+                "type": "text",
+                "editable": false,
+                "current": "6 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.5.baths",
+                "type": "text",
+                "editable": false,
+                "current": "7.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.5.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "7,400 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.5.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "stats": {
+          "instances": [
+            {
+              "number": {
+                "id": "home.stats.0.number",
+                "type": "text",
+                "editable": false,
+                "current": "12+",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "home.stats.0.label",
+                "type": "text",
+                "editable": false,
+                "current": "Years Serving Discerning Clients",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "home.stats.1.number",
+                "type": "text",
+                "editable": false,
+                "current": "$3.2B+",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "home.stats.1.label",
+                "type": "text",
+                "editable": false,
+                "current": "In Closed Transactions",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "home.stats.2.number",
+                "type": "text",
+                "editable": false,
+                "current": "41",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "home.stats.2.label",
+                "type": "text",
+                "editable": false,
+                "current": "Average Days to Contract",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "home.stats.3.number",
+                "type": "text",
+                "editable": false,
+                "current": "6",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "home.stats.3.label",
+                "type": "text",
+                "editable": false,
+                "current": "Principal Advisors",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "whyUs": {
+          "fields": {
+            "title": {
+              "id": "home.why.title",
+              "type": "text",
+              "editable": true,
+              "current": "Discretion and expertise, without compromise",
+              "minChars": 18,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "home.why.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Why Aurelia Estates",
+              "minChars": 10,
+              "maxChars": 24
+            },
+            "subtitle": {
+              "id": "home.why.subtitle",
+              "type": "text",
+              "editable": true,
+              "current": "Whether you're acquiring a private compound or quietly bringing one to market, our advisors handle every detail personally.",
+              "minChars": 49,
+              "maxChars": 146
+            }
+          },
+          "instances": [
+            {
+              "title": {
+                "id": "home.why.0.title",
+                "type": "text",
+                "editable": true,
+                "current": "Absolute Discretion",
+                "minChars": 8,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "home.why.0.text",
+                "type": "text",
+                "editable": true,
+                "current": "Off-market transactions, confidentiality agreements as standard practice, and a client list that stays private by design.",
+                "minChars": 48,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "home.why.1.title",
+                "type": "text",
+                "editable": true,
+                "current": "Global Buyer Network",
+                "minChars": 8,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "home.why.1.text",
+                "type": "text",
+                "editable": true,
+                "current": "Direct relationships with family offices, private wealth advisors, and international buyers actively seeking Southern California real estate.",
+                "minChars": 56,
+                "maxChars": 141
+              }
+            },
+            {
+              "title": {
+                "id": "home.why.2.title",
+                "type": "text",
+                "editable": true,
+                "current": "Architectural Expertise",
+                "minChars": 9,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "home.why.2.text",
+                "type": "text",
+                "editable": true,
+                "current": "Deep knowledge of noted architects and builders, from midcentury pedigree to new-build craftsmanship.",
+                "minChars": 40,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "home.why.3.title",
+                "type": "text",
+                "editable": true,
+                "current": "White-Glove Follow-Through",
+                "minChars": 10,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "home.why.3.text",
+                "type": "text",
+                "editable": true,
+                "current": "From private inspections to post-close concierge services, every detail is handled personally, long after the keys change hands.",
+                "minChars": 51,
+                "maxChars": 136
+              }
+            }
+          ]
+        },
+        "howItWorks": {
+          "fields": {
+            "title": {
+              "id": "home.how.title",
+              "type": "text",
+              "editable": true,
+              "current": "A quiet, considered path to your next address",
+              "minChars": 18,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "home.how.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "The Aurelia Experience",
+              "minChars": 11,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "title": {
+                "id": "home.how.0.title",
+                "type": "text",
+                "editable": true,
+                "current": "Private Consultation",
+                "minChars": 8,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "home.how.0.text",
+                "type": "text",
+                "editable": true,
+                "current": "A confidential conversation about your goals, timeline, and the level of discretion you require.",
+                "minChars": 38,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "home.how.1.title",
+                "type": "text",
+                "editable": true,
+                "current": "Curated Introductions",
+                "minChars": 8,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "home.how.1.text",
+                "type": "text",
+                "editable": true,
+                "current": "We arrange private showings of homes matched to your criteria — many before they're publicly listed.",
+                "minChars": 40,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "home.how.2.title",
+                "type": "text",
+                "editable": true,
+                "current": "Strategic Negotiation",
+                "minChars": 8,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "home.how.2.text",
+                "type": "text",
+                "editable": true,
+                "current": "Every offer is built on comparable data and market intelligence, negotiated with your interests as the only priority.",
+                "minChars": 47,
+                "maxChars": 117
+              }
+            },
+            {
+              "title": {
+                "id": "home.how.3.title",
+                "type": "text",
+                "editable": true,
+                "current": "Seamless Closing",
+                "minChars": 6,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "home.how.3.text",
+                "type": "text",
+                "editable": true,
+                "current": "We coordinate escrow, inspections, and every logistic through closing day and beyond.",
+                "minChars": 34,
+                "maxChars": 108
+              }
+            }
+          ]
+        },
+        "testimonials": {
+          "fields": {
+            "title": {
+              "id": "home.testimonials.title",
+              "type": "text",
+              "editable": true,
+              "current": "Trusted by discerning families and investors",
+              "minChars": 18,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "home.testimonials.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Client Stories",
+              "minChars": 7,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "quote": {
+                "id": "home.testimonials.0.quote",
+                "type": "text",
+                "editable": false,
+                "current": "\"Aurelia Estates found us the Stradella Road compound before it ever reached the open market. Adriana handled every detail with complete discretion.\"",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorName": {
+                "id": "home.testimonials.0.authorName",
+                "type": "text",
+                "editable": false,
+                "current": "Eleanor Vance",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorRole": {
+                "id": "home.testimonials.0.authorRole",
+                "type": "text",
+                "editable": false,
+                "current": "Buyer, Bel Air",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "avatar": {
+                "id": "home.testimonials.0.avatar",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/29.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "quote": {
+                "id": "home.testimonials.1.quote",
+                "type": "text",
+                "editable": false,
+                "current": "\"We listed our Red Mountain property with Aurelia and closed within six weeks, well above our reserve. Their network of qualified buyers is unmatched.\"",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorName": {
+                "id": "home.testimonials.1.authorName",
+                "type": "text",
+                "editable": false,
+                "current": "Richard Kessler",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorRole": {
+                "id": "home.testimonials.1.authorRole",
+                "type": "text",
+                "editable": false,
+                "current": "Seller, Aspen",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "avatar": {
+                "id": "home.testimonials.1.avatar",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/48.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "quote": {
+                "id": "home.testimonials.2.quote",
+                "type": "text",
+                "editable": false,
+                "current": "\"From the first showing to closing, the team anticipated every question. This is what representation should feel like at this level.\"",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorName": {
+                "id": "home.testimonials.2.authorName",
+                "type": "text",
+                "editable": false,
+                "current": "Camille Duarte",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorRole": {
+                "id": "home.testimonials.2.authorRole",
+                "type": "text",
+                "editable": false,
+                "current": "Buyer, Malibu",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "avatar": {
+                "id": "home.testimonials.2.avatar",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/58.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "cta": {
+          "fields": {
+            "heading": {
+              "id": "home.cta.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Ready to explore what's not yet on the market?",
+              "minChars": 18,
+              "maxChars": 76
+            },
+            "body": {
+              "id": "home.cta.body",
+              "type": "text",
+              "editable": true,
+              "current": "Speak privately with an Aurelia Estates advisor about current and upcoming exclusive listings.",
+              "minChars": 38,
+              "maxChars": 134
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "home.cta.button.0",
+                "type": "text",
+                "editable": true,
+                "current": "Schedule a Private Consultation",
+                "minChars": 16,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "home.cta.button.1",
+                "type": "text",
+                "editable": true,
+                "current": "View Listings",
+                "minChars": 7,
+                "maxChars": 32
+              }
+            }
+          ]
+        }
+      }
+    },
+    "about.html": {
+      "sections": {
+        "banner": {
+          "fields": {
+            "title": {
+              "id": "about.banner.title",
+              "type": "text",
+              "editable": true,
+              "current": "About Aurelia Estates",
+              "minChars": 8,
+              "maxChars": 76
+            },
+            "background": {
+              "id": "about.banner.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "story": {
+          "fields": {
+            "eyebrow": {
+              "id": "about.story.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Our Story",
+              "minChars": 5,
+              "maxChars": 24
+            },
+            "title": {
+              "id": "about.story.title",
+              "type": "text",
+              "editable": true,
+              "current": "A brokerage built on discretion and design",
+              "minChars": 17,
+              "maxChars": 80
+            },
+            "photo": {
+              "id": "about.story.photo",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "about.story.paragraph.0",
+                "type": "text",
+                "editable": true,
+                "current": "Aurelia Estates was founded in 2014 by Adriana Voss, a former private art advisor who spent a decade helping collectors navigate discretion, provenance, and value — skills she found were just as essential in real estate. She started the firm after watching too many exceptional Los Angeles properties change hands through impersonal, transactional processes that ignored what her clients actually cared about: privacy, craftsmanship, and trust.",
+                "minChars": 178,
+                "maxChars": 444
+              }
+            },
+            {
+              "text": {
+                "id": "about.story.paragraph.1",
+                "type": "text",
+                "editable": true,
+                "current": "Twelve years later, Aurelia Estates represents some of the most significant addresses in Bel Air, Holmby Hills, and Beverly Hills, and along the Malibu coastline, with select advisors extending our reach into Aspen and the Hamptons. Every advisor at the firm has closed nine-figure transactions and understands that a $10 million sale demands the same care as a $50 million one.",
+                "minChars": 151,
+                "maxChars": 378
+              }
+            },
+            {
+              "text": {
+                "id": "about.story.paragraph.2",
+                "type": "text",
+                "editable": true,
+                "current": "We remain independently owned and deliberately small. Six advisors, one standard: represent every client as though the transaction were our own.",
+                "minChars": 58,
+                "maxChars": 352
+              }
+            }
+          ]
+        },
+        "values": {
+          "fields": {
+            "title": {
+              "id": "about.values.title",
+              "type": "text",
+              "editable": true,
+              "current": "Our mission and values",
+              "minChars": 9,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "about.values.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "What Drives Us",
+              "minChars": 7,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "title": {
+                "id": "about.values.0.title",
+                "type": "text",
+                "editable": true,
+                "current": "Discretion by Default",
+                "minChars": 8,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "about.values.0.text",
+                "type": "text",
+                "editable": true,
+                "current": "Confidentiality agreements, private showings, and a strict no-sign policy for qualifying properties.",
+                "minChars": 40,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "about.values.1.title",
+                "type": "text",
+                "editable": true,
+                "current": "Design Literacy",
+                "minChars": 6,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "about.values.1.text",
+                "type": "text",
+                "editable": true,
+                "current": "Our advisors can speak fluently about architecture, provenance, and craftsmanship — not just square footage.",
+                "minChars": 43,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "about.values.2.title",
+                "type": "text",
+                "editable": true,
+                "current": "Relationships Over Transactions",
+                "minChars": 12,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "about.values.2.text",
+                "type": "text",
+                "editable": true,
+                "current": "Most of our business comes from repeat clients and referrals within a tight, trusted network.",
+                "minChars": 37,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "about.values.3.title",
+                "type": "text",
+                "editable": true,
+                "current": "Global Perspective, Local Depth",
+                "minChars": 12,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "about.values.3.text",
+                "type": "text",
+                "editable": true,
+                "current": "We know every canyon, cul-de-sac, and coastline in our markets, while connecting clients to opportunities well beyond them.",
+                "minChars": 49,
+                "maxChars": 136
+              }
+            }
+          ]
+        },
+        "stats": {
+          "instances": [
+            {
+              "number": {
+                "id": "about.stats.0.number",
+                "type": "text",
+                "editable": false,
+                "current": "12+",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "about.stats.0.label",
+                "type": "text",
+                "editable": false,
+                "current": "Years Serving Discerning Clients",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "about.stats.1.number",
+                "type": "text",
+                "editable": false,
+                "current": "$3.2B+",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "about.stats.1.label",
+                "type": "text",
+                "editable": false,
+                "current": "In Closed Transactions",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "about.stats.2.number",
+                "type": "text",
+                "editable": false,
+                "current": "41",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "about.stats.2.label",
+                "type": "text",
+                "editable": false,
+                "current": "Average Days to Contract",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "about.stats.3.number",
+                "type": "text",
+                "editable": false,
+                "current": "6",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "about.stats.3.label",
+                "type": "text",
+                "editable": false,
+                "current": "Principal Advisors",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "team": {
+          "fields": {
+            "title": {
+              "id": "about.team.title",
+              "type": "text",
+              "editable": true,
+              "current": "The advisors behind Aurelia Estates",
+              "minChars": 14,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "about.team.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Meet the Team",
+              "minChars": 7,
+              "maxChars": 24
+            },
+            "viewAll": {
+              "id": "about.team.viewAll",
+              "type": "text",
+              "editable": true,
+              "current": "Meet All Advisors",
+              "minChars": 9,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "name": {
+                "id": "about.team.0.name",
+                "type": "text",
+                "editable": false,
+                "current": "Adriana Voss",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "about.team.0.role",
+                "type": "text",
+                "editable": false,
+                "current": "Founder & Principal Broker",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "about.team.0.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(310) 555-0101",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "about.team.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/65.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "about.team.1.name",
+                "type": "text",
+                "editable": false,
+                "current": "Julian Castellane",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "about.team.1.role",
+                "type": "text",
+                "editable": false,
+                "current": "Senior Estate Advisor",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "about.team.1.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(310) 555-0112",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "about.team.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/86.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "about.team.2.name",
+                "type": "text",
+                "editable": false,
+                "current": "Naomi Fairweather",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "about.team.2.role",
+                "type": "text",
+                "editable": false,
+                "current": "Malibu & Coastal Specialist",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "about.team.2.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(310) 555-0123",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "about.team.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/33.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "cta": {
+          "fields": {
+            "heading": {
+              "id": "about.cta.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Let's talk about your next address",
+              "minChars": 14,
+              "maxChars": 76
+            },
+            "body": {
+              "id": "about.cta.body",
+              "type": "text",
+              "editable": true,
+              "current": "Whether you're buying, selling, or simply exploring what's available privately, our advisors are ready.",
+              "minChars": 41,
+              "maxChars": 134
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "about.cta.button.0",
+                "type": "text",
+                "editable": true,
+                "current": "Contact Us",
+                "minChars": 5,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "about.cta.button.1",
+                "type": "text",
+                "editable": true,
+                "current": "View Listings",
+                "minChars": 7,
+                "maxChars": 32
+              }
+            }
+          ]
+        }
+      }
+    },
+    "services.html": {
+      "sections": {
+        "banner": {
+          "fields": {
+            "title": {
+              "id": "services.banner.title",
+              "type": "text",
+              "editable": true,
+              "current": "Our Services",
+              "minChars": 5,
+              "maxChars": 76
+            },
+            "background": {
+              "id": "services.banner.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "services": {
+          "fields": {
+            "title": {
+              "id": "services.offers.title",
+              "type": "text",
+              "editable": true,
+              "current": "Considered service for every stage of ownership",
+              "minChars": 19,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "services.offers.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "What We Offer",
+              "minChars": 7,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "title": {
+                "id": "services.offers.0.title",
+                "type": "text",
+                "editable": true,
+                "current": "Private Listing Access",
+                "minChars": 9,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.0.text",
+                "type": "text",
+                "editable": true,
+                "current": "Advance access to off-market and coming-soon properties across Bel Air, Beverly Hills, Malibu, Aspen, and the Hamptons — often before they're photographed.",
+                "minChars": 62,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.0.link",
+                "type": "text",
+                "editable": false,
+                "current": "Get Started →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "title": {
+                "id": "services.offers.1.title",
+                "type": "text",
+                "editable": true,
+                "current": "Estate Marketing",
+                "minChars": 6,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.1.text",
+                "type": "text",
+                "editable": true,
+                "current": "Architectural photography, cinematic video, and print placements that present a property the way its architecture deserves.",
+                "minChars": 49,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.1.link",
+                "type": "text",
+                "editable": false,
+                "current": "Get Started →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "title": {
+                "id": "services.offers.2.title",
+                "type": "text",
+                "editable": true,
+                "current": "Buyer Representation",
+                "minChars": 8,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.2.text",
+                "type": "text",
+                "editable": true,
+                "current": "Confidential search, private showings, and negotiation for buyers who require complete discretion.",
+                "minChars": 39,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.2.link",
+                "type": "text",
+                "editable": false,
+                "current": "Get Started →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "title": {
+                "id": "services.offers.3.title",
+                "type": "text",
+                "editable": true,
+                "current": "1031 Exchange Consulting",
+                "minChars": 10,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.3.text",
+                "type": "text",
+                "editable": true,
+                "current": "Coordinated timing and qualified intermediary introductions for investors executing like-kind exchanges.",
+                "minChars": 42,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.3.link",
+                "type": "text",
+                "editable": false,
+                "current": "Get Started →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "title": {
+                "id": "services.offers.4.title",
+                "type": "text",
+                "editable": true,
+                "current": "Relocation Concierge",
+                "minChars": 8,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.4.text",
+                "type": "text",
+                "editable": true,
+                "current": "End-to-end support for clients relocating to Southern California, from neighborhood selection to school placement and moving logistics.",
+                "minChars": 54,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.4.link",
+                "type": "text",
+                "editable": false,
+                "current": "Get Started →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "title": {
+                "id": "services.offers.5.title",
+                "type": "text",
+                "editable": true,
+                "current": "New Development Sales",
+                "minChars": 8,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.5.text",
+                "type": "text",
+                "editable": true,
+                "current": "Exclusive sales representation for architect-driven new construction and small-lot luxury developments.",
+                "minChars": 41,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.5.link",
+                "type": "text",
+                "editable": false,
+                "current": "Get Started →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            }
+          ]
+        },
+        "process": {
+          "fields": {
+            "title": {
+              "id": "services.process.title",
+              "type": "text",
+              "editable": true,
+              "current": "How we work with you",
+              "minChars": 8,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "services.process.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Our Process",
+              "minChars": 6,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "title": {
+                "id": "services.process.0.title",
+                "type": "text",
+                "editable": true,
+                "current": "Private Consultation",
+                "minChars": 8,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "services.process.0.text",
+                "type": "text",
+                "editable": true,
+                "current": "A confidential conversation about your objectives, timeline, and discretion requirements.",
+                "minChars": 36,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "services.process.1.title",
+                "type": "text",
+                "editable": true,
+                "current": "Tailored Strategy",
+                "minChars": 7,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "services.process.1.text",
+                "type": "text",
+                "editable": true,
+                "current": "A plan built around your property or search — pricing, marketing, or acquisition criteria.",
+                "minChars": 36,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "services.process.2.title",
+                "type": "text",
+                "editable": true,
+                "current": "Discreet Execution",
+                "minChars": 7,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "services.process.2.text",
+                "type": "text",
+                "editable": true,
+                "current": "Private showings, negotiations, and paperwork handled personally by your advisor.",
+                "minChars": 32,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "services.process.3.title",
+                "type": "text",
+                "editable": true,
+                "current": "Closing & Beyond",
+                "minChars": 6,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "services.process.3.text",
+                "type": "text",
+                "editable": true,
+                "current": "We coordinate every closing detail and remain available long after the transaction is complete.",
+                "minChars": 38,
+                "maxChars": 108
+              }
+            }
+          ]
+        },
+        "faq": {
+          "fields": {
+            "title": {
+              "id": "services.faq.title",
+              "type": "text",
+              "editable": true,
+              "current": "Common questions",
+              "minChars": 6,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "services.faq.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "FAQ",
+              "minChars": 2,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "question": {
+                "id": "services.faq.0.question",
+                "type": "text",
+                "editable": true,
+                "current": "Do you only work with off-market properties?",
+                "minChars": 18,
+                "maxChars": 172
+              },
+              "answer": {
+                "id": "services.faq.0.answer",
+                "type": "text",
+                "editable": true,
+                "current": "No — we represent both publicly listed and off-market properties. Many of our most significant sales, however, never appear on the open market.",
+                "minChars": 57,
+                "maxChars": 273
+              }
+            },
+            {
+              "question": {
+                "id": "services.faq.1.question",
+                "type": "text",
+                "editable": true,
+                "current": "How does Aurelia Estates protect client privacy?",
+                "minChars": 19,
+                "maxChars": 172
+              },
+              "answer": {
+                "id": "services.faq.1.answer",
+                "type": "text",
+                "editable": true,
+                "current": "Every engagement begins with a confidentiality agreement. We use private showings by appointment only, and can arrange transactions under an LLC or trust to keep ownership out of public record.",
+                "minChars": 77,
+                "maxChars": 273
+              }
+            },
+            {
+              "question": {
+                "id": "services.faq.2.question",
+                "type": "text",
+                "editable": true,
+                "current": "What is the typical price range you work in?",
+                "minChars": 18,
+                "maxChars": 172
+              },
+              "answer": {
+                "id": "services.faq.2.answer",
+                "type": "text",
+                "editable": true,
+                "current": "Our current portfolio ranges from roughly $3 million to $18 million, with occasional representation above that range for exceptional properties.",
+                "minChars": 58,
+                "maxChars": 273
+              }
+            },
+            {
+              "question": {
+                "id": "services.faq.3.question",
+                "type": "text",
+                "editable": true,
+                "current": "Do you work with buyers relocating from outside California?",
+                "minChars": 24,
+                "maxChars": 172
+              },
+              "answer": {
+                "id": "services.faq.3.answer",
+                "type": "text",
+                "editable": true,
+                "current": "Yes — our relocation concierge service handles virtual tours, school research, and logistics for clients moving from anywhere in the world.",
+                "minChars": 56,
+                "maxChars": 273
+              }
+            },
+            {
+              "question": {
+                "id": "services.faq.4.question",
+                "type": "text",
+                "editable": true,
+                "current": "Can you represent me in Aspen or the Hamptons if I'm based in Los Angeles?",
+                "minChars": 30,
+                "maxChars": 172
+              },
+              "answer": {
+                "id": "services.faq.4.answer",
+                "type": "text",
+                "editable": true,
+                "current": "Yes. Our advisors in both markets work directly with our Los Angeles team, so you have a single point of contact regardless of where the property is located.",
+                "minChars": 63,
+                "maxChars": 273
+              }
+            }
+          ]
+        },
+        "cta": {
+          "fields": {
+            "heading": {
+              "id": "services.cta.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Not sure where to start?",
+              "minChars": 10,
+              "maxChars": 76
+            },
+            "body": {
+              "id": "services.cta.body",
+              "type": "text",
+              "editable": true,
+              "current": "Schedule a private, no-obligation consultation with one of our advisors.",
+              "minChars": 29,
+              "maxChars": 134
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "services.cta.button.0",
+                "type": "text",
+                "editable": true,
+                "current": "Schedule a Consultation",
+                "minChars": 12,
+                "maxChars": 32
+              }
+            }
+          ]
+        }
+      }
+    },
+    "listings.html": {
+      "sections": {
+        "banner": {
+          "fields": {
+            "title": {
+              "id": "listings.banner.title",
+              "type": "text",
+              "editable": true,
+              "current": "Exclusive Listings",
+              "minChars": 7,
+              "maxChars": 76
+            },
+            "background": {
+              "id": "listings.banner.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1615874959474-d609969a20ed?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "listings": {
+          "instances": [
+            {
+              "badge": {
+                "id": "listings.card.0.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.0.price",
+                "type": "text",
+                "editable": false,
+                "current": "$12,500,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.0.location",
+                "type": "text",
+                "editable": false,
+                "current": "1685 Stradella Road, Bel Air, Los Angeles, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.0.title",
+                "type": "text",
+                "editable": false,
+                "current": "Bel Air Modern Compound",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.0.beds",
+                "type": "text",
+                "editable": false,
+                "current": "6 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.0.baths",
+                "type": "text",
+                "editable": false,
+                "current": "8 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.0.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "8,200 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.1.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.1.price",
+                "type": "text",
+                "editable": false,
+                "current": "$8,950,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.1.location",
+                "type": "text",
+                "editable": false,
+                "current": "1201 Loma Vista Drive, Beverly Hills, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.1.title",
+                "type": "text",
+                "editable": false,
+                "current": "Beverly Hills Mediterranean Estate",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.1.beds",
+                "type": "text",
+                "editable": false,
+                "current": "5 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.1.baths",
+                "type": "text",
+                "editable": false,
+                "current": "6.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.1.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "6,400 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.2.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Exclusive Listing",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.2.price",
+                "type": "text",
+                "editable": false,
+                "current": "$16,800,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.2.location",
+                "type": "text",
+                "editable": false,
+                "current": "21000 Pacific Coast Highway, Malibu, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.2.title",
+                "type": "text",
+                "editable": false,
+                "current": "Malibu Oceanfront Villa",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.2.beds",
+                "type": "text",
+                "editable": false,
+                "current": "5 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.2.baths",
+                "type": "text",
+                "editable": false,
+                "current": "7 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.2.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "7,100 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1615874959474-d609969a20ed?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.3.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.3.price",
+                "type": "text",
+                "editable": false,
+                "current": "$18,500,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.3.location",
+                "type": "text",
+                "editable": false,
+                "current": "350 Delfern Drive, Holmby Hills, Los Angeles, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.3.title",
+                "type": "text",
+                "editable": false,
+                "current": "Holmby Hills Georgian Estate",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.3.beds",
+                "type": "text",
+                "editable": false,
+                "current": "7 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.3.baths",
+                "type": "text",
+                "editable": false,
+                "current": "9 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.3.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "9,000 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.3.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.4.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Exclusive Listing",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.4.price",
+                "type": "text",
+                "editable": false,
+                "current": "$14,200,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.4.location",
+                "type": "text",
+                "editable": false,
+                "current": "145 Red Mountain Road, Aspen, CO",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.4.title",
+                "type": "text",
+                "editable": false,
+                "current": "Aspen Mountain Retreat",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.4.beds",
+                "type": "text",
+                "editable": false,
+                "current": "5 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.4.baths",
+                "type": "text",
+                "editable": false,
+                "current": "6 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.4.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "6,800 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.4.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.5.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.5.price",
+                "type": "text",
+                "editable": false,
+                "current": "$10,750,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.5.location",
+                "type": "text",
+                "editable": false,
+                "current": "88 Further Lane, East Hampton, NY",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.5.title",
+                "type": "text",
+                "editable": false,
+                "current": "Hamptons Shingle-Style Estate",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.5.beds",
+                "type": "text",
+                "editable": false,
+                "current": "6 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.5.baths",
+                "type": "text",
+                "editable": false,
+                "current": "7.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.5.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "7,400 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.5.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.6.badge",
+                "type": "text",
+                "editable": false,
+                "current": "New to Market",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.6.price",
+                "type": "text",
+                "editable": false,
+                "current": "$7,200,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.6.location",
+                "type": "text",
+                "editable": false,
+                "current": "9200 Oriole Way, Los Angeles, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.6.title",
+                "type": "text",
+                "editable": false,
+                "current": "Sunset Strip Architectural Showpiece",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.6.beds",
+                "type": "text",
+                "editable": false,
+                "current": "4 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.6.baths",
+                "type": "text",
+                "editable": false,
+                "current": "5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.6.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "5,100 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.6.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1631889993959-41b4e9c6e3c5?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.7.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.7.price",
+                "type": "text",
+                "editable": false,
+                "current": "$9,850,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.7.location",
+                "type": "text",
+                "editable": false,
+                "current": "1420 Loma Linda Drive, Beverly Hills, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.7.title",
+                "type": "text",
+                "editable": false,
+                "current": "Trousdale Estates Contemporary",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.7.beds",
+                "type": "text",
+                "editable": false,
+                "current": "5 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.7.baths",
+                "type": "text",
+                "editable": false,
+                "current": "6 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.7.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "6,900 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.7.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1592595896616-c37162298647?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.8.badge",
+                "type": "text",
+                "editable": false,
+                "current": "New to Market",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.8.price",
+                "type": "text",
+                "editable": false,
+                "current": "$6,400,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.8.location",
+                "type": "text",
+                "editable": false,
+                "current": "1550 Amalfi Drive, Pacific Palisades, Los Angeles, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.8.title",
+                "type": "text",
+                "editable": false,
+                "current": "Pacific Palisades Retreat",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.8.beds",
+                "type": "text",
+                "editable": false,
+                "current": "4 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.8.baths",
+                "type": "text",
+                "editable": false,
+                "current": "4.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.8.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "4,300 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.8.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "property-detail.html": {
+      "sections": {
+        "listing": {
+          "fields": {
+            "badge": {
+              "id": "property.badge",
+              "type": "text",
+              "editable": false,
+              "current": "For Sale",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "title": {
+              "id": "property.title",
+              "type": "text",
+              "editable": false,
+              "current": "Bel Air Modern Compound",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "location": {
+              "id": "property.location",
+              "type": "text",
+              "editable": false,
+              "current": "1685 Stradella Road, Bel Air, Los Angeles, CA 90077",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "price": {
+              "id": "property.price",
+              "type": "text",
+              "editable": false,
+              "current": "$12,500,000",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "keyFacts": {
+          "instances": [
+            {
+              "value": {
+                "id": "property.facts.0.value",
+                "type": "text",
+                "editable": false,
+                "current": "6",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "property.facts.0.label",
+                "type": "text",
+                "editable": false,
+                "current": "Bedrooms",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "property.facts.1.value",
+                "type": "text",
+                "editable": false,
+                "current": "8",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "property.facts.1.label",
+                "type": "text",
+                "editable": false,
+                "current": "Bathrooms",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "property.facts.2.value",
+                "type": "text",
+                "editable": false,
+                "current": "8,200",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "property.facts.2.label",
+                "type": "text",
+                "editable": false,
+                "current": "Sqft",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "property.facts.3.value",
+                "type": "text",
+                "editable": false,
+                "current": "2021",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "property.facts.3.label",
+                "type": "text",
+                "editable": false,
+                "current": "Year Built",
+                "reason": "structural/UI text — never rewritten"
+              }
+            }
+          ]
+        },
+        "description": {
+          "fields": {
+            "heading": {
+              "id": "property.description.heading",
+              "type": "text",
+              "editable": false,
+              "current": "Description",
+              "reason": "structural/UI text — never rewritten"
+            },
+            "body": {
+              "id": "property.description.body",
+              "type": "text",
+              "editable": true,
+              "current": "Set behind private gates on one of Bel Air's most coveted streets, this newly built compound pairs museum-quality architecture with effortless indoor-outdoor living. Walls of pocketing glass open the main living pavilion to a motor-court auto gallery, a 70-foot infinity-edge pool, and unobstructed canyon views. The primary suite occupies its own wing, with a private terrace, dual dressing rooms, and a spa bath finished in book-matched marble. A subterranean level houses a screening room, wine cellar, and wellness center with sauna and cold plunge.",
+              "minChars": 221,
+              "maxChars": 704
+            }
+          }
+        },
+        "amenities": {
+          "fields": {
+            "heading": {
+              "id": "property.amenities.heading",
+              "type": "text",
+              "editable": false,
+              "current": "Amenities",
+              "reason": "structural/UI text — never rewritten"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "property.amenities.0",
+                "type": "text",
+                "editable": true,
+                "current": "Book-matched marble spa bath",
+                "minChars": 14,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.1",
+                "type": "text",
+                "editable": true,
+                "current": "10-car subterranean garage & auto gallery",
+                "minChars": 21,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.2",
+                "type": "text",
+                "editable": true,
+                "current": "70-foot infinity-edge pool",
+                "minChars": 13,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.3",
+                "type": "text",
+                "editable": true,
+                "current": "Home theater & temperature-controlled wine cellar",
+                "minChars": 25,
+                "maxChars": 49
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.4",
+                "type": "text",
+                "editable": true,
+                "current": "Wellness center with sauna & cold plunge",
+                "minChars": 20,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.5",
+                "type": "text",
+                "editable": true,
+                "current": "Full smart-home automation",
+                "minChars": 13,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.6",
+                "type": "text",
+                "editable": true,
+                "current": "Motor-court entry behind private gates",
+                "minChars": 19,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.7",
+                "type": "text",
+                "editable": true,
+                "current": "Unobstructed canyon & city-light views",
+                "minChars": 19,
+                "maxChars": 48
+              }
+            }
+          ]
+        },
+        "location": {
+          "fields": {
+            "heading": {
+              "id": "property.location.heading",
+              "type": "text",
+              "editable": false,
+              "current": "Location",
+              "reason": "structural/UI text — never rewritten"
+            }
+          }
+        },
+        "sidebar": {
+          "fields": {
+            "agentName": {
+              "id": "property.sidebar.agentName",
+              "type": "text",
+              "editable": false,
+              "current": "Adriana Voss",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "agentRole": {
+              "id": "property.sidebar.agentRole",
+              "type": "text",
+              "editable": false,
+              "current": "Founder & Principal Broker",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "blurb": {
+              "id": "property.sidebar.blurb",
+              "type": "text",
+              "editable": true,
+              "current": "Listing advisor for this property. Reach out to arrange a private showing.",
+              "minChars": 30,
+              "maxChars": 88
+            },
+            "callButton": {
+              "id": "property.sidebar.callButton",
+              "type": "text",
+              "editable": false,
+              "current": "Call (310) 555-0101",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "heading": {
+              "id": "property.tour.heading",
+              "type": "text",
+              "editable": false,
+              "current": "Request a Private Showing",
+              "reason": "structural/UI text — never rewritten"
+            },
+            "agentPhoto": {
+              "id": "property.sidebar.agentPhoto",
+              "type": "image",
+              "editable": false,
+              "current": "https://randomuser.me/api/portraits/women/65.jpg",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "similarListings": {
+          "fields": {
+            "title": {
+              "id": "property.similar.title",
+              "type": "text",
+              "editable": true,
+              "current": "Similarly exceptional properties",
+              "minChars": 13,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "property.similar.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "You May Also Like",
+              "minChars": 9,
+              "maxChars": 24
+            },
+            "viewAll": {
+              "id": "property.similar.viewAll",
+              "type": "text",
+              "editable": true,
+              "current": "View All Listings",
+              "minChars": 9,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "badge": {
+                "id": "property.similar.0.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "property.similar.0.price",
+                "type": "text",
+                "editable": false,
+                "current": "$18,500,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "property.similar.0.location",
+                "type": "text",
+                "editable": false,
+                "current": "350 Delfern Drive, Holmby Hills, Los Angeles, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "property.similar.0.title",
+                "type": "text",
+                "editable": false,
+                "current": "Holmby Hills Georgian Estate",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "property.similar.0.beds",
+                "type": "text",
+                "editable": false,
+                "current": "7 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "property.similar.0.baths",
+                "type": "text",
+                "editable": false,
+                "current": "9 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "property.similar.0.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "9,000 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "property.similar.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "property.similar.1.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "property.similar.1.price",
+                "type": "text",
+                "editable": false,
+                "current": "$8,950,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "property.similar.1.location",
+                "type": "text",
+                "editable": false,
+                "current": "1201 Loma Vista Drive, Beverly Hills, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "property.similar.1.title",
+                "type": "text",
+                "editable": false,
+                "current": "Beverly Hills Mediterranean Estate",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "property.similar.1.beds",
+                "type": "text",
+                "editable": false,
+                "current": "5 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "property.similar.1.baths",
+                "type": "text",
+                "editable": false,
+                "current": "6.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "property.similar.1.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "6,400 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "property.similar.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "property.similar.2.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Exclusive Listing",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "property.similar.2.price",
+                "type": "text",
+                "editable": false,
+                "current": "$16,800,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "property.similar.2.location",
+                "type": "text",
+                "editable": false,
+                "current": "21000 Pacific Coast Highway, Malibu, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "property.similar.2.title",
+                "type": "text",
+                "editable": false,
+                "current": "Malibu Oceanfront Villa",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "property.similar.2.beds",
+                "type": "text",
+                "editable": false,
+                "current": "5 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "property.similar.2.baths",
+                "type": "text",
+                "editable": false,
+                "current": "7 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "property.similar.2.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "7,100 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "property.similar.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1615874959474-d609969a20ed?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "gallery": {
+          "fields": {
+            "main": {
+              "id": "property.gallery.main",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=75",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "property.gallery.side.0",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=700&q=75",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "text": {
+                "id": "property.gallery.side.1",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=700&q=75",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "agents.html": {
+      "sections": {
+        "banner": {
+          "fields": {
+            "title": {
+              "id": "agents.banner.title",
+              "type": "text",
+              "editable": true,
+              "current": "Meet Our Advisors",
+              "minChars": 7,
+              "maxChars": 76
+            },
+            "background": {
+              "id": "agents.banner.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "team": {
+          "fields": {
+            "title": {
+              "id": "agents.team.title",
+              "type": "text",
+              "editable": true,
+              "current": "Six advisors, one uncompromising standard",
+              "minChars": 16,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "agents.team.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Our Team",
+              "minChars": 4,
+              "maxChars": 24
+            },
+            "subtitle": {
+              "id": "agents.team.subtitle",
+              "type": "text",
+              "editable": true,
+              "current": "Every Aurelia Estates advisor has personally closed nine-figure transactions across our represented markets.",
+              "minChars": 43,
+              "maxChars": 146
+            }
+          },
+          "instances": [
+            {
+              "name": {
+                "id": "agents.roster.0.name",
+                "type": "text",
+                "editable": false,
+                "current": "Adriana Voss",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.0.role",
+                "type": "text",
+                "editable": false,
+                "current": "Founder & Principal Broker",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.0.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(310) 555-0101 · adriana@aureliaestates.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/65.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "agents.roster.1.name",
+                "type": "text",
+                "editable": false,
+                "current": "Julian Castellane",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.1.role",
+                "type": "text",
+                "editable": false,
+                "current": "Senior Estate Advisor",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.1.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(310) 555-0112 · julian@aureliaestates.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/86.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "agents.roster.2.name",
+                "type": "text",
+                "editable": false,
+                "current": "Naomi Fairweather",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.2.role",
+                "type": "text",
+                "editable": false,
+                "current": "Malibu & Coastal Specialist",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.2.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(310) 555-0123 · naomi@aureliaestates.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/33.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "agents.roster.3.name",
+                "type": "text",
+                "editable": false,
+                "current": "Marcus Whitfield",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.3.role",
+                "type": "text",
+                "editable": false,
+                "current": "Aspen Mountain Properties",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.3.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(970) 555-0134 · marcus@aureliaestates.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.3.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/22.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "agents.roster.4.name",
+                "type": "text",
+                "editable": false,
+                "current": "Simone Delacroix",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.4.role",
+                "type": "text",
+                "editable": false,
+                "current": "Hamptons Advisor",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.4.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(631) 555-0145 · simone@aureliaestates.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.4.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/50.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "agents.roster.5.name",
+                "type": "text",
+                "editable": false,
+                "current": "Theo Nakamura",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.5.role",
+                "type": "text",
+                "editable": false,
+                "current": "New Development & Architectural Sales",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.5.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(310) 555-0156 · theo@aureliaestates.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.5.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/67.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "cta": {
+          "fields": {
+            "heading": {
+              "id": "agents.cta.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Interested in joining Aurelia Estates?",
+              "minChars": 15,
+              "maxChars": 76
+            },
+            "body": {
+              "id": "agents.cta.body",
+              "type": "text",
+              "editable": true,
+              "current": "We work with a small number of advisors who share our standard for discretion and craft.",
+              "minChars": 35,
+              "maxChars": 134
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "agents.cta.button.0",
+                "type": "text",
+                "editable": true,
+                "current": "Get in Touch",
+                "minChars": 6,
+                "maxChars": 32
+              }
+            }
+          ]
+        }
+      }
+    },
+    "agent-detail.html": {
+      "sections": {
+        "profile": {
+          "fields": {
+            "name": {
+              "id": "agentDetail.name",
+              "type": "text",
+              "editable": false,
+              "current": "Adriana Voss",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "role": {
+              "id": "agentDetail.role",
+              "type": "text",
+              "editable": false,
+              "current": "Founder & Principal Broker",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "contact": {
+              "id": "agentDetail.contact",
+              "type": "text",
+              "editable": false,
+              "current": "(310) 555-0101 · adriana@aureliaestates.com · CA DRE #01456789",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "photo": {
+              "id": "agentDetail.photo",
+              "type": "image",
+              "editable": false,
+              "current": "https://randomuser.me/api/portraits/women/65.jpg",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "bio": {
+          "fields": {
+            "aboutHeading": {
+              "id": "agentDetail.aboutHeading",
+              "type": "text",
+              "editable": false,
+              "current": "About Adriana",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "agentDetail.bio.0",
+                "type": "text",
+                "editable": true,
+                "current": "Adriana founded Aurelia Estates in 2014 after a decade as a private art advisor, where she learned to navigate discretion, provenance, and value for collectors who never wanted their names in print. She brought the same philosophy to real estate: represent the property, protect the client, and let the results speak. Adriana specializes in Bel Air, Holmby Hills, and Beverly Hills, and has personally closed over $1.1 billion in transactions.",
+                "minChars": 177,
+                "maxChars": 443
+              }
+            },
+            {
+              "text": {
+                "id": "agentDetail.bio.1",
+                "type": "text",
+                "editable": true,
+                "current": "She currently sits on the board of a Los Angeles arts conservancy and continues to personally advise a small number of long-standing clients and their families.",
+                "minChars": 64,
+                "maxChars": 264
+              }
+            }
+          ]
+        },
+        "keyFacts": {
+          "instances": [
+            {
+              "value": {
+                "id": "agentDetail.facts.0.value",
+                "type": "text",
+                "editable": false,
+                "current": "12",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "agentDetail.facts.0.label",
+                "type": "text",
+                "editable": false,
+                "current": "Years Experience",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "agentDetail.facts.1.value",
+                "type": "text",
+                "editable": false,
+                "current": "180+",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "agentDetail.facts.1.label",
+                "type": "text",
+                "editable": false,
+                "current": "Homes Sold",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "agentDetail.facts.2.value",
+                "type": "text",
+                "editable": false,
+                "current": "$1.1B",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "agentDetail.facts.2.label",
+                "type": "text",
+                "editable": false,
+                "current": "Career Volume",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "agentDetail.facts.3.value",
+                "type": "text",
+                "editable": false,
+                "current": "4.9",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "agentDetail.facts.3.label",
+                "type": "text",
+                "editable": false,
+                "current": "Client Rating",
+                "reason": "structural/UI text — never rewritten"
+              }
+            }
+          ]
+        },
+        "listings": {
+          "fields": {
+            "listingsHeading": {
+              "id": "agentDetail.listingsHeading",
+              "type": "text",
+              "editable": false,
+              "current": "Current Listings by Adriana",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          },
+          "instances": [
+            {
+              "badge": {
+                "id": "agentDetail.listings.0.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "agentDetail.listings.0.price",
+                "type": "text",
+                "editable": false,
+                "current": "$12,500,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "agentDetail.listings.0.location",
+                "type": "text",
+                "editable": false,
+                "current": "Bel Air, Los Angeles, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "agentDetail.listings.0.title",
+                "type": "text",
+                "editable": false,
+                "current": "Bel Air Modern Compound",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "agentDetail.listings.0.beds",
+                "type": "text",
+                "editable": false,
+                "current": "6 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "agentDetail.listings.0.baths",
+                "type": "text",
+                "editable": false,
+                "current": "8 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "agentDetail.listings.0.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "8,200 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agentDetail.listings.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "agentDetail.listings.1.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "agentDetail.listings.1.price",
+                "type": "text",
+                "editable": false,
+                "current": "$18,500,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "agentDetail.listings.1.location",
+                "type": "text",
+                "editable": false,
+                "current": "Holmby Hills, Los Angeles, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "agentDetail.listings.1.title",
+                "type": "text",
+                "editable": false,
+                "current": "Holmby Hills Georgian Estate",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "agentDetail.listings.1.beds",
+                "type": "text",
+                "editable": false,
+                "current": "7 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "agentDetail.listings.1.baths",
+                "type": "text",
+                "editable": false,
+                "current": "9 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "agentDetail.listings.1.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "9,000 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agentDetail.listings.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "agentDetail.listings.2.badge",
+                "type": "text",
+                "editable": false,
+                "current": "For Sale",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "agentDetail.listings.2.price",
+                "type": "text",
+                "editable": false,
+                "current": "$8,950,000",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "agentDetail.listings.2.location",
+                "type": "text",
+                "editable": false,
+                "current": "Beverly Hills, CA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "agentDetail.listings.2.title",
+                "type": "text",
+                "editable": false,
+                "current": "Beverly Hills Mediterranean Estate",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "agentDetail.listings.2.beds",
+                "type": "text",
+                "editable": false,
+                "current": "5 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "agentDetail.listings.2.baths",
+                "type": "text",
+                "editable": false,
+                "current": "6.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "agentDetail.listings.2.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "6,400 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agentDetail.listings.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "testimonials": {
+          "instances": [
+            {
+              "quote": {
+                "id": "agentDetail.testimonial.0.quote",
+                "type": "text",
+                "editable": false,
+                "current": "\"Aurelia Estates found us the Stradella Road compound before it ever reached the open market. Adriana's negotiation and discretion made the entire process effortless.\"",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorName": {
+                "id": "agentDetail.testimonial.0.authorName",
+                "type": "text",
+                "editable": false,
+                "current": "Eleanor Vance",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorRole": {
+                "id": "agentDetail.testimonial.0.authorRole",
+                "type": "text",
+                "editable": false,
+                "current": "Buyer, Bel Air",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "avatar": {
+                "id": "agentDetail.testimonial.0.avatar",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/29.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "sidebar": {
+          "fields": {
+            "contactHeading": {
+              "id": "agentDetail.contactHeading",
+              "type": "text",
+              "editable": false,
+              "current": "Contact Adriana",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        }
+      }
+    },
+    "contact.html": {
+      "sections": {
+        "banner": {
+          "fields": {
+            "title": {
+              "id": "contact.banner.title",
+              "type": "text",
+              "editable": true,
+              "current": "Get In Touch",
+              "minChars": 5,
+              "maxChars": 76
+            },
+            "background": {
+              "id": "contact.banner.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "contactInfo": {
+          "instances": [
+            {
+              "title": {
+                "id": "contact.info.0.title",
+                "type": "text",
+                "editable": false,
+                "current": "Office Address",
+                "reason": "structural/UI text — never rewritten"
+              },
+              "text": {
+                "id": "contact.info.0.text",
+                "type": "text",
+                "editable": false,
+                "current": "456 North Canon Drive, Suite 300Beverly Hills, CA 90210",
+                "reason": "comes from the business's own profile, not the model"
+              }
+            },
+            {
+              "title": {
+                "id": "contact.info.1.title",
+                "type": "text",
+                "editable": false,
+                "current": "Phone & Email",
+                "reason": "structural/UI text — never rewritten"
+              },
+              "text": {
+                "id": "contact.info.1.text",
+                "type": "text",
+                "editable": false,
+                "current": "(310) 555-0199hello@aureliaestates.com",
+                "reason": "comes from the business's own profile, not the model"
+              }
+            },
+            {
+              "title": {
+                "id": "contact.info.2.title",
+                "type": "text",
+                "editable": false,
+                "current": "Office Hours",
+                "reason": "structural/UI text — never rewritten"
+              },
+              "text": {
+                "id": "contact.info.2.text",
+                "type": "text",
+                "editable": false,
+                "current": "By Appointment OnlyMonday - Saturday, 9:00am - 6:00pm",
+                "reason": "comes from the business's own profile, not the model"
+              }
+            }
+          ]
+        },
+        "form": {
+          "fields": {
+            "heading": {
+              "id": "contact.form.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Send Us a Message",
+              "minChars": 7,
+              "maxChars": 27
+            },
+            "intro": {
+              "id": "contact.form.intro",
+              "type": "text",
+              "editable": true,
+              "current": "Fill out the form and an Aurelia Estates advisor will get back to you within one business day, in complete confidence.",
+              "minChars": 47,
+              "maxChars": 120
+            }
+          }
+        },
+        "sidebar": {
+          "fields": {
+            "heading": {
+              "id": "contact.sidebar.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Prefer to talk to someone directly?",
+              "minChars": 18,
+              "maxChars": 48
+            },
+            "agentName": {
+              "id": "contact.sidebar.agentName",
+              "type": "text",
+              "editable": false,
+              "current": "Adriana Voss",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "agentRole": {
+              "id": "contact.sidebar.agentRole",
+              "type": "text",
+              "editable": false,
+              "current": "Founder & Principal Broker",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "callButton": {
+              "id": "contact.sidebar.callButton",
+              "type": "text",
+              "editable": false,
+              "current": "Call (310) 555-0199",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "agentPhoto": {
+              "id": "contact.sidebar.agentPhoto",
+              "type": "image",
+              "editable": false,
+              "current": "https://randomuser.me/api/portraits/women/65.jpg",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        }
+      }
+    }
+  }
+}

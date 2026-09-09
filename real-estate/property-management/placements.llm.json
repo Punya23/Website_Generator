@@ -1,0 +1,3811 @@
+{
+  "template": "property-management",
+  "pages": {
+    "chrome": {
+      "sections": {
+        "nav": {
+          "instances": [
+            {
+              "text": {
+                "id": "chrome.nav.link.0",
+                "type": "text",
+                "editable": false,
+                "current": "Home",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.nav.link.1",
+                "type": "text",
+                "editable": false,
+                "current": "About",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.nav.link.2",
+                "type": "text",
+                "editable": false,
+                "current": "Rentals",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.nav.link.3",
+                "type": "text",
+                "editable": false,
+                "current": "Team",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.nav.link.4",
+                "type": "text",
+                "editable": false,
+                "current": "Services",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.nav.link.5",
+                "type": "text",
+                "editable": false,
+                "current": "Contact",
+                "reason": "structural/UI text — never rewritten"
+              }
+            }
+          ],
+          "fields": {
+            "brand": {
+              "id": "chrome.nav.brand",
+              "type": "text",
+              "editable": false,
+              "current": "HarborviewPM",
+              "reason": "comes from the business's own profile, not the model"
+            }
+          }
+        },
+        "footer": {
+          "fields": {
+            "brand": {
+              "id": "chrome.footer.brand",
+              "type": "text",
+              "editable": false,
+              "current": "HarborviewPM",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "about": {
+              "id": "chrome.footer.about",
+              "type": "text",
+              "editable": true,
+              "current": "A Seattle-based property management company helping owners and tenants navigate the rental relationship with less stress since 2015.",
+              "minChars": 53,
+              "maxChars": 132
+            },
+            "copyright": {
+              "id": "chrome.footer.copyright",
+              "type": "text",
+              "editable": false,
+              "current": "© 2026 Harborview Property Management. All rights reserved.",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "license": {
+              "id": "chrome.footer.license",
+              "type": "text",
+              "editable": false,
+              "current": "WA Firm License #9231-PM · Privacy Policy · Terms",
+              "reason": "comes from the business's own profile, not the model"
+            }
+          }
+        },
+        "navCta": {
+          "fields": {
+            "cta": {
+              "id": "chrome.nav.cta",
+              "type": "text",
+              "editable": true,
+              "current": "Get a Free Rental Analysis",
+              "minChars": 13,
+              "maxChars": 40
+            }
+          }
+        },
+        "topbar": {
+          "fields": {
+            "address": {
+              "id": "chrome.topbar.address",
+              "type": "text",
+              "editable": false,
+              "current": "1200 Westlake Ave N, Suite 300, Seattle, WA",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "phone": {
+              "id": "chrome.topbar.phone",
+              "type": "text",
+              "editable": false,
+              "current": "(206) 555-0140",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "email": {
+              "id": "chrome.topbar.email",
+              "type": "text",
+              "editable": false,
+              "current": "hello@harborviewpm.com",
+              "reason": "comes from the business's own profile, not the model"
+            }
+          }
+        },
+        "footerQuickLinks": {
+          "fields": {
+            "heading": {
+              "id": "chrome.footer.col2.heading",
+              "type": "text",
+              "editable": false,
+              "current": "Quick Links",
+              "reason": "structural/UI text — never rewritten"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "chrome.footer.col2.link.0",
+                "type": "text",
+                "editable": false,
+                "current": "About Us",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col2.link.1",
+                "type": "text",
+                "editable": false,
+                "current": "Available Rentals",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col2.link.2",
+                "type": "text",
+                "editable": false,
+                "current": "Our Team",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col2.link.3",
+                "type": "text",
+                "editable": false,
+                "current": "Services",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col2.link.4",
+                "type": "text",
+                "editable": false,
+                "current": "Contact",
+                "reason": "structural/UI text — never rewritten"
+              }
+            }
+          ]
+        },
+        "footerCategories": {
+          "fields": {
+            "heading": {
+              "id": "chrome.footer.col3.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Popular Areas",
+              "minChars": 7,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "chrome.footer.col3.link.0",
+                "type": "text",
+                "editable": true,
+                "current": "Capitol Hill",
+                "minChars": 6,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col3.link.1",
+                "type": "text",
+                "editable": true,
+                "current": "Ballard",
+                "minChars": 4,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col3.link.2",
+                "type": "text",
+                "editable": true,
+                "current": "Fremont",
+                "minChars": 4,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col3.link.3",
+                "type": "text",
+                "editable": true,
+                "current": "Bellevue",
+                "minChars": 4,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "chrome.footer.col3.link.4",
+                "type": "text",
+                "editable": true,
+                "current": "Kirkland",
+                "minChars": 4,
+                "maxChars": 32
+              }
+            }
+          ]
+        },
+        "footerNewsletter": {
+          "fields": {
+            "heading": {
+              "id": "chrome.footer.col4.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Stay Updated",
+              "minChars": 6,
+              "maxChars": 32
+            },
+            "newsletterText": {
+              "id": "chrome.footer.newsletterText",
+              "type": "text",
+              "editable": true,
+              "current": "Get new rental listings and owner tips in your inbox every month.",
+              "minChars": 26,
+              "maxChars": 68
+            }
+          }
+        }
+      }
+    },
+    "index.html": {
+      "sections": {
+        "hero": {
+          "fields": {
+            "eyebrow": {
+              "id": "home.hero.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Greater Seattle Property Management",
+              "minChars": 18,
+              "maxChars": 35
+            },
+            "title": {
+              "id": "home.hero.title",
+              "type": "text",
+              "editable": true,
+              "current": "Property management that respects your time",
+              "minChars": 17,
+              "maxChars": 54
+            },
+            "subtitle": {
+              "id": "home.hero.subtitle",
+              "type": "text",
+              "editable": true,
+              "current": "Harborview Property Management handles the day-to-day of owning and renting property across Seattle and the Eastside — responsive maintenance, transparent reporting, and a team that actually picks up the phone.",
+              "minChars": 84,
+              "maxChars": 210
+            },
+            "background": {
+              "id": "home.hero.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "home.hero.cta.0",
+                "type": "text",
+                "editable": true,
+                "current": "Find a Rental",
+                "minChars": 7,
+                "maxChars": 24
+              }
+            },
+            {
+              "text": {
+                "id": "home.hero.cta.1",
+                "type": "text",
+                "editable": true,
+                "current": "For Property Owners",
+                "minChars": 10,
+                "maxChars": 24
+              }
+            }
+          ]
+        },
+        "featuredListings": {
+          "fields": {
+            "title": {
+              "id": "home.featured.title",
+              "type": "text",
+              "editable": true,
+              "current": "Rentals ready for move-in",
+              "minChars": 10,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "home.featured.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Available Now",
+              "minChars": 7,
+              "maxChars": 24
+            },
+            "viewAll": {
+              "id": "home.featured.viewAll",
+              "type": "text",
+              "editable": true,
+              "current": "View All Rentals",
+              "minChars": 8,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "badge": {
+                "id": "home.featured.0.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Available Now",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.0.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,895/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.0.location",
+                "type": "text",
+                "editable": false,
+                "current": "1417 NW 56th St, Unit 204, Ballard, Seattle, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.0.title",
+                "type": "text",
+                "editable": false,
+                "current": "Ballard Modern 1BR Apartment",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.0.beds",
+                "type": "text",
+                "editable": false,
+                "current": "1 Bed",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.0.baths",
+                "type": "text",
+                "editable": false,
+                "current": "1 Bath",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.0.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "650 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "home.featured.1.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Applications Open",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.1.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,650/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.1.location",
+                "type": "text",
+                "editable": false,
+                "current": "1122 E Pike St, Unit 5, Capitol Hill, Seattle, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.1.title",
+                "type": "text",
+                "editable": false,
+                "current": "Capitol Hill Studio Loft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.1.beds",
+                "type": "text",
+                "editable": false,
+                "current": "Studio",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.1.baths",
+                "type": "text",
+                "editable": false,
+                "current": "1 Bath",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.1.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "480 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1521783988139-89397d761dce?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "home.featured.2.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Available Now",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.2.price",
+                "type": "text",
+                "editable": false,
+                "current": "$2,395/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.2.location",
+                "type": "text",
+                "editable": false,
+                "current": "3608 Fremont Ave N, Unit A, Fremont, Seattle, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.2.title",
+                "type": "text",
+                "editable": false,
+                "current": "Fremont 2BR Craftsman Apartment",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.2.beds",
+                "type": "text",
+                "editable": false,
+                "current": "2 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.2.baths",
+                "type": "text",
+                "editable": false,
+                "current": "1 Bath",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.2.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "950 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "home.featured.3.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Available Now",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.3.price",
+                "type": "text",
+                "editable": false,
+                "current": "$3,150/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.3.location",
+                "type": "text",
+                "editable": false,
+                "current": "10500 NE 8th St, Unit 812, Bellevue, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.3.title",
+                "type": "text",
+                "editable": false,
+                "current": "Bellevue 2BR Modern Condo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.3.beds",
+                "type": "text",
+                "editable": false,
+                "current": "2 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.3.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.3.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,120 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.3.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "home.featured.4.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Applications Open",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.4.price",
+                "type": "text",
+                "editable": false,
+                "current": "$3,950/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.4.location",
+                "type": "text",
+                "editable": false,
+                "current": "421 Market St, Kirkland, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.4.title",
+                "type": "text",
+                "editable": false,
+                "current": "Kirkland 3BR Townhome",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.4.beds",
+                "type": "text",
+                "editable": false,
+                "current": "3 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.4.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.4.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,580 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.4.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "home.featured.5.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Available Now",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "home.featured.5.price",
+                "type": "text",
+                "editable": false,
+                "current": "$2,100/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "home.featured.5.location",
+                "type": "text",
+                "editable": false,
+                "current": "215 W Highland Dr, Unit 3, Queen Anne, Seattle, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "home.featured.5.title",
+                "type": "text",
+                "editable": false,
+                "current": "Queen Anne 1BR Apartment",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "home.featured.5.beds",
+                "type": "text",
+                "editable": false,
+                "current": "1 Bed",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "home.featured.5.baths",
+                "type": "text",
+                "editable": false,
+                "current": "1 Bath",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "home.featured.5.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "700 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "home.featured.5.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "stats": {
+          "instances": [
+            {
+              "number": {
+                "id": "home.stats.0.number",
+                "type": "text",
+                "editable": false,
+                "current": "410+",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "home.stats.0.label",
+                "type": "text",
+                "editable": false,
+                "current": "Units Managed",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "home.stats.1.number",
+                "type": "text",
+                "editable": false,
+                "current": "11",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "home.stats.1.label",
+                "type": "text",
+                "editable": false,
+                "current": "Avg. Vacancy Days",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "home.stats.2.number",
+                "type": "text",
+                "editable": false,
+                "current": "96%",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "home.stats.2.label",
+                "type": "text",
+                "editable": false,
+                "current": "Owner Retention",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "home.stats.3.number",
+                "type": "text",
+                "editable": false,
+                "current": "10+",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "home.stats.3.label",
+                "type": "text",
+                "editable": false,
+                "current": "Years in Business",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "whyUs": {
+          "fields": {
+            "title": {
+              "id": "home.why.title",
+              "type": "text",
+              "editable": true,
+              "current": "Built for owners and tenants alike",
+              "minChars": 14,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "home.why.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Why Harborview",
+              "minChars": 7,
+              "maxChars": 24
+            },
+            "subtitle": {
+              "id": "home.why.subtitle",
+              "type": "text",
+              "editable": true,
+              "current": "Good property management works both ways — owners get their investment protected, tenants get a management company that treats them well.",
+              "minChars": 55,
+              "maxChars": 146
+            }
+          },
+          "instances": [
+            {
+              "title": {
+                "id": "home.why.0.title",
+                "type": "text",
+                "editable": true,
+                "current": "Maximized Rental Income",
+                "minChars": 9,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "home.why.0.text",
+                "type": "text",
+                "editable": true,
+                "current": "We price every unit against real-time Seattle-area market data and keep vacancy days low, so your property earns what it should.",
+                "minChars": 51,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "home.why.1.title",
+                "type": "text",
+                "editable": true,
+                "current": "Transparent Financial Reporting",
+                "minChars": 12,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "home.why.1.text",
+                "type": "text",
+                "editable": true,
+                "current": "Monthly owner statements and a live portal show exactly where your rent income and expenses stand, always.",
+                "minChars": 42,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "home.why.2.title",
+                "type": "text",
+                "editable": true,
+                "current": "Responsive Maintenance",
+                "minChars": 9,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "home.why.2.text",
+                "type": "text",
+                "editable": true,
+                "current": "Submit a request online any time, day or night, and our vetted vendor network handles it fast.",
+                "minChars": 38,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "home.why.3.title",
+                "type": "text",
+                "editable": true,
+                "current": "Easy Online Rent Payments",
+                "minChars": 10,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "home.why.3.text",
+                "type": "text",
+                "editable": true,
+                "current": "Pay rent, view your lease, and message our team from a tenant portal that actually works.",
+                "minChars": 36,
+                "maxChars": 136
+              }
+            }
+          ]
+        },
+        "howItWorks": {
+          "fields": {
+            "title": {
+              "id": "home.how.title",
+              "type": "text",
+              "editable": true,
+              "current": "From search to move-in, made simple",
+              "minChars": 14,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "home.how.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "How It Works",
+              "minChars": 6,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "title": {
+                "id": "home.how.0.title",
+                "type": "text",
+                "editable": true,
+                "current": "Browse & Tour",
+                "minChars": 5,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "home.how.0.text",
+                "type": "text",
+                "editable": true,
+                "current": "Search available rentals online and schedule an in-person or self-guided tour.",
+                "minChars": 31,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "home.how.1.title",
+                "type": "text",
+                "editable": true,
+                "current": "Apply Online",
+                "minChars": 5,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "home.how.1.text",
+                "type": "text",
+                "editable": true,
+                "current": "Submit your application and required documents through our secure applicant portal.",
+                "minChars": 33,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "home.how.2.title",
+                "type": "text",
+                "editable": true,
+                "current": "Sign Your Lease",
+                "minChars": 6,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "home.how.2.text",
+                "type": "text",
+                "editable": true,
+                "current": "We handle digital lease signing, a move-in walkthrough, and key handoff.",
+                "minChars": 29,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "home.how.3.title",
+                "type": "text",
+                "editable": true,
+                "current": "Move In & Manage",
+                "minChars": 6,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "home.how.3.text",
+                "type": "text",
+                "editable": true,
+                "current": "Pay rent, track your lease, and submit maintenance requests all in one tenant portal.",
+                "minChars": 34,
+                "maxChars": 108
+              }
+            }
+          ]
+        },
+        "testimonials": {
+          "fields": {
+            "title": {
+              "id": "home.testimonials.title",
+              "type": "text",
+              "editable": true,
+              "current": "Trusted by Seattle-area owners and renters",
+              "minChars": 17,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "home.testimonials.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Client Stories",
+              "minChars": 7,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "quote": {
+                "id": "home.testimonials.0.quote",
+                "type": "text",
+                "editable": false,
+                "current": "\"Harborview took over management of my triplex two years ago and vacancy dropped from six weeks to under two. Their monthly statements make tax season painless.\"",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorName": {
+                "id": "home.testimonials.0.authorName",
+                "type": "text",
+                "editable": false,
+                "current": "Linda Chao",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorRole": {
+                "id": "home.testimonials.0.authorRole",
+                "type": "text",
+                "editable": false,
+                "current": "Property Owner, Ballard",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "avatar": {
+                "id": "home.testimonials.0.avatar",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/55.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "quote": {
+                "id": "home.testimonials.1.quote",
+                "type": "text",
+                "editable": false,
+                "current": "\"I submitted a maintenance request on a Sunday night and someone was at my door by Monday morning. That kind of response is rare from a property manager.\"",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorName": {
+                "id": "home.testimonials.1.authorName",
+                "type": "text",
+                "editable": false,
+                "current": "Jordan Metz",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorRole": {
+                "id": "home.testimonials.1.authorRole",
+                "type": "text",
+                "editable": false,
+                "current": "Tenant, Capitol Hill",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "avatar": {
+                "id": "home.testimonials.1.avatar",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/24.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "quote": {
+                "id": "home.testimonials.2.quote",
+                "type": "text",
+                "editable": false,
+                "current": "\"I manage four rental properties from out of state, and Harborview's owner portal means I always know what's happening without having to call anyone.\"",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorName": {
+                "id": "home.testimonials.2.authorName",
+                "type": "text",
+                "editable": false,
+                "current": "Robert Kim",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorRole": {
+                "id": "home.testimonials.2.authorRole",
+                "type": "text",
+                "editable": false,
+                "current": "Property Owner, Bellevue",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "avatar": {
+                "id": "home.testimonials.2.avatar",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/50.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "cta": {
+          "fields": {
+            "heading": {
+              "id": "home.cta.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Ready to work with Harborview?",
+              "minChars": 12,
+              "maxChars": 76
+            },
+            "body": {
+              "id": "home.cta.body",
+              "type": "text",
+              "editable": true,
+              "current": "Whether you own a rental property or you're searching for your next home, our team is ready to help.",
+              "minChars": 40,
+              "maxChars": 134
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "home.cta.button.0",
+                "type": "text",
+                "editable": true,
+                "current": "Get a Free Rental Analysis",
+                "minChars": 13,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "home.cta.button.1",
+                "type": "text",
+                "editable": true,
+                "current": "Browse Rentals",
+                "minChars": 7,
+                "maxChars": 32
+              }
+            }
+          ]
+        }
+      }
+    },
+    "about.html": {
+      "sections": {
+        "banner": {
+          "fields": {
+            "title": {
+              "id": "about.banner.title",
+              "type": "text",
+              "editable": true,
+              "current": "About Harborview Property Management",
+              "minChars": 14,
+              "maxChars": 76
+            },
+            "background": {
+              "id": "about.banner.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "story": {
+          "fields": {
+            "eyebrow": {
+              "id": "about.story.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Our Story",
+              "minChars": 5,
+              "maxChars": 24
+            },
+            "title": {
+              "id": "about.story.title",
+              "type": "text",
+              "editable": true,
+              "current": "Property management that works for both sides of the lease",
+              "minChars": 23,
+              "maxChars": 80
+            },
+            "photo": {
+              "id": "about.story.photo",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?auto=format&fit=crop&w=800&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "about.story.paragraph.0",
+                "type": "text",
+                "editable": true,
+                "current": "Harborview Property Management was founded in 2015 by Dana Whitfield, a longtime Seattle leasing agent who kept watching owners get burned by unresponsive management companies and tenants get stuck waiting weeks for repairs. She started Harborview with a simple premise: property management should work well for both sides of the lease.",
+                "minChars": 134,
+                "maxChars": 352
+              }
+            },
+            {
+              "text": {
+                "id": "about.story.paragraph.1",
+                "type": "text",
+                "editable": true,
+                "current": "Eleven years later, Harborview manages more than 410 rental units across Seattle, the Eastside, and surrounding neighborhoods — everything from single-family homes to small multifamily buildings. Our team of licensed property managers, leasing specialists, and maintenance coordinators handles the daily work of ownership, from marketing vacancies to answering a 2am pipe leak.",
+                "minChars": 151,
+                "maxChars": 377
+              }
+            },
+            {
+              "text": {
+                "id": "about.story.paragraph.2",
+                "type": "text",
+                "editable": true,
+                "current": "We're still locally owned and Seattle-based, with every property manager living in the neighborhoods we serve. Owners get a partner who treats their investment like it matters; tenants get a management company that actually returns their calls.",
+                "minChars": 98,
+                "maxChars": 352
+              }
+            }
+          ]
+        },
+        "values": {
+          "fields": {
+            "title": {
+              "id": "about.values.title",
+              "type": "text",
+              "editable": true,
+              "current": "Our mission and values",
+              "minChars": 9,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "about.values.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "What Drives Us",
+              "minChars": 7,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "title": {
+                "id": "about.values.0.title",
+                "type": "text",
+                "editable": true,
+                "current": "Responsiveness First",
+                "minChars": 8,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "about.values.0.text",
+                "type": "text",
+                "editable": true,
+                "current": "Maintenance requests get a response within hours, not days — for every tenant, on every property we manage.",
+                "minChars": 43,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "about.values.1.title",
+                "type": "text",
+                "editable": true,
+                "current": "Radical Transparency",
+                "minChars": 8,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "about.values.1.text",
+                "type": "text",
+                "editable": true,
+                "current": "Owners see every dollar in and out through a live portal, with no surprise fees buried in the fine print.",
+                "minChars": 42,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "about.values.2.title",
+                "type": "text",
+                "editable": true,
+                "current": "Local Market Knowledge",
+                "minChars": 9,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "about.values.2.text",
+                "type": "text",
+                "editable": true,
+                "current": "Our team lives and works in the neighborhoods we manage, from Ballard to Bellevue, and prices accordingly.",
+                "minChars": 42,
+                "maxChars": 136
+              }
+            },
+            {
+              "title": {
+                "id": "about.values.3.title",
+                "type": "text",
+                "editable": true,
+                "current": "Care for Both Sides",
+                "minChars": 8,
+                "maxChars": 54
+              },
+              "text": {
+                "id": "about.values.3.text",
+                "type": "text",
+                "editable": true,
+                "current": "We measure success by owner retention and tenant renewal rates, not just how fast we can fill a vacancy.",
+                "minChars": 42,
+                "maxChars": 136
+              }
+            }
+          ]
+        },
+        "stats": {
+          "instances": [
+            {
+              "number": {
+                "id": "about.stats.0.number",
+                "type": "text",
+                "editable": false,
+                "current": "410+",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "about.stats.0.label",
+                "type": "text",
+                "editable": false,
+                "current": "Units Managed",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "about.stats.1.number",
+                "type": "text",
+                "editable": false,
+                "current": "11",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "about.stats.1.label",
+                "type": "text",
+                "editable": false,
+                "current": "Avg. Vacancy Days",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "about.stats.2.number",
+                "type": "text",
+                "editable": false,
+                "current": "96%",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "about.stats.2.label",
+                "type": "text",
+                "editable": false,
+                "current": "Owner Retention",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "number": {
+                "id": "about.stats.3.number",
+                "type": "text",
+                "editable": false,
+                "current": "10+",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "about.stats.3.label",
+                "type": "text",
+                "editable": false,
+                "current": "Years in Business",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "team": {
+          "fields": {
+            "title": {
+              "id": "about.team.title",
+              "type": "text",
+              "editable": true,
+              "current": "The people behind Harborview",
+              "minChars": 11,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "about.team.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Meet the Team",
+              "minChars": 7,
+              "maxChars": 24
+            },
+            "viewAll": {
+              "id": "about.team.viewAll",
+              "type": "text",
+              "editable": true,
+              "current": "Meet the Full Team",
+              "minChars": 9,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "name": {
+                "id": "about.team.0.name",
+                "type": "text",
+                "editable": false,
+                "current": "Dana Whitfield",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "about.team.0.role",
+                "type": "text",
+                "editable": false,
+                "current": "Founder & Lead Property Manager",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "about.team.0.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(206) 555-0140 x101",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "about.team.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/50.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "about.team.1.name",
+                "type": "text",
+                "editable": false,
+                "current": "Marcus Bell",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "about.team.1.role",
+                "type": "text",
+                "editable": false,
+                "current": "Leasing Manager",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "about.team.1.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(206) 555-0140 x102",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "about.team.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/45.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "about.team.2.name",
+                "type": "text",
+                "editable": false,
+                "current": "Priya Anand",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "about.team.2.role",
+                "type": "text",
+                "editable": false,
+                "current": "Owner Relations Manager",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "about.team.2.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(206) 555-0140 x103",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "about.team.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/33.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "cta": {
+          "fields": {
+            "heading": {
+              "id": "about.cta.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Let's talk about your property, or your next home",
+              "minChars": 20,
+              "maxChars": 76
+            },
+            "body": {
+              "id": "about.cta.body",
+              "type": "text",
+              "editable": true,
+              "current": "Whether you're an owner exploring management or a renter with a question, our team is ready to help.",
+              "minChars": 40,
+              "maxChars": 134
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "about.cta.button.0",
+                "type": "text",
+                "editable": true,
+                "current": "Contact Us",
+                "minChars": 5,
+                "maxChars": 32
+              }
+            },
+            {
+              "text": {
+                "id": "about.cta.button.1",
+                "type": "text",
+                "editable": true,
+                "current": "View Rentals",
+                "minChars": 6,
+                "maxChars": 32
+              }
+            }
+          ]
+        }
+      }
+    },
+    "services.html": {
+      "sections": {
+        "banner": {
+          "fields": {
+            "title": {
+              "id": "services.banner.title",
+              "type": "text",
+              "editable": true,
+              "current": "Our Services",
+              "minChars": 5,
+              "maxChars": 76
+            },
+            "background": {
+              "id": "services.banner.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "services": {
+          "fields": {
+            "title": {
+              "id": "services.offers.title",
+              "type": "text",
+              "editable": true,
+              "current": "Full-service management for owners, real support for tenants",
+              "minChars": 24,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "services.offers.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "What We Offer",
+              "minChars": 7,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "title": {
+                "id": "services.offers.0.title",
+                "type": "text",
+                "editable": true,
+                "current": "Tenant Placement & Screening",
+                "minChars": 11,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.0.text",
+                "type": "text",
+                "editable": true,
+                "current": "Professional listing photos, syndication to major rental sites, and thorough background, credit, income, and rental-history screening on every applicant.",
+                "minChars": 61,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.0.link",
+                "type": "text",
+                "editable": false,
+                "current": "For Property Owners →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "title": {
+                "id": "services.offers.1.title",
+                "type": "text",
+                "editable": true,
+                "current": "Rent Collection & Financial Reporting",
+                "minChars": 15,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.1.text",
+                "type": "text",
+                "editable": true,
+                "current": "Online rent collection with automatic owner deposits, monthly statements, and year-end tax documents ready for your accountant.",
+                "minChars": 51,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.1.link",
+                "type": "text",
+                "editable": false,
+                "current": "For Property Owners →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "title": {
+                "id": "services.offers.2.title",
+                "type": "text",
+                "editable": true,
+                "current": "Maintenance Coordination",
+                "minChars": 10,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.2.text",
+                "type": "text",
+                "editable": true,
+                "current": "A vetted network of licensed contractors handles repairs and preventive maintenance, with 24/7 emergency dispatch.",
+                "minChars": 46,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.2.link",
+                "type": "text",
+                "editable": false,
+                "current": "For Property Owners →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "title": {
+                "id": "services.offers.3.title",
+                "type": "text",
+                "editable": true,
+                "current": "Online Rent Payments & Portal",
+                "minChars": 12,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.3.text",
+                "type": "text",
+                "editable": true,
+                "current": "Pay rent, view your lease and payment history, and message your property manager from one simple tenant portal.",
+                "minChars": 44,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.3.link",
+                "type": "text",
+                "editable": false,
+                "current": "For Tenants →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "title": {
+                "id": "services.offers.4.title",
+                "type": "text",
+                "editable": true,
+                "current": "24/7 Maintenance Requests",
+                "minChars": 10,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.4.text",
+                "type": "text",
+                "editable": true,
+                "current": "Submit a maintenance request online any time. Emergency issues are dispatched to a vendor immediately, day or night.",
+                "minChars": 46,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.4.link",
+                "type": "text",
+                "editable": false,
+                "current": "For Tenants →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "title": {
+                "id": "services.offers.5.title",
+                "type": "text",
+                "editable": true,
+                "current": "Move-In / Move-Out Support",
+                "minChars": 10,
+                "maxChars": 76
+              },
+              "text": {
+                "id": "services.offers.5.text",
+                "type": "text",
+                "editable": true,
+                "current": "Detailed move-in walkthroughs, a clear move-out checklist, and prompt, itemized deposit returns.",
+                "minChars": 38,
+                "maxChars": 188
+              },
+              "link": {
+                "id": "services.offers.5.link",
+                "type": "text",
+                "editable": false,
+                "current": "For Tenants →",
+                "reason": "structural/UI text — never rewritten"
+              }
+            }
+          ]
+        },
+        "process": {
+          "fields": {
+            "title": {
+              "id": "services.process.title",
+              "type": "text",
+              "editable": true,
+              "current": "How we onboard a property",
+              "minChars": 10,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "services.process.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Our Process",
+              "minChars": 6,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "title": {
+                "id": "services.process.0.title",
+                "type": "text",
+                "editable": true,
+                "current": "Property Assessment",
+                "minChars": 8,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "services.process.0.text",
+                "type": "text",
+                "editable": true,
+                "current": "We evaluate your property, walk you through market rent, and outline any recommended improvements.",
+                "minChars": 39,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "services.process.1.title",
+                "type": "text",
+                "editable": true,
+                "current": "Marketing & Screening",
+                "minChars": 8,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "services.process.1.text",
+                "type": "text",
+                "editable": true,
+                "current": "Professional listing, showings, and full applicant screening to place a qualified tenant fast.",
+                "minChars": 38,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "services.process.2.title",
+                "type": "text",
+                "editable": true,
+                "current": "Move-In & Management",
+                "minChars": 8,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "services.process.2.text",
+                "type": "text",
+                "editable": true,
+                "current": "Lease signing, a move-in walkthrough, and ongoing day-to-day management begin.",
+                "minChars": 31,
+                "maxChars": 108
+              }
+            },
+            {
+              "title": {
+                "id": "services.process.3.title",
+                "type": "text",
+                "editable": true,
+                "current": "Reporting & Renewal",
+                "minChars": 8,
+                "maxChars": 30
+              },
+              "text": {
+                "id": "services.process.3.text",
+                "type": "text",
+                "editable": true,
+                "current": "Monthly statements, proactive maintenance, and lease renewal strategy to keep your property performing.",
+                "minChars": 41,
+                "maxChars": 108
+              }
+            }
+          ]
+        },
+        "faq": {
+          "fields": {
+            "title": {
+              "id": "services.faq.title",
+              "type": "text",
+              "editable": true,
+              "current": "Common questions",
+              "minChars": 6,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "services.faq.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "FAQ",
+              "minChars": 2,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "question": {
+                "id": "services.faq.0.question",
+                "type": "text",
+                "editable": true,
+                "current": "What is Harborview's property management fee?",
+                "minChars": 18,
+                "maxChars": 172
+              },
+              "answer": {
+                "id": "services.faq.0.answer",
+                "type": "text",
+                "editable": true,
+                "current": "Our standard management fee is 8% of collected monthly rent, with no charge for vacant units. Leasing a new tenant carries a one-time fee equal to 50% of one month's rent — we'll walk through full pricing during your property assessment.",
+                "minChars": 95,
+                "maxChars": 273
+              }
+            },
+            {
+              "question": {
+                "id": "services.faq.1.question",
+                "type": "text",
+                "editable": true,
+                "current": "Is there a fee to apply for a rental?",
+                "minChars": 15,
+                "maxChars": 172
+              },
+              "answer": {
+                "id": "services.faq.1.answer",
+                "type": "text",
+                "editable": true,
+                "current": "Yes, each adult applicant pays a $45 non-refundable application fee, which covers the cost of credit, background, and rental-history screening.",
+                "minChars": 57,
+                "maxChars": 273
+              }
+            },
+            {
+              "question": {
+                "id": "services.faq.2.question",
+                "type": "text",
+                "editable": true,
+                "current": "How does Harborview screen tenants?",
+                "minChars": 14,
+                "maxChars": 172
+              },
+              "answer": {
+                "id": "services.faq.2.answer",
+                "type": "text",
+                "editable": true,
+                "current": "Every applicant undergoes a credit check, nationwide criminal background check, eviction history search, and verification of income and rental references before approval.",
+                "minChars": 68,
+                "maxChars": 273
+              }
+            },
+            {
+              "question": {
+                "id": "services.faq.3.question",
+                "type": "text",
+                "editable": true,
+                "current": "How long does the rental application process take?",
+                "minChars": 20,
+                "maxChars": 172
+              },
+              "answer": {
+                "id": "services.faq.3.answer",
+                "type": "text",
+                "editable": true,
+                "current": "Most applications are reviewed within 1-2 business days once we've received all required documents and verified income and references.",
+                "minChars": 54,
+                "maxChars": 273
+              }
+            },
+            {
+              "question": {
+                "id": "services.faq.4.question",
+                "type": "text",
+                "editable": true,
+                "current": "Do you handle maintenance emergencies after hours?",
+                "minChars": 20,
+                "maxChars": 172
+              },
+              "answer": {
+                "id": "services.faq.4.answer",
+                "type": "text",
+                "editable": true,
+                "current": "Yes — our maintenance line is staffed 24/7. Emergency issues like flooding, no heat, or lockouts are dispatched to a vendor the same day, any day of the week.",
+                "minChars": 63,
+                "maxChars": 273
+              }
+            }
+          ]
+        },
+        "cta": {
+          "fields": {
+            "heading": {
+              "id": "services.cta.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Not sure where to start?",
+              "minChars": 10,
+              "maxChars": 76
+            },
+            "body": {
+              "id": "services.cta.body",
+              "type": "text",
+              "editable": true,
+              "current": "Whether you're an owner exploring management or a renter with a question, we're happy to talk it through.",
+              "minChars": 42,
+              "maxChars": 134
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "services.cta.button.0",
+                "type": "text",
+                "editable": true,
+                "current": "Contact Our Team",
+                "minChars": 8,
+                "maxChars": 32
+              }
+            }
+          ]
+        }
+      }
+    },
+    "listings.html": {
+      "sections": {
+        "banner": {
+          "fields": {
+            "title": {
+              "id": "listings.banner.title",
+              "type": "text",
+              "editable": true,
+              "current": "Available Rentals",
+              "minChars": 7,
+              "maxChars": 76
+            },
+            "background": {
+              "id": "listings.banner.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1560184897-ae75f418493e?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "listings": {
+          "instances": [
+            {
+              "badge": {
+                "id": "listings.card.0.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Available Now",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.0.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,895/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.0.location",
+                "type": "text",
+                "editable": false,
+                "current": "1417 NW 56th St, Unit 204, Ballard, Seattle, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.0.title",
+                "type": "text",
+                "editable": false,
+                "current": "Ballard Modern 1BR Apartment",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.0.beds",
+                "type": "text",
+                "editable": false,
+                "current": "1 Bed",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.0.baths",
+                "type": "text",
+                "editable": false,
+                "current": "1 Bath",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.0.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "650 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.1.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Applications Open",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.1.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,650/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.1.location",
+                "type": "text",
+                "editable": false,
+                "current": "1122 E Pike St, Unit 5, Capitol Hill, Seattle, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.1.title",
+                "type": "text",
+                "editable": false,
+                "current": "Capitol Hill Studio Loft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.1.beds",
+                "type": "text",
+                "editable": false,
+                "current": "Studio",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.1.baths",
+                "type": "text",
+                "editable": false,
+                "current": "1 Bath",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.1.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "480 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1521783988139-89397d761dce?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.2.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Available Now",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.2.price",
+                "type": "text",
+                "editable": false,
+                "current": "$2,395/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.2.location",
+                "type": "text",
+                "editable": false,
+                "current": "3608 Fremont Ave N, Unit A, Fremont, Seattle, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.2.title",
+                "type": "text",
+                "editable": false,
+                "current": "Fremont 2BR Craftsman Apartment",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.2.beds",
+                "type": "text",
+                "editable": false,
+                "current": "2 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.2.baths",
+                "type": "text",
+                "editable": false,
+                "current": "1 Bath",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.2.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "950 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.3.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Available Now",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.3.price",
+                "type": "text",
+                "editable": false,
+                "current": "$3,150/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.3.location",
+                "type": "text",
+                "editable": false,
+                "current": "10500 NE 8th St, Unit 812, Bellevue, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.3.title",
+                "type": "text",
+                "editable": false,
+                "current": "Bellevue 2BR Modern Condo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.3.beds",
+                "type": "text",
+                "editable": false,
+                "current": "2 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.3.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.3.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,120 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.3.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.4.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Applications Open",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.4.price",
+                "type": "text",
+                "editable": false,
+                "current": "$3,950/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.4.location",
+                "type": "text",
+                "editable": false,
+                "current": "421 Market St, Kirkland, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.4.title",
+                "type": "text",
+                "editable": false,
+                "current": "Kirkland 3BR Townhome",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.4.beds",
+                "type": "text",
+                "editable": false,
+                "current": "3 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.4.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.4.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,580 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.4.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.5.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Available Now",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.5.price",
+                "type": "text",
+                "editable": false,
+                "current": "$2,100/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.5.location",
+                "type": "text",
+                "editable": false,
+                "current": "215 W Highland Dr, Unit 3, Queen Anne, Seattle, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.5.title",
+                "type": "text",
+                "editable": false,
+                "current": "Queen Anne 1BR Apartment",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.5.beds",
+                "type": "text",
+                "editable": false,
+                "current": "1 Bed",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.5.baths",
+                "type": "text",
+                "editable": false,
+                "current": "1 Bath",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.5.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "700 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.5.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.6.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Available Now",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.6.price",
+                "type": "text",
+                "editable": false,
+                "current": "$2,650/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.6.location",
+                "type": "text",
+                "editable": false,
+                "current": "4514 Woodlawn Ave N, Wallingford, Seattle, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.6.title",
+                "type": "text",
+                "editable": false,
+                "current": "Wallingford 2BR Duplex",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.6.beds",
+                "type": "text",
+                "editable": false,
+                "current": "2 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.6.baths",
+                "type": "text",
+                "editable": false,
+                "current": "1.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.6.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,050 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.6.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1558036117-15d82a90b9b1?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.7.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Applications Open",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.7.price",
+                "type": "text",
+                "editable": false,
+                "current": "$3,395/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.7.location",
+                "type": "text",
+                "editable": false,
+                "current": "4225 California Ave SW, West Seattle, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.7.title",
+                "type": "text",
+                "editable": false,
+                "current": "West Seattle 3BR House",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.7.beds",
+                "type": "text",
+                "editable": false,
+                "current": "3 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.7.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.7.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,650 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.7.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1615529182904-14819c35db37?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "listings.card.8.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Available Now",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "listings.card.8.price",
+                "type": "text",
+                "editable": false,
+                "current": "$4,150/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "listings.card.8.location",
+                "type": "text",
+                "editable": false,
+                "current": "101 Republican St, Unit 1408, South Lake Union, Seattle, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "listings.card.8.title",
+                "type": "text",
+                "editable": false,
+                "current": "South Lake Union 2BR High-Rise",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "listings.card.8.beds",
+                "type": "text",
+                "editable": false,
+                "current": "2 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "listings.card.8.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "listings.card.8.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,180 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "listings.card.8.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "property-detail.html": {
+      "sections": {
+        "listing": {
+          "fields": {
+            "badge": {
+              "id": "property.badge",
+              "type": "text",
+              "editable": false,
+              "current": "Available Now",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "title": {
+              "id": "property.title",
+              "type": "text",
+              "editable": false,
+              "current": "Fremont 2BR Craftsman Apartment",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "location": {
+              "id": "property.location",
+              "type": "text",
+              "editable": false,
+              "current": "3608 Fremont Ave N, Unit A, Fremont, Seattle, WA 98103",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "price": {
+              "id": "property.price",
+              "type": "text",
+              "editable": false,
+              "current": "$2,395/mo",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "keyFacts": {
+          "instances": [
+            {
+              "value": {
+                "id": "property.facts.0.value",
+                "type": "text",
+                "editable": false,
+                "current": "2",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "property.facts.0.label",
+                "type": "text",
+                "editable": false,
+                "current": "Bedrooms",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "property.facts.1.value",
+                "type": "text",
+                "editable": false,
+                "current": "1",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "property.facts.1.label",
+                "type": "text",
+                "editable": false,
+                "current": "Bathrooms",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "property.facts.2.value",
+                "type": "text",
+                "editable": false,
+                "current": "950",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "property.facts.2.label",
+                "type": "text",
+                "editable": false,
+                "current": "Sqft",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "property.facts.3.value",
+                "type": "text",
+                "editable": false,
+                "current": "Oct 1",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "property.facts.3.label",
+                "type": "text",
+                "editable": false,
+                "current": "Available",
+                "reason": "structural/UI text — never rewritten"
+              }
+            }
+          ]
+        },
+        "description": {
+          "fields": {
+            "heading": {
+              "id": "property.description.heading",
+              "type": "text",
+              "editable": false,
+              "current": "Description",
+              "reason": "structural/UI text — never rewritten"
+            },
+            "body": {
+              "id": "property.description.body",
+              "type": "text",
+              "editable": true,
+              "current": "This sunlit two-bedroom unit occupies the ground floor of a beautifully maintained 1920s craftsman fourplex in the heart of Fremont, just blocks from the Ship Canal, the Fremont Bridge, and the neighborhood's cafes and breweries. Original hardwood floors and tall windows pair with an updated kitchen and in-unit laundry. Harborview handles all maintenance and leasing for this property, with online rent payment and a dedicated 24/7 maintenance line available to every tenant from day one.",
+              "minChars": 196,
+              "maxChars": 704
+            }
+          }
+        },
+        "amenities": {
+          "fields": {
+            "heading": {
+              "id": "property.amenities.heading",
+              "type": "text",
+              "editable": false,
+              "current": "Amenities",
+              "reason": "structural/UI text — never rewritten"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "property.amenities.0",
+                "type": "text",
+                "editable": true,
+                "current": "In-unit washer & dryer",
+                "minChars": 11,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.1",
+                "type": "text",
+                "editable": true,
+                "current": "Updated kitchen with dishwasher",
+                "minChars": 16,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.2",
+                "type": "text",
+                "editable": true,
+                "current": "Original hardwood floors",
+                "minChars": 12,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.3",
+                "type": "text",
+                "editable": true,
+                "current": "Off-street parking (1 space)",
+                "minChars": 14,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.4",
+                "type": "text",
+                "editable": true,
+                "current": "Pet-friendly with deposit",
+                "minChars": 13,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.5",
+                "type": "text",
+                "editable": true,
+                "current": "On-site storage unit",
+                "minChars": 10,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.6",
+                "type": "text",
+                "editable": true,
+                "current": "Walk Score 91 — steps to Fremont shops",
+                "minChars": 19,
+                "maxChars": 48
+              }
+            },
+            {
+              "text": {
+                "id": "property.amenities.7",
+                "type": "text",
+                "editable": true,
+                "current": "24/7 online maintenance requests",
+                "minChars": 16,
+                "maxChars": 48
+              }
+            }
+          ]
+        },
+        "location": {
+          "fields": {
+            "heading": {
+              "id": "property.location.heading",
+              "type": "text",
+              "editable": false,
+              "current": "Location",
+              "reason": "structural/UI text — never rewritten"
+            }
+          }
+        },
+        "sidebar": {
+          "fields": {
+            "agentName": {
+              "id": "property.sidebar.agentName",
+              "type": "text",
+              "editable": false,
+              "current": "Marcus Bell",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "agentRole": {
+              "id": "property.sidebar.agentRole",
+              "type": "text",
+              "editable": false,
+              "current": "Leasing Manager",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "blurb": {
+              "id": "property.sidebar.blurb",
+              "type": "text",
+              "editable": true,
+              "current": "Leasing manager for this property. Reach out to schedule a viewing or ask about the application process.",
+              "minChars": 42,
+              "maxChars": 104
+            },
+            "callButton": {
+              "id": "property.sidebar.callButton",
+              "type": "text",
+              "editable": false,
+              "current": "Call (206) 555-0140",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "heading": {
+              "id": "property.tour.heading",
+              "type": "text",
+              "editable": false,
+              "current": "Schedule a Viewing",
+              "reason": "structural/UI text — never rewritten"
+            },
+            "agentPhoto": {
+              "id": "property.sidebar.agentPhoto",
+              "type": "image",
+              "editable": false,
+              "current": "https://randomuser.me/api/portraits/men/45.jpg",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "similarListings": {
+          "fields": {
+            "title": {
+              "id": "property.similar.title",
+              "type": "text",
+              "editable": true,
+              "current": "Similar rentals nearby",
+              "minChars": 9,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "property.similar.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "You May Also Like",
+              "minChars": 9,
+              "maxChars": 24
+            },
+            "viewAll": {
+              "id": "property.similar.viewAll",
+              "type": "text",
+              "editable": true,
+              "current": "View All Rentals",
+              "minChars": 8,
+              "maxChars": 24
+            }
+          },
+          "instances": [
+            {
+              "badge": {
+                "id": "property.similar.0.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Available Now",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "property.similar.0.price",
+                "type": "text",
+                "editable": false,
+                "current": "$2,100/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "property.similar.0.location",
+                "type": "text",
+                "editable": false,
+                "current": "Queen Anne, Seattle, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "property.similar.0.title",
+                "type": "text",
+                "editable": false,
+                "current": "Queen Anne 1BR Apartment",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "property.similar.0.beds",
+                "type": "text",
+                "editable": false,
+                "current": "1 Bed",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "property.similar.0.baths",
+                "type": "text",
+                "editable": false,
+                "current": "1 Bath",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "property.similar.0.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "700 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "property.similar.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "property.similar.1.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Available Now",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "property.similar.1.price",
+                "type": "text",
+                "editable": false,
+                "current": "$2,650/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "property.similar.1.location",
+                "type": "text",
+                "editable": false,
+                "current": "Wallingford, Seattle, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "property.similar.1.title",
+                "type": "text",
+                "editable": false,
+                "current": "Wallingford 2BR Duplex",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "property.similar.1.beds",
+                "type": "text",
+                "editable": false,
+                "current": "2 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "property.similar.1.baths",
+                "type": "text",
+                "editable": false,
+                "current": "1.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "property.similar.1.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,050 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "property.similar.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1558036117-15d82a90b9b1?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "property.similar.2.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Applications Open",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "property.similar.2.price",
+                "type": "text",
+                "editable": false,
+                "current": "$1,650/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "property.similar.2.location",
+                "type": "text",
+                "editable": false,
+                "current": "Capitol Hill, Seattle, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "property.similar.2.title",
+                "type": "text",
+                "editable": false,
+                "current": "Capitol Hill Studio Loft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "property.similar.2.beds",
+                "type": "text",
+                "editable": false,
+                "current": "Studio",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "property.similar.2.baths",
+                "type": "text",
+                "editable": false,
+                "current": "1 Bath",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "property.similar.2.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "480 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "property.similar.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1521783988139-89397d761dce?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "gallery": {
+          "fields": {
+            "main": {
+              "id": "property.gallery.main",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1200&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "property.gallery.side.0",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1571939228382-b2f2b585ce15?auto=format&fit=crop&w=700&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "text": {
+                "id": "property.gallery.side.1",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&w=700&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "agents.html": {
+      "sections": {
+        "banner": {
+          "fields": {
+            "title": {
+              "id": "agents.banner.title",
+              "type": "text",
+              "editable": true,
+              "current": "Our Team",
+              "minChars": 4,
+              "maxChars": 76
+            },
+            "background": {
+              "id": "agents.banner.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1571939228382-b2f2b585ce15?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "team": {
+          "fields": {
+            "title": {
+              "id": "agents.team.title",
+              "type": "text",
+              "editable": true,
+              "current": "Six specialists, one dedicated point of contact",
+              "minChars": 19,
+              "maxChars": 66
+            },
+            "eyebrow": {
+              "id": "agents.team.eyebrow",
+              "type": "text",
+              "editable": true,
+              "current": "Our Team",
+              "minChars": 4,
+              "maxChars": 24
+            },
+            "subtitle": {
+              "id": "agents.team.subtitle",
+              "type": "text",
+              "editable": true,
+              "current": "Every property Harborview manages is backed by leasing, maintenance, accounting, and owner-relations specialists who know it by name.",
+              "minChars": 53,
+              "maxChars": 146
+            }
+          },
+          "instances": [
+            {
+              "name": {
+                "id": "agents.roster.0.name",
+                "type": "text",
+                "editable": false,
+                "current": "Dana Whitfield",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.0.role",
+                "type": "text",
+                "editable": false,
+                "current": "Founder & Lead Property Manager",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.0.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(206) 555-0140 x101 · dana@harborviewpm.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/50.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "agents.roster.1.name",
+                "type": "text",
+                "editable": false,
+                "current": "Marcus Bell",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.1.role",
+                "type": "text",
+                "editable": false,
+                "current": "Leasing Manager",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.1.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(206) 555-0140 x102 · marcus@harborviewpm.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/45.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "agents.roster.2.name",
+                "type": "text",
+                "editable": false,
+                "current": "Priya Anand",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.2.role",
+                "type": "text",
+                "editable": false,
+                "current": "Owner Relations Manager",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.2.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(206) 555-0140 x103 · priya@harborviewpm.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/33.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "agents.roster.3.name",
+                "type": "text",
+                "editable": false,
+                "current": "Tom Nakashima",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.3.role",
+                "type": "text",
+                "editable": false,
+                "current": "Maintenance Coordinator",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.3.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(206) 555-0140 x104 · tom@harborviewpm.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.3.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/62.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "agents.roster.4.name",
+                "type": "text",
+                "editable": false,
+                "current": "Grace Odom",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.4.role",
+                "type": "text",
+                "editable": false,
+                "current": "Tenant Relations Specialist",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.4.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(206) 555-0140 x105 · grace@harborviewpm.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.4.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/women/28.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "name": {
+                "id": "agents.roster.5.name",
+                "type": "text",
+                "editable": false,
+                "current": "Carlos Rivera",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "role": {
+                "id": "agents.roster.5.role",
+                "type": "text",
+                "editable": false,
+                "current": "Accounting & Financial Reporting Manager",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "contact": {
+                "id": "agents.roster.5.contact",
+                "type": "text",
+                "editable": false,
+                "current": "(206) 555-0140 x106 · carlos@harborviewpm.com",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agents.roster.5.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/19.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "cta": {
+          "fields": {
+            "heading": {
+              "id": "agents.cta.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Want to join the team?",
+              "minChars": 9,
+              "maxChars": 76
+            },
+            "body": {
+              "id": "agents.cta.body",
+              "type": "text",
+              "editable": true,
+              "current": "We're always looking for experienced property managers and maintenance coordinators who share our standards.",
+              "minChars": 43,
+              "maxChars": 134
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "agents.cta.button.0",
+                "type": "text",
+                "editable": true,
+                "current": "Get in Touch",
+                "minChars": 6,
+                "maxChars": 32
+              }
+            }
+          ]
+        }
+      }
+    },
+    "agent-detail.html": {
+      "sections": {
+        "profile": {
+          "fields": {
+            "name": {
+              "id": "agentDetail.name",
+              "type": "text",
+              "editable": false,
+              "current": "Dana Whitfield",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "role": {
+              "id": "agentDetail.role",
+              "type": "text",
+              "editable": false,
+              "current": "Founder & Lead Property Manager",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "contact": {
+              "id": "agentDetail.contact",
+              "type": "text",
+              "editable": false,
+              "current": "(206) 555-0140 x101 · dana@harborviewpm.com · WA Broker License #PM-58291",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "photo": {
+              "id": "agentDetail.photo",
+              "type": "image",
+              "editable": false,
+              "current": "https://randomuser.me/api/portraits/women/50.jpg",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "bio": {
+          "fields": {
+            "aboutHeading": {
+              "id": "agentDetail.aboutHeading",
+              "type": "text",
+              "editable": false,
+              "current": "About Dana",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          },
+          "instances": [
+            {
+              "text": {
+                "id": "agentDetail.bio.0",
+                "type": "text",
+                "editable": true,
+                "current": "Dana founded Harborview Property Management in 2015 after eight years managing residential portfolios for a large regional brokerage, where she grew frustrated watching owners get generic service and tenants get ignored. She built Harborview around a simple standard: every property gets a dedicated manager who actually knows it. Dana holds a Washington real estate broker's license and personally oversees the firm's largest owner accounts.",
+                "minChars": 177,
+                "maxChars": 442
+              }
+            },
+            {
+              "text": {
+                "id": "agentDetail.bio.1",
+                "type": "text",
+                "editable": true,
+                "current": "Outside the office, Dana serves on the board of a Seattle affordable-housing nonprofit and mentors new property managers joining the firm.",
+                "minChars": 55,
+                "maxChars": 264
+              }
+            }
+          ]
+        },
+        "keyFacts": {
+          "instances": [
+            {
+              "value": {
+                "id": "agentDetail.facts.0.value",
+                "type": "text",
+                "editable": false,
+                "current": "12+",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "agentDetail.facts.0.label",
+                "type": "text",
+                "editable": false,
+                "current": "Years Experience",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "agentDetail.facts.1.value",
+                "type": "text",
+                "editable": false,
+                "current": "410+",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "agentDetail.facts.1.label",
+                "type": "text",
+                "editable": false,
+                "current": "Units Managed",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "agentDetail.facts.2.value",
+                "type": "text",
+                "editable": false,
+                "current": "<2 Hrs",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "agentDetail.facts.2.label",
+                "type": "text",
+                "editable": false,
+                "current": "Response Time",
+                "reason": "structural/UI text — never rewritten"
+              }
+            },
+            {
+              "value": {
+                "id": "agentDetail.facts.3.value",
+                "type": "text",
+                "editable": false,
+                "current": "4.9",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "label": {
+                "id": "agentDetail.facts.3.label",
+                "type": "text",
+                "editable": false,
+                "current": "Client Rating",
+                "reason": "structural/UI text — never rewritten"
+              }
+            }
+          ]
+        },
+        "listings": {
+          "fields": {
+            "listingsHeading": {
+              "id": "agentDetail.listingsHeading",
+              "type": "text",
+              "editable": false,
+              "current": "Properties Managed by Dana",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          },
+          "instances": [
+            {
+              "badge": {
+                "id": "agentDetail.listings.0.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Available Now",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "agentDetail.listings.0.price",
+                "type": "text",
+                "editable": false,
+                "current": "$3,150/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "agentDetail.listings.0.location",
+                "type": "text",
+                "editable": false,
+                "current": "Bellevue, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "agentDetail.listings.0.title",
+                "type": "text",
+                "editable": false,
+                "current": "Bellevue 2BR Modern Condo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "agentDetail.listings.0.beds",
+                "type": "text",
+                "editable": false,
+                "current": "2 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "agentDetail.listings.0.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "agentDetail.listings.0.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,120 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agentDetail.listings.0.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "agentDetail.listings.1.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Applications Open",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "agentDetail.listings.1.price",
+                "type": "text",
+                "editable": false,
+                "current": "$3,950/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "agentDetail.listings.1.location",
+                "type": "text",
+                "editable": false,
+                "current": "Kirkland, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "agentDetail.listings.1.title",
+                "type": "text",
+                "editable": false,
+                "current": "Kirkland 3BR Townhome",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "agentDetail.listings.1.beds",
+                "type": "text",
+                "editable": false,
+                "current": "3 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "agentDetail.listings.1.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2.5 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "agentDetail.listings.1.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,580 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agentDetail.listings.1.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            },
+            {
+              "badge": {
+                "id": "agentDetail.listings.2.badge",
+                "type": "text",
+                "editable": false,
+                "current": "Available Now",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "price": {
+                "id": "agentDetail.listings.2.price",
+                "type": "text",
+                "editable": false,
+                "current": "$4,150/mo",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "location": {
+                "id": "agentDetail.listings.2.location",
+                "type": "text",
+                "editable": false,
+                "current": "South Lake Union, Seattle, WA",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "title": {
+                "id": "agentDetail.listings.2.title",
+                "type": "text",
+                "editable": false,
+                "current": "South Lake Union 2BR High-Rise",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "beds": {
+                "id": "agentDetail.listings.2.beds",
+                "type": "text",
+                "editable": false,
+                "current": "2 Beds",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "baths": {
+                "id": "agentDetail.listings.2.baths",
+                "type": "text",
+                "editable": false,
+                "current": "2 Baths",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "sqft": {
+                "id": "agentDetail.listings.2.sqft",
+                "type": "text",
+                "editable": false,
+                "current": "1,180 sqft",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "photo": {
+                "id": "agentDetail.listings.2.photo",
+                "type": "image",
+                "editable": false,
+                "current": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=70",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "testimonials": {
+          "instances": [
+            {
+              "quote": {
+                "id": "agentDetail.testimonial.0.quote",
+                "type": "text",
+                "editable": false,
+                "current": "\"I manage four rental properties from out of state, and Harborview's owner portal means I always know what's happening without having to call anyone.\"",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorName": {
+                "id": "agentDetail.testimonial.0.authorName",
+                "type": "text",
+                "editable": false,
+                "current": "Robert Kim",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "authorRole": {
+                "id": "agentDetail.testimonial.0.authorRole",
+                "type": "text",
+                "editable": false,
+                "current": "Property Owner, Bellevue",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              },
+              "avatar": {
+                "id": "agentDetail.testimonial.0.avatar",
+                "type": "image",
+                "editable": false,
+                "current": "https://randomuser.me/api/portraits/men/50.jpg",
+                "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              }
+            }
+          ]
+        },
+        "sidebar": {
+          "fields": {
+            "contactHeading": {
+              "id": "agentDetail.contactHeading",
+              "type": "text",
+              "editable": false,
+              "current": "Contact Dana",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        }
+      }
+    },
+    "contact.html": {
+      "sections": {
+        "banner": {
+          "fields": {
+            "title": {
+              "id": "contact.banner.title",
+              "type": "text",
+              "editable": true,
+              "current": "Get In Touch",
+              "minChars": 5,
+              "maxChars": 76
+            },
+            "background": {
+              "id": "contact.banner.background",
+              "type": "image",
+              "editable": false,
+              "current": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1600&q=70",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        },
+        "contactInfo": {
+          "instances": [
+            {
+              "title": {
+                "id": "contact.info.0.title",
+                "type": "text",
+                "editable": false,
+                "current": "Office Address",
+                "reason": "structural/UI text — never rewritten"
+              },
+              "text": {
+                "id": "contact.info.0.text",
+                "type": "text",
+                "editable": false,
+                "current": "1200 Westlake Ave N, Suite 300Seattle, WA 98109",
+                "reason": "comes from the business's own profile, not the model"
+              }
+            },
+            {
+              "title": {
+                "id": "contact.info.1.title",
+                "type": "text",
+                "editable": false,
+                "current": "Phone & Email",
+                "reason": "structural/UI text — never rewritten"
+              },
+              "text": {
+                "id": "contact.info.1.text",
+                "type": "text",
+                "editable": false,
+                "current": "(206) 555-0140hello@harborviewpm.com",
+                "reason": "comes from the business's own profile, not the model"
+              }
+            },
+            {
+              "title": {
+                "id": "contact.info.2.title",
+                "type": "text",
+                "editable": false,
+                "current": "Office Hours",
+                "reason": "structural/UI text — never rewritten"
+              },
+              "text": {
+                "id": "contact.info.2.text",
+                "type": "text",
+                "editable": false,
+                "current": "Mon - Fri: 8:00am - 6:00pmSat: 9:00am - 2:00pm",
+                "reason": "comes from the business's own profile, not the model"
+              }
+            }
+          ]
+        },
+        "form": {
+          "fields": {
+            "heading": {
+              "id": "contact.form.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Send Us a Message",
+              "minChars": 7,
+              "maxChars": 27
+            },
+            "intro": {
+              "id": "contact.form.intro",
+              "type": "text",
+              "editable": true,
+              "current": "Fill out the form and a member of the Harborview team will get back to you within one business day.",
+              "minChars": 40,
+              "maxChars": 120
+            }
+          }
+        },
+        "sidebar": {
+          "fields": {
+            "heading": {
+              "id": "contact.sidebar.heading",
+              "type": "text",
+              "editable": true,
+              "current": "Prefer to talk to someone directly?",
+              "minChars": 18,
+              "maxChars": 48
+            },
+            "agentName": {
+              "id": "contact.sidebar.agentName",
+              "type": "text",
+              "editable": false,
+              "current": "Dana Whitfield",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "agentRole": {
+              "id": "contact.sidebar.agentRole",
+              "type": "text",
+              "editable": false,
+              "current": "Founder & Lead Property Manager",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            },
+            "callButton": {
+              "id": "contact.sidebar.callButton",
+              "type": "text",
+              "editable": false,
+              "current": "Call (206) 555-0140",
+              "reason": "comes from the business's own profile, not the model"
+            },
+            "agentPhoto": {
+              "id": "contact.sidebar.agentPhoto",
+              "type": "image",
+              "editable": false,
+              "current": "https://randomuser.me/api/portraits/women/50.jpg",
+              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -3,6 +3,7 @@ import path from "node:path";
 import * as cheerio from "cheerio";
 import { extractRealEstateTemplate } from "../src/templates/placements/extract.js";
 import { applyPlacements } from "../src/templates/placements/fill.js";
+import { applyLlmResponse, buildLlmView, buildPromptPayload } from "../src/templates/placements/llm-view.js";
 import type { ImagePlacement, PagePlacements, TextPlacement } from "../src/templates/placements/schema.js";
 
 const REAL_ESTATE_DIR = path.resolve(process.cwd(), "real-estate");
@@ -15,6 +16,7 @@ function textPlacement(overrides: Partial<TextPlacement>): TextPlacement {
     page: "test.html",
     selector: "#t1",
     tag: "p",
+    section: "test",
     role: "sectionBody",
     fillSource: "llm",
     original: "Original placeholder copy that is reasonably long.",
@@ -30,6 +32,7 @@ function imagePlacement(overrides: Partial<ImagePlacement>): ImagePlacement {
     page: "test.html",
     selector: "#i1",
     domKind: "img",
+    section: "test",
     role: "propertyPhoto",
     fillSource: "data",
     original: "https://example.com/original.jpg",
@@ -172,6 +175,69 @@ describe("applyPlacements: text", () => {
     const p = page([textPlacement({ fillSource: "brief", compose: "phoneAndEmail" })]);
     const result = await applyPlacements(html, p, { brief: { phone: "(212) 555-0100", email: "info@realbusiness.com" } });
     expect(result.html).toContain("(212) 555-0100<br>info@realbusiness.com");
+  });
+});
+
+describe("llm-view: the nested page -> section -> field contract", () => {
+  it("marks every field of the nav section non-editable, and the CTA button separately editable", async () => {
+    const file = await extractRealEstateTemplate(path.join(REAL_ESTATE_DIR, "real-estate-agency"), "real-estate-agency");
+    const view = buildLlmView(file);
+    const nav = view.pages.chrome.sections.nav;
+    expect(nav.fields?.brand.editable).toBe(false);
+    expect(nav.instances?.every((instance) => instance.text?.editable === false)).toBe(true);
+    // The CTA button is marketing copy sitting in the nav bar, not site navigation — its own section.
+    expect(view.pages.chrome.sections.navCta?.fields?.cta.editable).toBe(true);
+  });
+
+  it("drops the nav section entirely from the prompt payload — nothing in it is ever editable", async () => {
+    const file = await extractRealEstateTemplate(path.join(REAL_ESTATE_DIR, "real-estate-agency"), "real-estate-agency");
+    const prompt = buildPromptPayload(buildLlmView(file));
+    expect(prompt.pages.chrome.sections.nav).toBeUndefined();
+    expect(prompt.pages.chrome.sections.footerQuickLinks).toBeUndefined();
+  });
+
+  it("strips internal bookkeeping (id, editable, reason) out of the prompt payload", async () => {
+    const file = await extractRealEstateTemplate(path.join(REAL_ESTATE_DIR, "real-estate-agency"), "real-estate-agency");
+    const prompt = buildPromptPayload(buildLlmView(file));
+    const hero = prompt.pages["index.html"]?.sections.hero;
+    expect(hero?.fields?.title).toEqual({
+      type: "text",
+      current: "Find the home that fits your next chapter",
+      minChars: 16,
+      maxChars: 54,
+    });
+  });
+
+  it("round-trips a model's nested answer back to real placement ids", async () => {
+    const file = await extractRealEstateTemplate(path.join(REAL_ESTATE_DIR, "real-estate-agency"), "real-estate-agency");
+    const view = buildLlmView(file);
+    const response = {
+      pages: {
+        "index.html": {
+          sections: {
+            hero: {
+              fields: { title: "New headline", eyebrow: "New eyebrow" },
+              instances: [{ text: "New CTA one" }, { text: "New CTA two" }],
+            },
+          },
+        },
+      },
+    };
+    const values = applyLlmResponse(view, response);
+    expect(values).toEqual({
+      "home.hero.title": "New headline",
+      "home.hero.eyebrow": "New eyebrow",
+      "home.hero.cta.0": "New CTA one",
+      "home.hero.cta.1": "New CTA two",
+    });
+  });
+
+  it("ignores a value offered for a field the view marks non-editable", async () => {
+    const file = await extractRealEstateTemplate(path.join(REAL_ESTATE_DIR, "real-estate-agency"), "real-estate-agency");
+    const view = buildLlmView(file);
+    const response = { pages: { chrome: { sections: { nav: { fields: { brand: "Sneaky Rebrand" } } } } } };
+    const values = applyLlmResponse(view, response);
+    expect(values).toEqual({});
   });
 });
 

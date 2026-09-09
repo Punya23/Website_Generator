@@ -100,6 +100,10 @@ export const TextPlacementSchema = z.object({
    *  placements file that silently targets the wrong node, or every node). */
   selector: z.string().min(1),
   tag: z.string().min(1),
+  /** Which visual block this placement belongs to (`"hero"`, `"featuredListings"`, `"nav"`, ...) —
+   *  see `real-estate-map.ts`'s `sectionForId`. This is what `llm-view.ts` groups by so a whole
+   *  section ("nav") can read as "never needs anything" without inspecting every field in it. */
+  section: z.string().min(1),
   /** Free-form but drawn from `TEXT_ROLES` below — semantic label, not a CSS/DOM detail, so a
    *  consumer can group/prompt by meaning ("every hero headline across pages") without re-deriving
    *  it from `selector`. */
@@ -145,6 +149,8 @@ export const ImagePlacementSchema = z.object({
    *  `src/templates/types.ts`, for the same reason (hero/page-banner photography here is marked up
    *  as a CSS background, not an `<img>`). */
   domKind: z.enum(["img", "background"]),
+  /** See `TextPlacementSchema.section`. */
+  section: z.string().min(1),
   role: z.string().min(1),
   fillSource: z.enum(IMAGE_FILL_SOURCES),
   /** The template's own placeholder photo URL. Reference only — never re-shipped on a real site

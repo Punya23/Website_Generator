@@ -35,7 +35,8 @@
     "templates:backfill-taxonomy": "tsx src/templates/ingest/backfill-taxonomy.ts",
     "templates:backfill-photo-slots": "tsx src/templates/ingest/backfill-photo-slots.ts",
     "templates:backfill-roles": "tsx src/templates/ingest/backfill-roles.ts",
-    "templates:backfill-quality": "tsx src/templates/ingest/backfill-quality.ts"
+    "templates:backfill-quality": "tsx src/templates/ingest/backfill-quality.ts",
+    "templates:placements:real-estate": "tsx src/templates/placements/generate-real-estate.ts"
   },
   "keywords": [
     "website-generator",

@@ -49,11 +49,17 @@ export interface ApplyPlacementsOptions {
    *  quote — testimonials and agent identity stay `data`-locked with no illustrative fallback,
    *  same protection this project already gives the scraped-template corpus. */
   illustrativeFill?: DataResolver;
+  /** Format for the non-dialable phone placeholder — country-code/grouping only (default:
+   *  `"+1 (000) 000-0000"`). The digits stay all-zero regardless of what's passed here; see
+   *  `PLACEHOLDER_PHONE`'s own doc comment for why that's the one part of this that's non-negotiable. */
+  placeholderPhone?: string;
 }
 
 /** Unmistakably a placeholder, never a number that could ring an actual stranger — a plausible-
- *  looking fake phone number is a real-world harm a fake price or fake address is not. Same shape
- *  as this project's other pipeline's own placeholder (`copy-slots.ts`'s `resolveContact`). */
+ *  looking fake phone number is a real-world harm a fake price or fake address is not, no matter
+ *  how well it matches the business's own country/tone. All-zero digits keep that true regardless
+ *  of which country-code shape the caller passes via `ApplyPlacementsOptions.placeholderPhone`
+ *  (default: this one) — never generate the DIGITS themselves, only the surrounding format. */
 const PLACEHOLDER_PHONE = "+1 (000) 000-0000";
 
 function slugifyBusinessName(name: string): string {
@@ -78,10 +84,20 @@ const BRIEF_ILLUSTRATIVE_FIELDS = new Set<BriefField>(["address", "hours"]);
 /** `brief` with phone/email defaulted to an obvious placeholder when the caller's own brief didn't
  *  supply one — computed once so every placement that reads phone/email (the plain `brief`
  *  placements, and the `callButton`/`phoneAndEmail` compositions below) sees the same value. */
-function withPlaceholderContact(brief: PlacementBrief): PlacementBrief {
+/** Keeps a leading country code (the digits right after `+`, if any — not itself a number anyone
+ *  could dial) and zeroes out every OTHER digit, keeping every non-digit character (spaces, parens,
+ *  dashes) exactly as given. Enforced here, not just by convention, so a caller cannot accidentally
+ *  (or a future change cannot silently) turn this into an LLM-plausible number just by passing one
+ *  in via `placeholderPhone`. `"+91 98765 43210"` in comes out `"+91 00000 00000"`. */
+function zeroedPhoneFormat(format: string): string {
+  const countryCode = format.match(/^\+\d+/)?.[0] ?? "";
+  return countryCode + format.slice(countryCode.length).replace(/\d/g, "0");
+}
+
+function withPlaceholderContact(brief: PlacementBrief, placeholderPhone: string): PlacementBrief {
   return {
     ...brief,
-    phone: brief.phone || PLACEHOLDER_PHONE,
+    phone: brief.phone || zeroedPhoneFormat(placeholderPhone),
     email: brief.email || placeholderEmail(brief.businessName),
   };
 }
@@ -225,7 +241,7 @@ export async function applyPlacements(html: string, page: PagePlacements, option
   // Phone/email specifically default to an obvious, deterministic placeholder rather than falling
   // through to `illustrativeFill` — see `withPlaceholderContact`'s own doc comment on why those two
   // are a different risk tier from a fake price or fake address.
-  const brief = withPlaceholderContact(options.brief);
+  const brief = withPlaceholderContact(options.brief, options.placeholderPhone ?? PLACEHOLDER_PHONE);
 
   for (const placement of page.text) {
     if (placement.fillSource === "fixed") {
@@ -253,9 +269,14 @@ export async function applyPlacements(html: string, page: PagePlacements, option
         raw = await options.illustrativeFill(placement);
       }
     } else if (placement.fillSource === "data") {
+      // Real data wins outright. Failing that, a full illustrative example (when the caller
+      // configured one) is preferred over the lighter brand-name swap below — a testimonial that
+      // happens to name the template's own brand should get replaced wholesale with an on-brief
+      // one, not just have that one substring patched while the rest stays the wrong city/story.
+      // The swap is the fallback for callers with no `illustrativeFill` at all, same as before.
       raw = options.resolveData ? await options.resolveData(placement) : null;
-      if (!raw) raw = swapTemplateBrandName(placement.original, options);
       if (!raw && options.illustrativeFill) raw = await options.illustrativeFill(placement);
+      if (!raw) raw = swapTemplateBrandName(placement.original, options);
     } else {
       raw = options.llmValues?.[placement.id] ?? null;
     }

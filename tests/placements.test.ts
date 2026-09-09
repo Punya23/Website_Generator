@@ -206,6 +206,15 @@ describe("applyPlacements: text", () => {
     expect(result.html).toContain("+1 (000) 000-0000");
   });
 
+  it("keeps a caller-supplied placeholder phone FORMAT (country code) but always zeroes the number itself", async () => {
+    const html = `<span id="t1">(415) 555-0182</span>`;
+    const p = page([textPlacement({ fillSource: "brief", briefField: "phone", constraints: { minChars: 1, maxChars: 40, minWords: 1, maxWords: 5, maxLines: 1 } })]);
+    // Deliberately pass a real-looking number to prove fill.ts sanitizes it regardless of the caller.
+    const result = await applyPlacements(html, p, { brief: { businessName: "Surana Real Estates" }, placeholderPhone: "+91 98765 43210" });
+    expect(result.html).toContain("+91 00000 00000");
+    expect(result.html).not.toContain("98765");
+  });
+
   it("derives a placeholder email from the business name when the brief has none", async () => {
     const html = `<span id="t1">hello@prestigerealty.com</span>`;
     const p = page([textPlacement({ fillSource: "brief", briefField: "email", constraints: { minChars: 1, maxChars: 60, minWords: 1, maxWords: 5, maxLines: 1 } })]);

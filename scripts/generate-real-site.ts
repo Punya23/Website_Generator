@@ -21,14 +21,19 @@
  *  - `llm` fields: real marketing copy, written for this business.
  *  - `data`/`brief` fields with real input (a supplied phone/address, an actual listing): that
  *    real value, verbatim.
- *  - `data`/`brief` fields with NO real input, EXCEPT a locked person-identity role (see
- *    PEOPLE_ROLES): a plausible, brief-consistent EXAMPLE (illustrative, not verified) — a Pune
- *    address and an INR price instead of the wrong template's Palo Alto/USD one.
+ *  - `data`/`brief` fields with no real input, INCLUDING a fictional agent's name/role and a
+ *    fictional testimonial's quote/author (explicit product decision — a named fictional person is
+ *    already standard demo-site content, same as the template's own unmodified "Jennifer Lawson,
+ *    Homebuyer, Palo Alto"; this only re-contextualizes it to the real business instead of leaving
+ *    the wrong one's): a plausible, brief-consistent EXAMPLE (illustrative, not verified) — a Pune
+ *    address, an INR price, an Indian name, instead of the wrong template's Palo Alto/USD/Jennifer
+ *    Lawson one. See `PEOPLE_ROLES` for the one role still excluded, and why.
  *  - phone/email with no real input: an obvious, non-dialable/non-mailable placeholder — never an
- *    LLM-plausible one that could coincide with an actual stranger's number or inbox.
- *  - a real person's name/photo/quote (agent identity, testimonials) with no real input: stays the
- *    template's own (clearly fictional) demo person, only with the template's own brand name
- *    swapped out of any quote that happens to name it — never a new invented person.
+ *    LLM-plausible one that could coincide with an actual stranger's number or inbox. The FORMAT
+ *    (country code/grouping) is brief-aware (`placeholderPhoneFormatFor`); the digits are always
+ *    zero, enforced in `fill.ts` regardless of what format string reaches it.
+ *  - a real photo (agent headshot, testimonial avatar) with no real input: unaffected either way —
+ *    no stock-photo provider is wired into this script, so every image stays the template's own.
  */
 import "../src/load-env.js";
 import fs from "node:fs/promises";
@@ -53,13 +58,29 @@ high-pressure sales. Known locally for weekend "open house crawl" tours and a fr
 class held monthly at the Alameda library. Tone: warm, direct, a little informal — never corporate.
 Phone (510) 555-0199, hello@baybreezerealty.com, 220 Harbor View Blvd, Alameda, CA.`;
 
-/** Real-person roles: a genuine customer's testimonial, an agent's own name/contact — these never
- *  get an illustrative example, matching this project's existing "no legitimate source" rule for
- *  fabricated people (see `src/templates/copy-slots.ts`'s testimonial/team-photo carve-out for the
- *  scraped-template corpus, generalized here). With no real roster/testimonial data, these stay the
- *  template's own (clearly fictional) demo person — `fill.ts`'s brand-name swap still fixes a quote
- *  that happens to name the TEMPLATE's brand, but no new person is ever invented. */
-const PEOPLE_ROLES = new Set(["agentName", "agentRole", "agentContact", "testimonialQuote", "testimonialAuthorName", "testimonialAuthorRole"]);
+/** Explicit user decision, overriding this script's original stricter default: a fictional
+ *  customer/agent NAME and a fictional testimonial QUOTE are standard demo-site content (the
+ *  template already ships fictional named people paired with randomuser.me stock photos — this
+ *  only re-contextualizes the same kind of fiction to the real business, e.g. an Indian name for an
+ *  Indian brokerage, instead of leaving the template's own unrelated one). The photos themselves are
+ *  untouched either way — no stock-photo provider is wired into this script, so every avatar/
+ *  headshot stays the template's own regardless of this set.
+ *
+ *  `agentContact` alone stays excluded: it is a phone number (bundled with an email) in prose form,
+ *  the one shape this script still refuses to let an LLM invent — see `fill.ts`'s own doc comment
+ *  on `placeholderPhone` for why a fake-but-plausible number is a different risk tier than a fake
+ *  name or fake quote. It keeps the template's own demo contact, brand-swapped only. */
+const PEOPLE_ROLES = new Set(["agentContact"]);
+
+/** Heuristic only — decides the FORMAT of the non-dialable phone placeholder (which stays all
+ *  zeros regardless, enforced in fill.ts), not whether any real number is invented. Extend this
+ *  list rather than trying to be clever about locale detection; a false negative just falls back to
+ *  the US-shaped default, which is no less safe, only less obviously on-tone. */
+const INDIA_HINT_RE = /\b(india|bharat|maharashtra|pune|mumbai|bengaluru|bangalore|delhi|hyderabad|chennai|kolkata|gujarat|karnataka|rera|₹|\binr\b)\b/i;
+
+function placeholderPhoneFormatFor(rawBriefText: string): string {
+  return INDIA_HINT_RE.test(rawBriefText) ? "+91 00000 00000" : "+1 (000) 000-0000";
+}
 
 /** Mirrors `fill.ts`'s own `BRIEF_ILLUSTRATIVE_FIELDS` — kept in sync manually since one lives in
  *  the enforcement layer and this one only decides what to ASK an LLM for. phone/email are handled
@@ -225,7 +246,9 @@ async function main(): Promise<void> {
   }
   console.log(`[real-fill] provider=${llm.provider} model=${llm.getCompositionModel()}`);
 
-  const { brief, summary } = await resolveBriefContext(rawBrief && rawBrief.length > 0 ? rawBrief : DEMO_BRIEF);
+  const effectiveRawBrief = rawBrief && rawBrief.length > 0 ? rawBrief : DEMO_BRIEF;
+  const { brief, summary } = await resolveBriefContext(effectiveRawBrief);
+  const placeholderPhone = placeholderPhoneFormatFor(effectiveRawBrief);
   console.log(`[real-fill] business="${brief.businessName}" ${rawBrief ? "(from your brief)" : "(demo)"}`);
 
   const raw = JSON.parse(await fs.readFile(path.join(templateDir, "placements.json"), "utf8"));
@@ -270,6 +293,7 @@ async function main(): Promise<void> {
       llmValues,
       illustrativeFill,
       templateBusinessName: file.templateName,
+      placeholderPhone,
     });
 
     const outFile = pageFile.replace(/\.html$/, ".generated.html");

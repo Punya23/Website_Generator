@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "playground"],
       "port": 3847
+    },
+    {
+      "name": "real-estate-templates",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "real-estate", "-l", "4174"],
+      "port": 4174
     }
   ]
 }

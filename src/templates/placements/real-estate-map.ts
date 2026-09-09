@@ -119,11 +119,15 @@ function propertyCard(idPrefix: string, n: number): { text: TextDescriptor[]; im
     text: [
       {
         id: `${idPrefix}.${n - 1}.badge`, selector: `${base} .property-card__badge`, role: "propertyBadge",
-        fillSource: "data", text: label(2),
-        notes: 'Listing status ("For Sale", "New Listing", "For Rent", "Sold") from the real listing feed.',
+        fillSource: "data", text: label(3),
+        notes: 'Listing status ("For Sale", "New Listing", "For Rent", "Sold", "Under Construction") from the real listing feed.',
       },
       { id: `${idPrefix}.${n - 1}.price`, selector: `${base} .property-card__price`, role: "propertyPrice", fillSource: "data", text: label(4) },
-      { id: `${idPrefix}.${n - 1}.location`, selector: `${base} .property-card__location`, role: "propertyLocation", fillSource: "data", text: label(8) },
+      {
+        id: `${idPrefix}.${n - 1}.location`, selector: `${base} .property-card__location`, role: "propertyLocation",
+        fillSource: "data", text: seo(6, 60),
+        notes: "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin.",
+      },
       { id: `${idPrefix}.${n - 1}.title`, selector: `${base} .property-card__title a`, role: "propertyTitle", fillSource: "data", text: prose("cardTitle", COL3, 1) },
       { id: `${idPrefix}.${n - 1}.beds`, selector: `${base} .property-card__meta span:nth-of-type(1)`, role: "propertyMeta", fillSource: "data", text: label(3) },
       { id: `${idPrefix}.${n - 1}.baths`, selector: `${base} .property-card__meta span:nth-of-type(2)`, role: "propertyMeta", fillSource: "data", text: label(3) },
@@ -444,9 +448,9 @@ function listingsPage(): PageDescriptorSet {
 function propertyDetailPage(): PageDescriptorSet {
   const text: TextDescriptor[] = [
     ...seoFields("property.seo"),
-    { id: "property.badge", selector: ".detail-header .property-card__badge", role: "detailBadge", fillSource: "data", text: label(2) },
+    { id: "property.badge", selector: ".detail-header .property-card__badge", role: "detailBadge", fillSource: "data", text: label(3) },
     { id: "property.title", selector: ".detail-header h1", role: "detailTitle", fillSource: "data", text: prose("unstyledH1", MAIN_COL, 2) },
-    { id: "property.location", selector: ".detail-header__location", role: "detailLocation", fillSource: "data", text: label(10) },
+    { id: "property.location", selector: ".detail-header__location", role: "detailLocation", fillSource: "data", text: seo(6, 80) },
     { id: "property.price", selector: ".detail-header__price", role: "detailPrice", fillSource: "data", text: label(4) },
     { id: "property.facts.0.value", selector: ".key-facts__item:nth-of-type(1) strong", role: "keyFactValue", fillSource: "data", text: label(2) },
     { id: "property.facts.0.label", selector: ".key-facts__item:nth-of-type(1) span", role: "keyFactLabel", fillSource: "fixed", text: label(2) },

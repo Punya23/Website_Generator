@@ -3,7 +3,7 @@
   "vertical": "real-estate",
   "templateId": "property-management",
   "templateName": "Harborview Property Management",
-  "generatedAt": "2026-09-09T09:38:54.058Z",
+  "generatedAt": "2026-09-09T10:49:31.730Z",
   "pageOrder": [
     "index.html",
     "about.html",
@@ -773,12 +773,12 @@
           "original": "Available Now",
           "constraints": {
             "minChars": 7,
-            "maxChars": 16,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "home.featured.0.price",
@@ -809,12 +809,13 @@
           "fillSource": "data",
           "original": "1417 NW 56th St, Unit 204, Ballard, Seattle, WA",
           "constraints": {
-            "minChars": 24,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 9,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "home.featured.0.title",
@@ -900,12 +901,12 @@
           "original": "Applications Open",
           "constraints": {
             "minChars": 9,
-            "maxChars": 17,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "home.featured.1.price",
@@ -936,12 +937,13 @@
           "fillSource": "data",
           "original": "1122 E Pike St, Unit 5, Capitol Hill, Seattle, WA",
           "constraints": {
-            "minChars": 25,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 10,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "home.featured.1.title",
@@ -1027,12 +1029,12 @@
           "original": "Available Now",
           "constraints": {
             "minChars": 7,
-            "maxChars": 16,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "home.featured.2.price",
@@ -1063,12 +1065,13 @@
           "fillSource": "data",
           "original": "3608 Fremont Ave N, Unit A, Fremont, Seattle, WA",
           "constraints": {
-            "minChars": 24,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 9,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "home.featured.2.title",
@@ -1154,12 +1157,12 @@
           "original": "Available Now",
           "constraints": {
             "minChars": 7,
-            "maxChars": 16,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "home.featured.3.price",
@@ -1190,12 +1193,13 @@
           "fillSource": "data",
           "original": "10500 NE 8th St, Unit 812, Bellevue, WA",
           "constraints": {
-            "minChars": 20,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 8,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "home.featured.3.title",
@@ -1281,12 +1285,12 @@
           "original": "Applications Open",
           "constraints": {
             "minChars": 9,
-            "maxChars": 17,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "home.featured.4.price",
@@ -1317,12 +1321,13 @@
           "fillSource": "data",
           "original": "421 Market St, Kirkland, WA",
           "constraints": {
-            "minChars": 14,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 8,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "home.featured.4.title",
@@ -1408,12 +1413,12 @@
           "original": "Available Now",
           "constraints": {
             "minChars": 7,
-            "maxChars": 16,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "home.featured.5.price",
@@ -1444,12 +1449,13 @@
           "fillSource": "data",
           "original": "215 W Highland Dr, Unit 3, Queen Anne, Seattle, WA",
           "constraints": {
-            "minChars": 25,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 10,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "home.featured.5.title",
@@ -4327,12 +4333,12 @@
           "original": "Available Now",
           "constraints": {
             "minChars": 7,
-            "maxChars": 16,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "listings.card.0.price",
@@ -4363,12 +4369,13 @@
           "fillSource": "data",
           "original": "1417 NW 56th St, Unit 204, Ballard, Seattle, WA",
           "constraints": {
-            "minChars": 24,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 9,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "listings.card.0.title",
@@ -4454,12 +4461,12 @@
           "original": "Applications Open",
           "constraints": {
             "minChars": 9,
-            "maxChars": 17,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "listings.card.1.price",
@@ -4490,12 +4497,13 @@
           "fillSource": "data",
           "original": "1122 E Pike St, Unit 5, Capitol Hill, Seattle, WA",
           "constraints": {
-            "minChars": 25,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 10,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "listings.card.1.title",
@@ -4581,12 +4589,12 @@
           "original": "Available Now",
           "constraints": {
             "minChars": 7,
-            "maxChars": 16,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "listings.card.2.price",
@@ -4617,12 +4625,13 @@
           "fillSource": "data",
           "original": "3608 Fremont Ave N, Unit A, Fremont, Seattle, WA",
           "constraints": {
-            "minChars": 24,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 9,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "listings.card.2.title",
@@ -4708,12 +4717,12 @@
           "original": "Available Now",
           "constraints": {
             "minChars": 7,
-            "maxChars": 16,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "listings.card.3.price",
@@ -4744,12 +4753,13 @@
           "fillSource": "data",
           "original": "10500 NE 8th St, Unit 812, Bellevue, WA",
           "constraints": {
-            "minChars": 20,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 8,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "listings.card.3.title",
@@ -4835,12 +4845,12 @@
           "original": "Applications Open",
           "constraints": {
             "minChars": 9,
-            "maxChars": 17,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "listings.card.4.price",
@@ -4871,12 +4881,13 @@
           "fillSource": "data",
           "original": "421 Market St, Kirkland, WA",
           "constraints": {
-            "minChars": 14,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 8,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "listings.card.4.title",
@@ -4962,12 +4973,12 @@
           "original": "Available Now",
           "constraints": {
             "minChars": 7,
-            "maxChars": 16,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "listings.card.5.price",
@@ -4998,12 +5009,13 @@
           "fillSource": "data",
           "original": "215 W Highland Dr, Unit 3, Queen Anne, Seattle, WA",
           "constraints": {
-            "minChars": 25,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 10,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "listings.card.5.title",
@@ -5089,12 +5101,12 @@
           "original": "Available Now",
           "constraints": {
             "minChars": 7,
-            "maxChars": 16,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "listings.card.6.price",
@@ -5125,12 +5137,13 @@
           "fillSource": "data",
           "original": "4514 Woodlawn Ave N, Wallingford, Seattle, WA",
           "constraints": {
-            "minChars": 23,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 8,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "listings.card.6.title",
@@ -5216,12 +5229,12 @@
           "original": "Applications Open",
           "constraints": {
             "minChars": 9,
-            "maxChars": 17,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "listings.card.7.price",
@@ -5252,12 +5265,13 @@
           "fillSource": "data",
           "original": "4225 California Ave SW, West Seattle, WA",
           "constraints": {
-            "minChars": 20,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 8,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "listings.card.7.title",
@@ -5343,12 +5357,12 @@
           "original": "Available Now",
           "constraints": {
             "minChars": 7,
-            "maxChars": 16,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "listings.card.8.price",
@@ -5379,12 +5393,13 @@
           "fillSource": "data",
           "original": "101 Republican St, Unit 1408, South Lake Union, Seattle, WA",
           "constraints": {
-            "minChars": 30,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 10,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "listings.card.8.title",
@@ -5685,9 +5700,9 @@
           "original": "Available Now",
           "constraints": {
             "minChars": 7,
-            "maxChars": 16,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           }
         },
@@ -5720,10 +5735,10 @@
           "fillSource": "data",
           "original": "3608 Fremont Ave N, Unit A, Fremont, Seattle, WA 98103",
           "constraints": {
-            "minChars": 27,
+            "minChars": 6,
             "maxChars": 80,
             "minWords": 1,
-            "maxWords": 10,
+            "maxWords": 16,
             "maxLines": 1
           }
         },
@@ -6265,12 +6280,12 @@
           "original": "Available Now",
           "constraints": {
             "minChars": 7,
-            "maxChars": 16,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "property.similar.0.price",
@@ -6301,12 +6316,13 @@
           "fillSource": "data",
           "original": "Queen Anne, Seattle, WA",
           "constraints": {
-            "minChars": 12,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 8,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "property.similar.0.title",
@@ -6392,12 +6408,12 @@
           "original": "Available Now",
           "constraints": {
             "minChars": 7,
-            "maxChars": 16,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "property.similar.1.price",
@@ -6428,12 +6444,13 @@
           "fillSource": "data",
           "original": "Wallingford, Seattle, WA",
           "constraints": {
-            "minChars": 12,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 8,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "property.similar.1.title",
@@ -6519,12 +6536,12 @@
           "original": "Applications Open",
           "constraints": {
             "minChars": 9,
-            "maxChars": 17,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "property.similar.2.price",
@@ -6555,12 +6572,13 @@
           "fillSource": "data",
           "original": "Capitol Hill, Seattle, WA",
           "constraints": {
-            "minChars": 13,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 8,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "property.similar.2.title",
@@ -7698,12 +7716,12 @@
           "original": "Available Now",
           "constraints": {
             "minChars": 7,
-            "maxChars": 16,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "agentDetail.listings.0.price",
@@ -7735,11 +7753,12 @@
           "original": "Bellevue, WA",
           "constraints": {
             "minChars": 6,
-            "maxChars": 64,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 8,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "agentDetail.listings.0.title",
@@ -7825,12 +7844,12 @@
           "original": "Applications Open",
           "constraints": {
             "minChars": 9,
-            "maxChars": 17,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "agentDetail.listings.1.price",
@@ -7862,11 +7881,12 @@
           "original": "Kirkland, WA",
           "constraints": {
             "minChars": 6,
-            "maxChars": 64,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 8,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "agentDetail.listings.1.title",
@@ -7952,12 +7972,12 @@
           "original": "Available Now",
           "constraints": {
             "minChars": 7,
-            "maxChars": 16,
+            "maxChars": 24,
             "minWords": 1,
-            "maxWords": 2,
+            "maxWords": 3,
             "maxLines": 1
           },
-          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\") from the real listing feed."
+          "notes": "Listing status (\"For Sale\", \"New Listing\", \"For Rent\", \"Sold\", \"Under Construction\") from the real listing feed."
         },
         {
           "id": "agentDetail.listings.2.price",
@@ -7988,12 +8008,13 @@
           "fillSource": "data",
           "original": "South Lake Union, Seattle, WA",
           "constraints": {
-            "minChars": 15,
-            "maxChars": 64,
+            "minChars": 6,
+            "maxChars": 60,
             "minWords": 1,
-            "maxWords": 8,
+            "maxWords": 12,
             "maxLines": 1
-          }
+          },
+          "notes": "A locality name is a legitimate, much shorter address format than the original's full US street address — minChars deliberately low so a real short locality isn't rejected as suspiciously thin."
         },
         {
           "id": "agentDetail.listings.2.title",

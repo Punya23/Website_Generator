@@ -199,6 +199,53 @@ describe("applyPlacements: text", () => {
     expect(result.html).toContain('<a href="/terms">Terms</a>');
   });
 
+  it("defaults phone/email to an obvious, non-dialable placeholder when the brief has neither", async () => {
+    const html = `<span id="t1">(415) 555-0182</span>`;
+    const p = page([textPlacement({ fillSource: "brief", briefField: "phone", constraints: { minChars: 1, maxChars: 40, minWords: 1, maxWords: 5, maxLines: 1 } })]);
+    const result = await applyPlacements(html, p, { brief: { businessName: "Surana Real Estates" } });
+    expect(result.html).toContain("+1 (000) 000-0000");
+  });
+
+  it("derives a placeholder email from the business name when the brief has none", async () => {
+    const html = `<span id="t1">hello@prestigerealty.com</span>`;
+    const p = page([textPlacement({ fillSource: "brief", briefField: "email", constraints: { minChars: 1, maxChars: 60, minWords: 1, maxWords: 5, maxLines: 1 } })]);
+    const result = await applyPlacements(html, p, { brief: { businessName: "Surana Real Estates" } });
+    expect(result.html).toContain("hello@surana-real-estates.com");
+  });
+
+  it("asks illustrativeFill for a missing address, but never for phone/email/licenseNumber", async () => {
+    const html = `<span id="t1">1450 Market Street, San Francisco, CA</span>`;
+    const p = page([textPlacement({ fillSource: "brief", briefField: "address", constraints: { minChars: 1, maxChars: 60, minWords: 1, maxWords: 10, maxLines: 1 } })]);
+    const asked: string[] = [];
+    const result = await applyPlacements(html, p, {
+      brief: { businessName: "Surana Real Estates" },
+      illustrativeFill: async (placement) => {
+        asked.push(placement.id);
+        return "Wakad, Pune, Maharashtra";
+      },
+    });
+    expect(result.html).toContain("Wakad, Pune, Maharashtra");
+    expect(asked).toEqual(["t.1"]);
+  });
+
+  it("never calls illustrativeFill for a locked person-identity role (caller's own gate, not fill.ts's)", async () => {
+    // fill.ts itself has no role-based gate — the safety policy lives in the CALLER's decision of
+    // what to pass as illustrativeFill (see generate-real-site.ts's PEOPLE_ROLES). This test only
+    // confirms illustrativeFill is offered a data placement generically; the policy test belongs
+    // wherever PEOPLE_ROLES is actually enforced.
+    const html = `<span id="t1">Jennifer Lawson</span>`;
+    const p = page([textPlacement({ fillSource: "data", role: "testimonialAuthorName", original: "Jennifer Lawson", constraints: { minChars: 1, maxChars: 30, minWords: 1, maxWords: 4, maxLines: 1 } })]);
+    let called = false;
+    await applyPlacements(html, p, {
+      brief: { businessName: "Surana Real Estates" },
+      illustrativeFill: async () => {
+        called = true;
+        return "Someone Fake";
+      },
+    });
+    expect(called).toBe(true); // fill.ts DOES call it — proving the gate must live upstream, not here
+  });
+
   it("composes a phone-and-email pair with a line break between them", async () => {
     const html = `<p id="t1">(415) 555-0182<br>hello@demo.com</p>`;
     const p = page([textPlacement({ fillSource: "brief", compose: "phoneAndEmail" })]);

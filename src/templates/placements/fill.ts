@@ -40,6 +40,50 @@ export interface ApplyPlacementsOptions {
    *  else in the fallback text — the customer's name, quote and location stay the template's own
    *  fiction, same as always. */
   templateBusinessName?: string;
+  /** Last-resort fallback for a `data` placement (after `resolveData` and the brand-name swap both
+   *  come up empty) or a `brief` placement whose field has no value at all (`address`/`hours` only
+   *  — see below) — a plausible, brief-consistent EXAMPLE value, explicitly not verified real data.
+   *  `fill.ts` applies whatever this returns through the same constraint check as anything else;
+   *  deciding what's safe to ask for is entirely the caller's call. It should never be asked for
+   *  (and generate-real-site.ts's own use of this never asks for) a real person's name, photo, or
+   *  quote — testimonials and agent identity stay `data`-locked with no illustrative fallback,
+   *  same protection this project already gives the scraped-template corpus. */
+  illustrativeFill?: DataResolver;
+}
+
+/** Unmistakably a placeholder, never a number that could ring an actual stranger — a plausible-
+ *  looking fake phone number is a real-world harm a fake price or fake address is not. Same shape
+ *  as this project's other pipeline's own placeholder (`copy-slots.ts`'s `resolveContact`). */
+const PLACEHOLDER_PHONE = "+1 (000) 000-0000";
+
+function slugifyBusinessName(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "business";
+}
+
+/** `hello@<business-slug>.com` — deterministic, not LLM-invented, for the same reason as the phone
+ *  placeholder above: unlike a fake price or fake address, an invented email could plausibly exist
+ *  and receive real mail meant for the actual business. */
+function placeholderEmail(businessName: string | undefined): string {
+  return `hello@${slugifyBusinessName(businessName ?? "business")}.com`;
+}
+
+/** `brief` fields `illustrativeFill` may be asked to invent an example for. Deliberately excludes
+ *  `phone`/`email` (see `withPlaceholderContact` — those get a deterministic non-dialable/non-
+ *  mailable placeholder instead, never an LLM-plausible one that could coincide with a real
+ *  stranger's) and `licenseNumber` (a professional registration number is exactly the kind of
+ *  official-looking credential that should never be plausibly fabricated — left as the template's
+ *  own obviously-fake demo value, same as when nothing here is configured at all). */
+const BRIEF_ILLUSTRATIVE_FIELDS = new Set<BriefField>(["address", "hours"]);
+
+/** `brief` with phone/email defaulted to an obvious placeholder when the caller's own brief didn't
+ *  supply one — computed once so every placement that reads phone/email (the plain `brief`
+ *  placements, and the `callButton`/`phoneAndEmail` compositions below) sees the same value. */
+function withPlaceholderContact(brief: PlacementBrief): PlacementBrief {
+  return {
+    ...brief,
+    phone: brief.phone || PLACEHOLDER_PHONE,
+    email: brief.email || placeholderEmail(brief.businessName),
+  };
 }
 
 export interface ClampNote {
@@ -178,6 +222,10 @@ export async function applyPlacements(html: string, page: PagePlacements, option
   const rejectedFixed: string[] = [];
   let appliedText = 0;
   let appliedImages = 0;
+  // Phone/email specifically default to an obvious, deterministic placeholder rather than falling
+  // through to `illustrativeFill` — see `withPlaceholderContact`'s own doc comment on why those two
+  // are a different risk tier from a fake price or fake address.
+  const brief = withPlaceholderContact(options.brief);
 
   for (const placement of page.text) {
     if (placement.fillSource === "fixed") {
@@ -186,32 +234,28 @@ export async function applyPlacements(html: string, page: PagePlacements, option
     }
 
     if (placement.compose === "phoneAndEmail") {
-      const phone = options.brief.phone?.trim();
-      const email = options.brief.email?.trim();
-      if (!phone && !email) continue;
       const el = $(placement.selector).first();
       if (el.length === 0) {
         skipped.push(placement.id);
         continue;
       }
-      el.html(
-        [phone, email]
-          .filter((value): value is string => Boolean(value))
-          .map(escapeHtml)
-          .join("<br>")
-      );
+      el.html([brief.phone, brief.email].filter((value): value is string => Boolean(value)).map(escapeHtml).join("<br>"));
       appliedText += 1;
       continue;
     }
 
     let raw: string | null;
     if (placement.compose) {
-      raw = composedValue(placement.compose, options.brief);
+      raw = composedValue(placement.compose, brief);
     } else if (placement.fillSource === "brief") {
-      raw = (placement.briefField && options.brief[placement.briefField]) || null;
+      raw = (placement.briefField && brief[placement.briefField]) || null;
+      if (!raw && placement.briefField && BRIEF_ILLUSTRATIVE_FIELDS.has(placement.briefField) && options.illustrativeFill) {
+        raw = await options.illustrativeFill(placement);
+      }
     } else if (placement.fillSource === "data") {
       raw = options.resolveData ? await options.resolveData(placement) : null;
       if (!raw) raw = swapTemplateBrandName(placement.original, options);
+      if (!raw && options.illustrativeFill) raw = await options.illustrativeFill(placement);
     } else {
       raw = options.llmValues?.[placement.id] ?? null;
     }

@@ -105,9 +105,13 @@ function composedValue(compose: TextPlacement["compose"], brief: PlacementBrief)
  *  element's own direct text node(s) (a functional link, a decorative icon glyph, both untouched);
  *  otherwise every child is cleared and `value` becomes the element's entire plain-text content —
  *  correct by construction for any LLM-sourced value, which never carries markup to begin with. */
-function writeText($: cheerio.CheerioAPI, selector: string, value: string, preserveChildren?: boolean): boolean {
+function writeText($: cheerio.CheerioAPI, selector: string, value: string, preserveChildren?: boolean, attr?: string): boolean {
   const el = $(selector).first();
   if (el.length === 0) return false;
+  if (attr) {
+    el.attr(attr, value);
+    return true;
+  }
   if (preserveChildren) {
     const node = el.get(0) as unknown as { children?: Array<{ type: string; data?: string }> } | undefined;
     const textNodes = (node?.children ?? []).filter((child) => child.type === "text");
@@ -195,7 +199,7 @@ export async function applyPlacements(html: string, page: PagePlacements, option
     const value = placement.compose ? raw : clampToConstraints(raw, placement.constraints, placement.id, clamped);
     if (value === null) continue;
 
-    if (writeText($, placement.selector, value, placement.preserveChildren)) appliedText += 1;
+    if (writeText($, placement.selector, value, placement.preserveChildren, placement.attr)) appliedText += 1;
     else skipped.push(placement.id);
   }
 

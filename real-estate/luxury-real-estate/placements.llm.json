@@ -286,6 +286,26 @@
     },
     "index.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "home.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Aurelia Estates | Los Angeles Luxury Real Estate",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "home.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Aurelia Estates is a private Los Angeles brokerage representing exceptional properties in Bel Air, Beverly Hills, Malibu, Aspen, and the Hamptons.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "hero": {
           "fields": {
             "eyebrow": {
@@ -1143,6 +1163,26 @@
     },
     "about.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "about.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "About Us | Aurelia Estates",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "about.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Learn about Aurelia Estates, a private Los Angeles brokerage founded on discretion, design literacy, and long-term client relationships since 2014.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "banner": {
           "fields": {
             "title": {
@@ -1549,6 +1589,26 @@
     },
     "services.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "services.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Services | Aurelia Estates",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "services.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Aurelia Estates services — private listing access, estate marketing, buyer representation, 1031 exchange consulting, relocation concierge, and new development sales.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "banner": {
           "fields": {
             "title": {
@@ -1982,6 +2042,26 @@
     },
     "listings.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "listings.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Exclusive Listings | Aurelia Estates",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "listings.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Browse current exclusive listings from Aurelia Estates — private estates and villas in Bel Air, Beverly Hills, Malibu, Aspen, and the Hamptons.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "banner": {
           "fields": {
             "title": {
@@ -2531,6 +2611,26 @@
     },
     "property-detail.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "property.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Bel Air Modern Compound | Aurelia Estates",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "property.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "1685 Stradella Road, Bel Air, Los Angeles, CA — a 6 bedroom, 8 bathroom modern architectural compound represented by Aurelia Estates.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "listing": {
           "fields": {
             "badge": {
@@ -3040,6 +3140,26 @@
     },
     "agents.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "agents.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Our Advisors | Aurelia Estates",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "agents.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Meet the Aurelia Estates team — advisors specializing in Bel Air, Beverly Hills, Malibu, Aspen, and Hamptons luxury real estate.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "banner": {
           "fields": {
             "title": {
@@ -3305,6 +3425,26 @@
     },
     "agent-detail.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "agentDetail.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Adriana Voss, Principal Broker | Aurelia Estates",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "agentDetail.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Adriana Voss is the founder and principal broker of Aurelia Estates, specializing in Bel Air, Holmby Hills, and Beverly Hills.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "profile": {
           "fields": {
             "name": {
@@ -3674,6 +3814,26 @@
     },
     "contact.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "contact.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Contact Us | Aurelia Estates",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "contact.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Get in touch with Aurelia Estates — schedule a private consultation, request a property valuation, or ask a question.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "banner": {
           "fields": {
             "title": {

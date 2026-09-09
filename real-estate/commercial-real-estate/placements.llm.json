@@ -286,6 +286,26 @@
     },
     "index.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "home.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Cornerstone Commercial Realty | Chicago Commercial Real Estate Brokerage",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "home.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Cornerstone Commercial Realty is a Chicago-based commercial brokerage representing tenants, landlords, and investors across office, retail, and industrial markets.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "hero": {
           "fields": {
             "eyebrow": {
@@ -1143,6 +1163,26 @@
     },
     "about.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "about.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "About Us | Cornerstone Commercial Realty",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "about.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Learn about Cornerstone Commercial Realty, a Chicago commercial brokerage built on underwriting discipline and submarket depth since 2008.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "banner": {
           "fields": {
             "title": {
@@ -1549,6 +1589,26 @@
     },
     "services.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "services.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Services | Cornerstone Commercial Realty",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "services.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Cornerstone Commercial Realty services — tenant representation, landlord representation, investment sales, site selection, valuation, and lease renewal.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "banner": {
           "fields": {
             "title": {
@@ -1982,6 +2042,26 @@
     },
     "listings.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "listings.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Available Properties | Cornerstone Commercial Realty",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "listings.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Browse available Chicagoland commercial properties from Cornerstone Commercial Realty — office, retail, and industrial space for lease and sale.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "banner": {
           "fields": {
             "title": {
@@ -2531,6 +2611,26 @@
     },
     "property-detail.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "property.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "O'Hare Corridor Distribution Center, Elk Grove Village | Cornerstone Commercial Realty",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "property.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "2200 Touhy Ave, Elk Grove Village, IL — 84,000 SF Class B distribution facility for lease, listed by Cornerstone Commercial Realty.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "listing": {
           "fields": {
             "badge": {
@@ -3040,6 +3140,26 @@
     },
     "agents.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "agents.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Our Brokers | Cornerstone Commercial Realty",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "agents.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Meet the Cornerstone Commercial Realty team — Chicago commercial brokers specializing in office, retail, industrial, and investment sales.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "banner": {
           "fields": {
             "title": {
@@ -3305,6 +3425,26 @@
     },
     "agent-detail.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "agentDetail.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Daniel Marsh, Managing Broker | Cornerstone Commercial Realty",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "agentDetail.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Daniel Marsh is the founder and managing broker of Cornerstone Commercial Realty, specializing in Chicago investment sales and capital markets.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "profile": {
           "fields": {
             "name": {
@@ -3674,6 +3814,26 @@
     },
     "contact.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "contact.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Contact Us | Cornerstone Commercial Realty",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "contact.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Get in touch with Cornerstone Commercial Realty — schedule a consultation, request a market analysis, or ask about a Chicagoland property.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "banner": {
           "fields": {
             "title": {

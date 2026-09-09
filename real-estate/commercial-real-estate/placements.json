@@ -3,7 +3,7 @@
   "vertical": "real-estate",
   "templateId": "commercial-real-estate",
   "templateName": "Cornerstone Commercial Realty",
-  "generatedAt": "2026-09-09T07:55:09.158Z",
+  "generatedAt": "2026-09-09T09:38:54.013Z",
   "pageOrder": [
     "index.html",
     "about.html",
@@ -579,6 +579,43 @@
       "page": "index.html",
       "title": "Cornerstone Commercial Realty | Chicago Commercial Real Estate Brokerage",
       "text": [
+        {
+          "id": "home.seo.title",
+          "kind": "text",
+          "page": "index.html",
+          "selector": "title",
+          "tag": "title",
+          "section": "seo",
+          "role": "pageTitle",
+          "fillSource": "llm",
+          "original": "Cornerstone Commercial Realty | Chicago Commercial Real Estate Brokerage",
+          "constraints": {
+            "minChars": 15,
+            "maxChars": 60,
+            "minWords": 1,
+            "maxWords": 12,
+            "maxLines": 1
+          }
+        },
+        {
+          "id": "home.seo.description",
+          "kind": "text",
+          "page": "index.html",
+          "selector": "meta[name='description']",
+          "tag": "meta",
+          "section": "seo",
+          "role": "pageMetaDescription",
+          "fillSource": "llm",
+          "original": "Cornerstone Commercial Realty is a Chicago-based commercial brokerage representing tenants, landlords, and investors across office, retail, and industrial markets.",
+          "constraints": {
+            "minChars": 70,
+            "maxChars": 158,
+            "minWords": 1,
+            "maxWords": 32,
+            "maxLines": 1
+          },
+          "attr": "content"
+        },
         {
           "id": "home.hero.eyebrow",
           "kind": "text",
@@ -2464,6 +2501,43 @@
       "title": "About Us | Cornerstone Commercial Realty",
       "text": [
         {
+          "id": "about.seo.title",
+          "kind": "text",
+          "page": "about.html",
+          "selector": "title",
+          "tag": "title",
+          "section": "seo",
+          "role": "pageTitle",
+          "fillSource": "llm",
+          "original": "About Us | Cornerstone Commercial Realty",
+          "constraints": {
+            "minChars": 15,
+            "maxChars": 60,
+            "minWords": 1,
+            "maxWords": 12,
+            "maxLines": 1
+          }
+        },
+        {
+          "id": "about.seo.description",
+          "kind": "text",
+          "page": "about.html",
+          "selector": "meta[name='description']",
+          "tag": "meta",
+          "section": "seo",
+          "role": "pageMetaDescription",
+          "fillSource": "llm",
+          "original": "Learn about Cornerstone Commercial Realty, a Chicago commercial brokerage built on underwriting discipline and submarket depth since 2008.",
+          "constraints": {
+            "minChars": 70,
+            "maxChars": 158,
+            "minWords": 1,
+            "maxWords": 32,
+            "maxLines": 1
+          },
+          "attr": "content"
+        },
+        {
           "id": "about.banner.title",
           "kind": "text",
           "page": "about.html",
@@ -3280,6 +3354,43 @@
       "page": "services.html",
       "title": "Services | Cornerstone Commercial Realty",
       "text": [
+        {
+          "id": "services.seo.title",
+          "kind": "text",
+          "page": "services.html",
+          "selector": "title",
+          "tag": "title",
+          "section": "seo",
+          "role": "pageTitle",
+          "fillSource": "llm",
+          "original": "Services | Cornerstone Commercial Realty",
+          "constraints": {
+            "minChars": 15,
+            "maxChars": 60,
+            "minWords": 1,
+            "maxWords": 12,
+            "maxLines": 1
+          }
+        },
+        {
+          "id": "services.seo.description",
+          "kind": "text",
+          "page": "services.html",
+          "selector": "meta[name='description']",
+          "tag": "meta",
+          "section": "seo",
+          "role": "pageMetaDescription",
+          "fillSource": "llm",
+          "original": "Cornerstone Commercial Realty services — tenant representation, landlord representation, investment sales, site selection, valuation, and lease renewal.",
+          "constraints": {
+            "minChars": 70,
+            "maxChars": 158,
+            "minWords": 1,
+            "maxWords": 32,
+            "maxLines": 1
+          },
+          "attr": "content"
+        },
         {
           "id": "services.banner.title",
           "kind": "text",
@@ -4149,6 +4260,43 @@
       "page": "listings.html",
       "title": "Available Properties | Cornerstone Commercial Realty",
       "text": [
+        {
+          "id": "listings.seo.title",
+          "kind": "text",
+          "page": "listings.html",
+          "selector": "title",
+          "tag": "title",
+          "section": "seo",
+          "role": "pageTitle",
+          "fillSource": "llm",
+          "original": "Available Properties | Cornerstone Commercial Realty",
+          "constraints": {
+            "minChars": 15,
+            "maxChars": 60,
+            "minWords": 1,
+            "maxWords": 12,
+            "maxLines": 1
+          }
+        },
+        {
+          "id": "listings.seo.description",
+          "kind": "text",
+          "page": "listings.html",
+          "selector": "meta[name='description']",
+          "tag": "meta",
+          "section": "seo",
+          "role": "pageMetaDescription",
+          "fillSource": "llm",
+          "original": "Browse available Chicagoland commercial properties from Cornerstone Commercial Realty — office, retail, and industrial space for lease and sale.",
+          "constraints": {
+            "minChars": 70,
+            "maxChars": 158,
+            "minWords": 1,
+            "maxWords": 32,
+            "maxLines": 1
+          },
+          "attr": "content"
+        },
         {
           "id": "listings.banner.title",
           "kind": "text",
@@ -5489,6 +5637,43 @@
       "title": "O'Hare Corridor Distribution Center, Elk Grove Village | Cornerstone Commercial Realty",
       "text": [
         {
+          "id": "property.seo.title",
+          "kind": "text",
+          "page": "property-detail.html",
+          "selector": "title",
+          "tag": "title",
+          "section": "seo",
+          "role": "pageTitle",
+          "fillSource": "llm",
+          "original": "O'Hare Corridor Distribution Center, Elk Grove Village | Cornerstone Commercial Realty",
+          "constraints": {
+            "minChars": 15,
+            "maxChars": 60,
+            "minWords": 1,
+            "maxWords": 12,
+            "maxLines": 1
+          }
+        },
+        {
+          "id": "property.seo.description",
+          "kind": "text",
+          "page": "property-detail.html",
+          "selector": "meta[name='description']",
+          "tag": "meta",
+          "section": "seo",
+          "role": "pageMetaDescription",
+          "fillSource": "llm",
+          "original": "2200 Touhy Ave, Elk Grove Village, IL — 84,000 SF Class B distribution facility for lease, listed by Cornerstone Commercial Realty.",
+          "constraints": {
+            "minChars": 70,
+            "maxChars": 158,
+            "minWords": 1,
+            "maxWords": 32,
+            "maxLines": 1
+          },
+          "attr": "content"
+        },
+        {
           "id": "property.badge",
           "kind": "text",
           "page": "property-detail.html",
@@ -6577,6 +6762,43 @@
       "title": "Our Brokers | Cornerstone Commercial Realty",
       "text": [
         {
+          "id": "agents.seo.title",
+          "kind": "text",
+          "page": "agents.html",
+          "selector": "title",
+          "tag": "title",
+          "section": "seo",
+          "role": "pageTitle",
+          "fillSource": "llm",
+          "original": "Our Brokers | Cornerstone Commercial Realty",
+          "constraints": {
+            "minChars": 15,
+            "maxChars": 60,
+            "minWords": 1,
+            "maxWords": 12,
+            "maxLines": 1
+          }
+        },
+        {
+          "id": "agents.seo.description",
+          "kind": "text",
+          "page": "agents.html",
+          "selector": "meta[name='description']",
+          "tag": "meta",
+          "section": "seo",
+          "role": "pageMetaDescription",
+          "fillSource": "llm",
+          "original": "Meet the Cornerstone Commercial Realty team — Chicago commercial brokers specializing in office, retail, industrial, and investment sales.",
+          "constraints": {
+            "minChars": 70,
+            "maxChars": 158,
+            "minWords": 1,
+            "maxWords": 32,
+            "maxLines": 1
+          },
+          "attr": "content"
+        },
+        {
           "id": "agents.banner.title",
           "kind": "text",
           "page": "agents.html",
@@ -7153,6 +7375,43 @@
       "page": "agent-detail.html",
       "title": "Daniel Marsh, Managing Broker | Cornerstone Commercial Realty",
       "text": [
+        {
+          "id": "agentDetail.seo.title",
+          "kind": "text",
+          "page": "agent-detail.html",
+          "selector": "title",
+          "tag": "title",
+          "section": "seo",
+          "role": "pageTitle",
+          "fillSource": "llm",
+          "original": "Daniel Marsh, Managing Broker | Cornerstone Commercial Realty",
+          "constraints": {
+            "minChars": 15,
+            "maxChars": 60,
+            "minWords": 1,
+            "maxWords": 12,
+            "maxLines": 1
+          }
+        },
+        {
+          "id": "agentDetail.seo.description",
+          "kind": "text",
+          "page": "agent-detail.html",
+          "selector": "meta[name='description']",
+          "tag": "meta",
+          "section": "seo",
+          "role": "pageMetaDescription",
+          "fillSource": "llm",
+          "original": "Daniel Marsh is the founder and managing broker of Cornerstone Commercial Realty, specializing in Chicago investment sales and capital markets.",
+          "constraints": {
+            "minChars": 70,
+            "maxChars": 158,
+            "minWords": 1,
+            "maxWords": 32,
+            "maxLines": 1
+          },
+          "attr": "content"
+        },
         {
           "id": "agentDetail.name",
           "kind": "text",
@@ -7975,6 +8234,43 @@
       "page": "contact.html",
       "title": "Contact Us | Cornerstone Commercial Realty",
       "text": [
+        {
+          "id": "contact.seo.title",
+          "kind": "text",
+          "page": "contact.html",
+          "selector": "title",
+          "tag": "title",
+          "section": "seo",
+          "role": "pageTitle",
+          "fillSource": "llm",
+          "original": "Contact Us | Cornerstone Commercial Realty",
+          "constraints": {
+            "minChars": 15,
+            "maxChars": 60,
+            "minWords": 1,
+            "maxWords": 12,
+            "maxLines": 1
+          }
+        },
+        {
+          "id": "contact.seo.description",
+          "kind": "text",
+          "page": "contact.html",
+          "selector": "meta[name='description']",
+          "tag": "meta",
+          "section": "seo",
+          "role": "pageMetaDescription",
+          "fillSource": "llm",
+          "original": "Get in touch with Cornerstone Commercial Realty — schedule a consultation, request a market analysis, or ask about a Chicagoland property.",
+          "constraints": {
+            "minChars": 70,
+            "maxChars": 158,
+            "minWords": 1,
+            "maxWords": 32,
+            "maxLines": 1
+          },
+          "attr": "content"
+        },
         {
           "id": "contact.banner.title",
           "kind": "text",

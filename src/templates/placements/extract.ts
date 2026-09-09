@@ -37,6 +37,16 @@ import {
 
 function computeConstraints(mode: TextMode, original: string): TextConstraints {
   if (mode.mode === "label") return labelConstraints(mode.maxWords, original);
+  if (mode.mode === "fixed") {
+    const wordCount = Math.max(1, original.trim().split(/\s+/).filter(Boolean).length);
+    return {
+      minChars: mode.minChars,
+      maxChars: mode.maxChars,
+      minWords: 1,
+      maxWords: Math.max(wordCount, Math.round(mode.maxChars / 5)),
+      maxLines: 1,
+    };
+  }
   const typo = TYPE_SCALE[mode.typo];
   if (!typo) throw new Error(`Unknown typography key "${mode.typo}" — add it to measure.ts's TYPE_SCALE.`);
   return proseConstraints(typo, mode.widthPx, mode.lines, original);
@@ -63,7 +73,7 @@ function readOriginalText($: cheerio.CheerioAPI, el: cheerio.Cheerio<any>, strip
 
 function resolveText($: cheerio.CheerioAPI, page: string, d: TextDescriptor): TextPlacement {
   const el = assertOne($, page, d).first();
-  const original = readOriginalText($, el, d.stripChildSelectors);
+  const original = d.attr ? (el.attr(d.attr) ?? "").trim() : readOriginalText($, el, d.stripChildSelectors);
   const tag = (el.get(0) as { tagName?: string } | undefined)?.tagName ?? "*";
   return TextPlacementSchema.parse({
     id: d.id,
@@ -77,6 +87,7 @@ function resolveText($: cheerio.CheerioAPI, page: string, d: TextDescriptor): Te
     original,
     constraints: computeConstraints(d.text, original),
     ...(d.briefField ? { briefField: d.briefField } : {}),
+    ...(d.attr ? { attr: d.attr } : {}),
     ...(d.preserveChildren ? { preserveChildren: true } : {}),
     ...(d.compose ? { compose: d.compose } : {}),
     ...(d.notes ? { notes: d.notes } : {}),

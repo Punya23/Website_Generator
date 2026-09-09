@@ -116,6 +116,9 @@ export const TextPlacementSchema = z.object({
   constraints: TextConstraintsSchema,
   /** Which `BRIEF_FIELDS` entry this resolves from — set only when `fillSource === "brief"`. */
   briefField: z.enum(BRIEF_FIELDS).optional(),
+  /** Read/write an attribute (e.g. `content` on `<meta name="description">`) instead of the
+   *  element's text content. Absent (the default): text content. */
+  attr: z.string().optional(),
   /** When set, `fill.ts` replaces only this element's own direct text node(s) and leaves every
    *  element child untouched (a functional link, an accordion's icon glyph). Unset/false: the
    *  whole element's content is replaced with plain text, which is what any filled-in value is
@@ -197,6 +200,7 @@ export type PlacementsFile = z.infer<typeof PlacementsFileSchema>;
  *  purposes — `TextPlacement.role` is a plain string precisely so a new vertical's map can invent
  *  its own roles without a schema change. */
 export const TEXT_ROLES = [
+  "pageTitle", "pageMetaDescription",
   "brandName", "navLink", "navCta", "topbarAddress", "topbarPhone", "topbarEmail",
   "heroEyebrow", "heroTitle", "heroSubtitle", "heroCta",
   "pageBannerTitle", "breadcrumbCurrent",

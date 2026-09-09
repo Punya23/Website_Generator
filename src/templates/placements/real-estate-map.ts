@@ -30,7 +30,10 @@ import type { BriefField, ImageFillSource, TextComposeKind, TextFillSource } fro
 
 export type TextMode =
   | { mode: "prose"; typo: string; widthPx: number; lines: number }
-  | { mode: "label"; maxWords: number };
+  | { mode: "label"; maxWords: number }
+  /** A pre-set budget with no CSS box behind it — SEO fields (`<title>`, meta description) follow
+   *  a search-engine convention, not a rendered element's width/font-size. */
+  | { mode: "fixed"; minChars: number; maxChars: number };
 
 export interface TextDescriptor {
   id: string;
@@ -39,6 +42,10 @@ export interface TextDescriptor {
   fillSource: TextFillSource;
   text: TextMode;
   briefField?: BriefField;
+  /** Read/write an attribute instead of the element's text content — e.g. `content` on
+   *  `<meta name="description">`. Absent (the default): text content, via `fill.ts`'s usual
+   *  child-preserving/plain-text setter. */
+  attr?: string;
   /** Remove these (decorative, e.g. an accordion's "+" icon glyph) from a CLONE before reading the
    *  placement's reference text at extraction time — see `extract.ts`. */
   stripChildSelectors?: string[];
@@ -77,6 +84,21 @@ export interface PageDescriptorSet {
 
 const prose = (typo: string, widthPx: number, lines: number): TextMode => ({ mode: "prose", typo, widthPx, lines });
 const label = (maxWords: number): TextMode => ({ mode: "label", maxWords });
+const seo = (minChars: number, maxChars: number): TextMode => ({ mode: "fixed", minChars, maxChars });
+
+/** `<title>` and meta description — standard SEO length conventions (Google truncates a title
+ *  around ~60 characters, a description around ~155-160), the same on every page regardless of
+ *  which template or vertical it's for. Every real page in this template set has exactly one of
+ *  each, so these two descriptors are added once per page rather than templated further. */
+function seoFields(idPrefix: string): TextDescriptor[] {
+  return [
+    { id: `${idPrefix}.title`, selector: "title", role: "pageTitle", fillSource: "llm", text: seo(15, 60) },
+    {
+      id: `${idPrefix}.description`, selector: "meta[name='description']", attr: "content",
+      role: "pageMetaDescription", fillSource: "llm", text: seo(70, 158),
+    },
+  ];
+}
 
 const COL3 = gridColumnWidthPx(3);
 const COL4 = gridColumnWidthPx(4);
@@ -307,6 +329,7 @@ export function chromeDescriptors(): PageDescriptorSet {
 
 function indexPage(): PageDescriptorSet {
   const text: TextDescriptor[] = [
+    ...seoFields("home.seo"),
     { id: "home.hero.eyebrow", selector: ".hero__eyebrow", role: "heroEyebrow", fillSource: "llm", text: label(4) },
     { id: "home.hero.title", selector: ".hero__title", role: "heroTitle", fillSource: "llm", text: prose("heroTitle", 720, 2), notes: "Drops the source's <em>-accented word — a model's answer is plain text." },
     { id: "home.hero.subtitle", selector: ".hero__subtitle", role: "heroSubtitle", fillSource: "llm", text: prose("heroSubtitle", 560, 3) },
@@ -344,6 +367,7 @@ function indexPage(): PageDescriptorSet {
 
 function aboutPage(): PageDescriptorSet {
   const text: TextDescriptor[] = [
+    ...seoFields("about.seo"),
     { id: "about.banner.title", selector: ".page-banner__title", role: "pageBannerTitle", fillSource: "llm", text: prose("pageBannerTitle", 760, 2) },
     { id: "about.story.eyebrow", selector: ".detail-layout .section__eyebrow", role: "sectionEyebrow", fillSource: "llm", text: label(3) },
     { id: "about.story.title", selector: ".detail-layout .section__title", role: "sectionTitle", fillSource: "llm", text: prose("sectionTitle", MAIN_COL, 2) },
@@ -375,6 +399,7 @@ function aboutPage(): PageDescriptorSet {
 
 function servicesPage(): PageDescriptorSet {
   const text: TextDescriptor[] = [
+    ...seoFields("services.seo"),
     { id: "services.banner.title", selector: ".page-banner__title", role: "pageBannerTitle", fillSource: "llm", text: prose("pageBannerTitle", 760, 2) },
     ...sectionHeader("services.offers", "main > section:nth-of-type(2)", { subtitle: false }),
   ];
@@ -396,6 +421,7 @@ function servicesPage(): PageDescriptorSet {
 
 function listingsPage(): PageDescriptorSet {
   const text: TextDescriptor[] = [
+    ...seoFields("listings.seo"),
     { id: "listings.banner.title", selector: ".page-banner__title", role: "pageBannerTitle", fillSource: "llm", text: prose("pageBannerTitle", 760, 2) },
   ];
   const images: ImageDescriptor[] = [
@@ -417,6 +443,7 @@ function listingsPage(): PageDescriptorSet {
 
 function propertyDetailPage(): PageDescriptorSet {
   const text: TextDescriptor[] = [
+    ...seoFields("property.seo"),
     { id: "property.badge", selector: ".detail-header .property-card__badge", role: "detailBadge", fillSource: "data", text: label(2) },
     { id: "property.title", selector: ".detail-header h1", role: "detailTitle", fillSource: "data", text: prose("unstyledH1", MAIN_COL, 2) },
     { id: "property.location", selector: ".detail-header__location", role: "detailLocation", fillSource: "data", text: label(10) },
@@ -483,6 +510,7 @@ function propertyDetailPage(): PageDescriptorSet {
 
 function agentsPage(): PageDescriptorSet {
   const text: TextDescriptor[] = [
+    ...seoFields("agents.seo"),
     { id: "agents.banner.title", selector: ".page-banner__title", role: "pageBannerTitle", fillSource: "llm", text: prose("pageBannerTitle", 760, 2) },
     ...sectionHeader("agents.team", "main > section:nth-of-type(2)", { subtitle: true }),
   ];
@@ -504,6 +532,7 @@ function agentsPage(): PageDescriptorSet {
 
 function agentDetailPage(): PageDescriptorSet {
   const text: TextDescriptor[] = [
+    ...seoFields("agentDetail.seo"),
     { id: "agentDetail.name", selector: "h1[data-field='agent.name']", role: "agentName", fillSource: "data", text: prose("unstyledH1", MAIN_COL, 1) },
     { id: "agentDetail.role", selector: ".detail-layout .agent-card__role", role: "agentRole", fillSource: "data", text: label(4) },
     { id: "agentDetail.contact", selector: ".detail-layout > div:nth-of-type(1) > div:nth-of-type(1) > div > div:nth-of-type(2)", role: "agentContact", fillSource: "data", text: label(12), notes: "Phone, email, and license number in one line." },
@@ -546,6 +575,7 @@ function agentDetailPage(): PageDescriptorSet {
 
 function contactPage(): PageDescriptorSet {
   const text: TextDescriptor[] = [
+    ...seoFields("contact.seo"),
     { id: "contact.banner.title", selector: ".page-banner__title", role: "pageBannerTitle", fillSource: "llm", text: prose("pageBannerTitle", 760, 2) },
     { id: "contact.info.0.title", selector: ".info-card:nth-of-type(1) .info-card__title", role: "infoCardTitle", fillSource: "fixed", text: label(3) },
     { id: "contact.info.0.text", selector: ".info-card:nth-of-type(1) .info-card__text", role: "infoCardText", fillSource: "brief", briefField: "address", text: prose("infoCardText", COL3, 2) },
@@ -629,6 +659,7 @@ const SECTION_RULES: SectionRule[] = [
   { match: "chrome.footer.", section: "footer" },
 
   // index.html
+  { match: "home.seo.", section: "seo" },
   { match: "home.hero.", section: "hero" },
   { match: "home.featured.", section: "featuredListings" },
   { match: "home.stats.", section: "stats" },
@@ -638,6 +669,7 @@ const SECTION_RULES: SectionRule[] = [
   { match: "home.cta.", section: "cta" },
 
   // about.html
+  { match: "about.seo.", section: "seo" },
   { match: "about.banner.", section: "banner" },
   { match: "about.story.", section: "story" },
   { match: "about.values.", section: "values" },
@@ -646,6 +678,7 @@ const SECTION_RULES: SectionRule[] = [
   { match: "about.cta.", section: "cta" },
 
   // services.html
+  { match: "services.seo.", section: "seo" },
   { match: "services.banner.", section: "banner" },
   { match: "services.offers.", section: "services" },
   { match: "services.process.", section: "process" },
@@ -653,11 +686,13 @@ const SECTION_RULES: SectionRule[] = [
   { match: "services.cta.", section: "cta" },
 
   // listings.html
+  { match: "listings.seo.", section: "seo" },
   { match: "listings.banner.", section: "banner" },
   { match: "listings.card.", section: "listings" },
 
   // property-detail.html — the 4 exact rules must stay ahead of any prefix rule that could
   // otherwise shadow them (none currently would, but exact keeps this order-independent).
+  { match: "property.seo.", section: "seo" },
   { match: "property.badge", section: "listing", exact: true },
   { match: "property.title", section: "listing", exact: true },
   { match: "property.price", section: "listing", exact: true },
@@ -672,12 +707,14 @@ const SECTION_RULES: SectionRule[] = [
   { match: "property.similar.", section: "similarListings" },
 
   // agents.html
+  { match: "agents.seo.", section: "seo" },
   { match: "agents.banner.", section: "banner" },
   { match: "agents.team.", section: "team" },
   { match: "agents.roster.", section: "team" },
   { match: "agents.cta.", section: "cta" },
 
   // agent-detail.html
+  { match: "agentDetail.seo.", section: "seo" },
   { match: "agentDetail.name", section: "profile", exact: true },
   { match: "agentDetail.role", section: "profile", exact: true },
   { match: "agentDetail.contact", section: "profile", exact: true },
@@ -691,6 +728,7 @@ const SECTION_RULES: SectionRule[] = [
   { match: "agentDetail.contactHeading", section: "sidebar", exact: true },
 
   // contact.html
+  { match: "contact.seo.", section: "seo" },
   { match: "contact.banner.", section: "banner" },
   { match: "contact.info.", section: "contactInfo" },
   { match: "contact.form.", section: "form" },

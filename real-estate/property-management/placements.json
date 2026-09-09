@@ -3,7 +3,7 @@
   "vertical": "real-estate",
   "templateId": "property-management",
   "templateName": "Harborview Property Management",
-  "generatedAt": "2026-09-09T07:55:09.202Z",
+  "generatedAt": "2026-09-09T09:38:54.058Z",
   "pageOrder": [
     "index.html",
     "about.html",
@@ -579,6 +579,43 @@
       "page": "index.html",
       "title": "Harborview Property Management | Seattle Rental Property Management",
       "text": [
+        {
+          "id": "home.seo.title",
+          "kind": "text",
+          "page": "index.html",
+          "selector": "title",
+          "tag": "title",
+          "section": "seo",
+          "role": "pageTitle",
+          "fillSource": "llm",
+          "original": "Harborview Property Management | Seattle Rental Property Management",
+          "constraints": {
+            "minChars": 15,
+            "maxChars": 60,
+            "minWords": 1,
+            "maxWords": 12,
+            "maxLines": 1
+          }
+        },
+        {
+          "id": "home.seo.description",
+          "kind": "text",
+          "page": "index.html",
+          "selector": "meta[name='description']",
+          "tag": "meta",
+          "section": "seo",
+          "role": "pageMetaDescription",
+          "fillSource": "llm",
+          "original": "Harborview Property Management manages rental homes across greater Seattle for property owners and tenants — leasing, maintenance, and rent collection made simple.",
+          "constraints": {
+            "minChars": 70,
+            "maxChars": 158,
+            "minWords": 1,
+            "maxWords": 32,
+            "maxLines": 1
+          },
+          "attr": "content"
+        },
         {
           "id": "home.hero.eyebrow",
           "kind": "text",
@@ -2464,6 +2501,43 @@
       "title": "About Us | Harborview Property Management",
       "text": [
         {
+          "id": "about.seo.title",
+          "kind": "text",
+          "page": "about.html",
+          "selector": "title",
+          "tag": "title",
+          "section": "seo",
+          "role": "pageTitle",
+          "fillSource": "llm",
+          "original": "About Us | Harborview Property Management",
+          "constraints": {
+            "minChars": 15,
+            "maxChars": 60,
+            "minWords": 1,
+            "maxWords": 12,
+            "maxLines": 1
+          }
+        },
+        {
+          "id": "about.seo.description",
+          "kind": "text",
+          "page": "about.html",
+          "selector": "meta[name='description']",
+          "tag": "meta",
+          "section": "seo",
+          "role": "pageMetaDescription",
+          "fillSource": "llm",
+          "original": "Learn about Harborview Property Management, a Seattle-based rental management company serving property owners and tenants since 2015.",
+          "constraints": {
+            "minChars": 70,
+            "maxChars": 158,
+            "minWords": 1,
+            "maxWords": 32,
+            "maxLines": 1
+          },
+          "attr": "content"
+        },
+        {
           "id": "about.banner.title",
           "kind": "text",
           "page": "about.html",
@@ -3280,6 +3354,43 @@
       "page": "services.html",
       "title": "Services | Harborview Property Management",
       "text": [
+        {
+          "id": "services.seo.title",
+          "kind": "text",
+          "page": "services.html",
+          "selector": "title",
+          "tag": "title",
+          "section": "seo",
+          "role": "pageTitle",
+          "fillSource": "llm",
+          "original": "Services | Harborview Property Management",
+          "constraints": {
+            "minChars": 15,
+            "maxChars": 60,
+            "minWords": 1,
+            "maxWords": 12,
+            "maxLines": 1
+          }
+        },
+        {
+          "id": "services.seo.description",
+          "kind": "text",
+          "page": "services.html",
+          "selector": "meta[name='description']",
+          "tag": "meta",
+          "section": "seo",
+          "role": "pageMetaDescription",
+          "fillSource": "llm",
+          "original": "Property management services for owners and tenants — tenant placement, rent collection, maintenance coordination, and more.",
+          "constraints": {
+            "minChars": 70,
+            "maxChars": 158,
+            "minWords": 1,
+            "maxWords": 32,
+            "maxLines": 1
+          },
+          "attr": "content"
+        },
         {
           "id": "services.banner.title",
           "kind": "text",
@@ -4149,6 +4260,43 @@
       "page": "listings.html",
       "title": "Available Rentals | Harborview Property Management",
       "text": [
+        {
+          "id": "listings.seo.title",
+          "kind": "text",
+          "page": "listings.html",
+          "selector": "title",
+          "tag": "title",
+          "section": "seo",
+          "role": "pageTitle",
+          "fillSource": "llm",
+          "original": "Available Rentals | Harborview Property Management",
+          "constraints": {
+            "minChars": 15,
+            "maxChars": 60,
+            "minWords": 1,
+            "maxWords": 12,
+            "maxLines": 1
+          }
+        },
+        {
+          "id": "listings.seo.description",
+          "kind": "text",
+          "page": "listings.html",
+          "selector": "meta[name='description']",
+          "tag": "meta",
+          "section": "seo",
+          "role": "pageMetaDescription",
+          "fillSource": "llm",
+          "original": "Browse available rental homes and apartments managed by Harborview Property Management across greater Seattle.",
+          "constraints": {
+            "minChars": 70,
+            "maxChars": 158,
+            "minWords": 1,
+            "maxWords": 32,
+            "maxLines": 1
+          },
+          "attr": "content"
+        },
         {
           "id": "listings.banner.title",
           "kind": "text",
@@ -5489,6 +5637,43 @@
       "title": "Fremont 2BR Craftsman Apartment | Harborview Property Management",
       "text": [
         {
+          "id": "property.seo.title",
+          "kind": "text",
+          "page": "property-detail.html",
+          "selector": "title",
+          "tag": "title",
+          "section": "seo",
+          "role": "pageTitle",
+          "fillSource": "llm",
+          "original": "Fremont 2BR Craftsman Apartment | Harborview Property Management",
+          "constraints": {
+            "minChars": 15,
+            "maxChars": 60,
+            "minWords": 1,
+            "maxWords": 12,
+            "maxLines": 1
+          }
+        },
+        {
+          "id": "property.seo.description",
+          "kind": "text",
+          "page": "property-detail.html",
+          "selector": "meta[name='description']",
+          "tag": "meta",
+          "section": "seo",
+          "role": "pageMetaDescription",
+          "fillSource": "llm",
+          "original": "3608 Fremont Ave N, Unit A, Fremont, Seattle — 2 bed, 1 bath craftsman-style apartment managed by Harborview Property Management.",
+          "constraints": {
+            "minChars": 70,
+            "maxChars": 158,
+            "minWords": 1,
+            "maxWords": 32,
+            "maxLines": 1
+          },
+          "attr": "content"
+        },
+        {
           "id": "property.badge",
           "kind": "text",
           "page": "property-detail.html",
@@ -6577,6 +6762,43 @@
       "title": "Our Team | Harborview Property Management",
       "text": [
         {
+          "id": "agents.seo.title",
+          "kind": "text",
+          "page": "agents.html",
+          "selector": "title",
+          "tag": "title",
+          "section": "seo",
+          "role": "pageTitle",
+          "fillSource": "llm",
+          "original": "Our Team | Harborview Property Management",
+          "constraints": {
+            "minChars": 15,
+            "maxChars": 60,
+            "minWords": 1,
+            "maxWords": 12,
+            "maxLines": 1
+          }
+        },
+        {
+          "id": "agents.seo.description",
+          "kind": "text",
+          "page": "agents.html",
+          "selector": "meta[name='description']",
+          "tag": "meta",
+          "section": "seo",
+          "role": "pageMetaDescription",
+          "fillSource": "llm",
+          "original": "Meet the Harborview Property Management team — Seattle-based leasing, maintenance, and owner relations specialists.",
+          "constraints": {
+            "minChars": 70,
+            "maxChars": 158,
+            "minWords": 1,
+            "maxWords": 32,
+            "maxLines": 1
+          },
+          "attr": "content"
+        },
+        {
           "id": "agents.banner.title",
           "kind": "text",
           "page": "agents.html",
@@ -7153,6 +7375,43 @@
       "page": "agent-detail.html",
       "title": "Dana Whitfield, Founder & Lead Property Manager | Harborview Property Management",
       "text": [
+        {
+          "id": "agentDetail.seo.title",
+          "kind": "text",
+          "page": "agent-detail.html",
+          "selector": "title",
+          "tag": "title",
+          "section": "seo",
+          "role": "pageTitle",
+          "fillSource": "llm",
+          "original": "Dana Whitfield, Founder & Lead Property Manager | Harborview Property Management",
+          "constraints": {
+            "minChars": 15,
+            "maxChars": 60,
+            "minWords": 1,
+            "maxWords": 12,
+            "maxLines": 1
+          }
+        },
+        {
+          "id": "agentDetail.seo.description",
+          "kind": "text",
+          "page": "agent-detail.html",
+          "selector": "meta[name='description']",
+          "tag": "meta",
+          "section": "seo",
+          "role": "pageMetaDescription",
+          "fillSource": "llm",
+          "original": "Dana Whitfield is the founder and lead property manager at Harborview Property Management, serving Seattle-area rental owners and tenants.",
+          "constraints": {
+            "minChars": 70,
+            "maxChars": 158,
+            "minWords": 1,
+            "maxWords": 32,
+            "maxLines": 1
+          },
+          "attr": "content"
+        },
         {
           "id": "agentDetail.name",
           "kind": "text",
@@ -7975,6 +8234,43 @@
       "page": "contact.html",
       "title": "Contact Us | Harborview Property Management",
       "text": [
+        {
+          "id": "contact.seo.title",
+          "kind": "text",
+          "page": "contact.html",
+          "selector": "title",
+          "tag": "title",
+          "section": "seo",
+          "role": "pageTitle",
+          "fillSource": "llm",
+          "original": "Contact Us | Harborview Property Management",
+          "constraints": {
+            "minChars": 15,
+            "maxChars": 60,
+            "minWords": 1,
+            "maxWords": 12,
+            "maxLines": 1
+          }
+        },
+        {
+          "id": "contact.seo.description",
+          "kind": "text",
+          "page": "contact.html",
+          "selector": "meta[name='description']",
+          "tag": "meta",
+          "section": "seo",
+          "role": "pageMetaDescription",
+          "fillSource": "llm",
+          "original": "Get in touch with Harborview Property Management — for property owners seeking management services or tenants with questions.",
+          "constraints": {
+            "minChars": 70,
+            "maxChars": 158,
+            "minWords": 1,
+            "maxWords": 32,
+            "maxLines": 1
+          },
+          "attr": "content"
+        },
         {
           "id": "contact.banner.title",
           "kind": "text",

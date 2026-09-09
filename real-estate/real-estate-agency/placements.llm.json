@@ -286,6 +286,26 @@
     },
     "index.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "home.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Prestige Realty | Bay Area Real Estate Agency",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "home.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Prestige Realty is a boutique San Francisco Bay Area brokerage helping buyers, sellers and investors find their next home.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "hero": {
           "fields": {
             "eyebrow": {
@@ -1143,6 +1163,26 @@
     },
     "about.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "about.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "About Us | Prestige Realty",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "about.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Learn about Prestige Realty, a boutique Bay Area brokerage built on local expertise and honest advice since 2011.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "banner": {
           "fields": {
             "title": {
@@ -1549,6 +1589,26 @@
     },
     "services.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "services.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Services | Prestige Realty",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "services.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Prestige Realty services — home buying, selling, valuation, investment consulting, relocation, and new construction sales.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "banner": {
           "fields": {
             "title": {
@@ -1982,6 +2042,26 @@
     },
     "listings.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "listings.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Property Listings | Prestige Realty",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "listings.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Browse current Bay Area property listings from Prestige Realty — homes, condos, and estates for sale.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "banner": {
           "fields": {
             "title": {
@@ -2531,6 +2611,26 @@
     },
     "property-detail.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "property.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Modern Family Home, Palo Alto | Prestige Realty",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "property.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "482 Willow Creek Lane, Palo Alto, CA — 4 bed, 3 bath modern family home listed by Prestige Realty.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "listing": {
           "fields": {
             "badge": {
@@ -3040,6 +3140,26 @@
     },
     "agents.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "agents.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Our Agents | Prestige Realty",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "agents.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Meet the Prestige Realty team — Bay Area real estate agents specializing in buying, selling, and investment properties.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "banner": {
           "fields": {
             "title": {
@@ -3305,6 +3425,26 @@
     },
     "agent-detail.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "agentDetail.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Sarah Whitman, Principal Broker | Prestige Realty",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "agentDetail.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Sarah Whitman is the founder and principal broker of Prestige Realty, specializing in Palo Alto and Peninsula home sales.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "profile": {
           "fields": {
             "name": {
@@ -3674,6 +3814,26 @@
     },
     "contact.html": {
       "sections": {
+        "seo": {
+          "fields": {
+            "title": {
+              "id": "contact.seo.title",
+              "type": "text",
+              "editable": true,
+              "current": "Contact Us | Prestige Realty",
+              "minChars": 15,
+              "maxChars": 60
+            },
+            "description": {
+              "id": "contact.seo.description",
+              "type": "text",
+              "editable": true,
+              "current": "Get in touch with Prestige Realty — schedule a consultation, request a home valuation, or ask a question.",
+              "minChars": 70,
+              "maxChars": 158
+            }
+          }
+        },
         "banner": {
           "fields": {
             "title": {

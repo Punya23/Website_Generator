@@ -30,6 +30,16 @@ export interface ApplyPlacementsOptions {
    *  photo URL — `fill.ts` does not itself talk to a stock-photo provider; resolve the model's
    *  search query (see `ImagePlacement.subject`) through your own provider first. */
   llmValues?: Record<string, string>;
+  /** The TEMPLATE's own fictional business name (`PlacementsFile.templateName`, e.g. "Prestige
+   *  Realty") — set this so a `data` placement with nothing real to resolve to at least stops
+   *  naming a different company. A demo testimonial ("Prestige Realty found us a home...") is
+   *  otherwise still literally correct output — the customer/quote is honestly fictional, exactly
+   *  as designed — but it names the TEMPLATE's brand, not this site's, on every one of the four
+   *  templates (confirmed live: all four name their own demo brand inside their fallback
+   *  testimonial). Only a literal substring swap of this exact name, never a rewrite of anything
+   *  else in the fallback text — the customer's name, quote and location stay the template's own
+   *  fiction, same as always. */
+  templateBusinessName?: string;
 }
 
 export interface ClampNote {
@@ -80,6 +90,18 @@ function clampToConstraints(raw: string, constraints: TextConstraints, id: strin
     return truncated;
   }
   return trimmed;
+}
+
+/** The one substitution allowed on a `data` placement with nothing real to resolve to: replace a
+ *  literal mention of the TEMPLATE's own fictional brand with this site's real one, changing
+ *  nothing else about the fallback text. `null` when there is nothing to swap (no
+ *  `templateBusinessName`/`brief.businessName` configured, or the original doesn't name it) — the
+ *  caller's existing "nothing resolved, keep the original" behavior applies unchanged. */
+function swapTemplateBrandName(original: string, options: ApplyPlacementsOptions): string | null {
+  const from = options.templateBusinessName;
+  const to = options.brief.businessName;
+  if (!from || !to || !original.includes(from)) return null;
+  return original.split(from).join(to);
 }
 
 /** `© <year> <businessName>. All rights reserved.` / `Call <phone>` / the leading text of the
@@ -189,6 +211,7 @@ export async function applyPlacements(html: string, page: PagePlacements, option
       raw = (placement.briefField && options.brief[placement.briefField]) || null;
     } else if (placement.fillSource === "data") {
       raw = options.resolveData ? await options.resolveData(placement) : null;
+      if (!raw) raw = swapTemplateBrandName(placement.original, options);
     } else {
       raw = options.llmValues?.[placement.id] ?? null;
     }

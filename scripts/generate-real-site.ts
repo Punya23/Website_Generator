@@ -191,7 +191,12 @@ async function main(): Promise<void> {
     };
 
     const html = await fs.readFile(path.join(templateDir, pageFile), "utf8");
-    const result = await applyPlacements(html, merged, { brief, resolveData, llmValues });
+    const result = await applyPlacements(html, merged, {
+      brief,
+      resolveData,
+      llmValues,
+      templateBusinessName: file.templateName,
+    });
 
     const outFile = pageFile.replace(/\.html$/, ".generated.html");
     await fs.writeFile(path.join(templateDir, outFile), result.html, "utf8");

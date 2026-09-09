@@ -140,7 +140,12 @@ async function main(): Promise<void> {
     };
 
     const html = await fs.readFile(path.join(templateDir, pageFile), "utf8");
-    const result = await applyPlacements(html, merged, { brief: FAKE_BRIEF, resolveData, llmValues });
+    const result = await applyPlacements(html, merged, {
+      brief: FAKE_BRIEF,
+      resolveData,
+      llmValues,
+      templateBusinessName: file.templateName,
+    });
     allClamped.push(...result.clamped);
     totalApplied += result.appliedText + result.appliedImages;
 

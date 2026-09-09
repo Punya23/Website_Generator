@@ -158,6 +158,29 @@ describe("applyPlacements: text", () => {
     expect(result.appliedText).toBe(0);
   });
 
+  it("swaps a literal mention of the TEMPLATE's own fictional brand out of a fallback data placement", async () => {
+    const original = "\"Prestige Realty found us a home in Palo Alto we didn't even know was coming to market.\"";
+    const html = `<p id="t1">${original}</p>`;
+    const p = page([textPlacement({ fillSource: "data", original, constraints: { minChars: 1, maxChars: 200, minWords: 1, maxWords: 30, maxLines: 4 } })]);
+    const result = await applyPlacements(html, p, {
+      brief: { businessName: "Surana Real Estates" },
+      templateBusinessName: "Prestige Realty",
+    });
+    expect(result.html).toContain("Surana Real Estates found us a home in Palo Alto");
+    expect(result.html).not.toContain("Prestige Realty");
+  });
+
+  it("does nothing to a data placement that doesn't name the template's own brand", async () => {
+    const html = `<span id="t1">4 Beds</span>`;
+    const p = page([textPlacement({ fillSource: "data", original: "4 Beds", constraints: { minChars: 1, maxChars: 20, minWords: 1, maxWords: 3, maxLines: 1 } })]);
+    const result = await applyPlacements(html, p, {
+      brief: { businessName: "Surana Real Estates" },
+      templateBusinessName: "Prestige Realty",
+    });
+    expect(result.html).toContain("4 Beds");
+    expect(result.appliedText).toBe(0);
+  });
+
   it("composes the footer copyright line from the business name and current year", async () => {
     const html = `<span id="t1">© 2019 Some Template Author. All rights reserved.</span>`;
     const p = page([textPlacement({ fillSource: "brief", briefField: "businessName", compose: "footerCopyright" })]);

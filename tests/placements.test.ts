@@ -9,6 +9,7 @@ import {
   buildFlatPromptPayload,
   buildLlmView,
   buildPromptPayload,
+  flatKeysSchema,
 } from "../src/templates/placements/llm-view.js";
 import type { ImagePlacement, PagePlacements, TextPlacement } from "../src/templates/placements/schema.js";
 
@@ -353,6 +354,28 @@ describe("llm-view: the flat id-keyed contract (recommended for a real LLM call)
     const view = buildLlmView(file);
     const values = applyFlatLlmResponse(view, { "home.hero.title": "New headline" });
     expect(values).toEqual({ "home.hero.title": "New headline" });
+  });
+
+  it("flatKeysSchema builds a strict JSON Schema requiring exactly the given ids", () => {
+    const schema = flatKeysSchema(["home.hero.title", "home.hero.subtitle"]);
+    expect(schema).toEqual({
+      type: "object",
+      properties: {
+        "home.hero.title": { type: "string", minLength: 1 },
+        "home.hero.subtitle": { type: "string", minLength: 1 },
+      },
+      required: ["home.hero.title", "home.hero.subtitle"],
+      additionalProperties: false,
+    });
+  });
+
+  it("flatKeysSchema on an empty id list still requires nothing extra", () => {
+    expect(flatKeysSchema([])).toEqual({
+      type: "object",
+      properties: {},
+      required: [],
+      additionalProperties: false,
+    });
   });
 });
 

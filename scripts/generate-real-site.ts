@@ -38,6 +38,7 @@
 import "../src/load-env.js";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { z } from "zod";
 import { llm } from "../src/llm/client.js";
 import { chatJsonWithRetry } from "../src/llm/json-agent.js";
 import { expandBrief, expandBriefFromInput, briefToContext } from "../src/agents/expand-brief-agent.js";
@@ -45,7 +46,13 @@ import { STREET_ADDRESS_RE } from "../src/templates/filler-patterns.js";
 import { PlacementsFileSchema, type BriefField, type PagePlacements } from "../src/templates/placements/schema.js";
 import type { PlacementBrief } from "../src/templates/placements/fill.js";
 import { applyPlacements } from "../src/templates/placements/fill.js";
-import { applyFlatLlmResponse, buildFlatPromptPayload, buildLlmView, type LlmTemplateView } from "../src/templates/placements/llm-view.js";
+import {
+  applyFlatLlmResponse,
+  buildFlatPromptPayload,
+  buildLlmView,
+  flatKeysSchema,
+  type LlmTemplateView,
+} from "../src/templates/placements/llm-view.js";
 
 const templateId = process.argv[2] ?? "real-estate-agency";
 const templateDir = path.resolve(process.cwd(), "real-estate", templateId);
@@ -186,8 +193,44 @@ function buildExamplesPayload(pageSet: PagePlacements, brief: PlacementBrief): R
   return out;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+/** `z.object(...).strict()` for every id in `ids`, each a required non-empty string — the runtime
+ *  half of the coverage gate. `flatKeysSchema` (same id set) is the provider-side half, sent as
+ *  `response_format: json_schema` so a compliant provider can't return the wrong key set at all;
+ *  this is what still catches it on a provider/model that ignores or only loosely honors that
+ *  (see `client.ts`'s own note: schema mode isn't universal, and even where honored isn't always
+ *  strict) — `.parse()` throws `ZodError` on a missing/extra/empty key, which `chatJsonWithRetry`
+ *  already retries on (`isRetryableOutputError` in `json-agent.ts`), so a page that comes back
+ *  under-filled gets ONE more real attempt instead of silently shipping with template copy left in
+ *  the gaps it didn't notice. */
+function idsShape(ids: string[]): z.ZodRawShape {
+  const shape: z.ZodRawShape = {};
+  for (const id of ids) shape[id] = z.string().min(1);
+  return shape;
+}
+
+function buildResponseValidator(copyFields: Record<string, FlatPromptField>, exampleFields: Record<string, ExampleField>) {
+  return z
+    .object({
+      copy_values: z.object(idsShape(Object.keys(copyFields))).strict(),
+      example_values: z.object(idsShape(Object.keys(exampleFields))).strict(),
+    })
+    .strict();
+}
+
+function buildResponseJsonSchema(copyFields: Record<string, FlatPromptField>, exampleFields: Record<string, ExampleField>) {
+  return {
+    name: "page_fill",
+    schema: {
+      type: "object",
+      properties: {
+        copy_values: flatKeysSchema(Object.keys(copyFields)),
+        example_values: flatKeysSchema(Object.keys(exampleFields)),
+      },
+      required: ["copy_values", "example_values"],
+      additionalProperties: false,
+    },
+    strict: true,
+  };
 }
 
 function buildUserPrompt(
@@ -217,27 +260,30 @@ async function fillPageWithRealLlm(
     return { copyValues: {}, exampleValues: {} };
   }
 
+  const validator = buildResponseValidator(copyFields, exampleFields);
   const response = await chatJsonWithRetry(
     `real-site-fill:${pageKey}`,
     SYSTEM_PROMPT,
     (parseError) => buildUserPrompt(pageKey, summary, copyFields, exampleFields, parseError),
-    { tokenRole: "page", model: llm.getCompositionModel(), initialTemperature: 0.7 },
-    (raw) => JSON.parse(raw) as unknown
+    {
+      tokenRole: "page",
+      model: llm.getCompositionModel(),
+      initialTemperature: 0.7,
+      responseSchema: buildResponseJsonSchema(copyFields, exampleFields),
+    },
+    // Throws ZodError (retried by chatJsonWithRetry) on any missing, extra, or empty-string id —
+    // the JSON-Schema response_format above already asks the provider not to do this; this is the
+    // backstop for the provider/model combinations where that request isn't honored strictly.
+    (raw) => validator.parse(JSON.parse(raw))
   );
 
-  const copyValues =
-    page && isRecord(response)
-      ? applyFlatLlmResponse({ template: view.template, pages: { [pageKey]: page } }, { values: response.copy_values })
-      : {};
+  // Every id in copyFields/exampleFields is now guaranteed present as a non-empty string —
+  // `validator.parse` above would have thrown (and been retried) otherwise.
+  const copyValues = page
+    ? applyFlatLlmResponse({ template: view.template, pages: { [pageKey]: page } }, { values: response.copy_values })
+    : {};
 
-  const exampleValues: Record<string, string> = {};
-  const rawExamples = isRecord(response) && isRecord(response.example_values) ? response.example_values : {};
-  for (const id of Object.keys(exampleFields)) {
-    const value = rawExamples[id];
-    if (typeof value === "string") exampleValues[id] = value;
-  }
-
-  return { copyValues, exampleValues };
+  return { copyValues, exampleValues: response.example_values };
 }
 
 async function main(): Promise<void> {

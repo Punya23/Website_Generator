@@ -337,3 +337,33 @@ export function applyFlatLlmResponse(view: LlmTemplateView, response: unknown): 
   }
   return values;
 }
+
+/**
+ * A JSON Schema object whose properties are exactly `ids` (each a required, non-empty string),
+ * `additionalProperties: false`. Pass the result as `response_format: json_schema`'s `schema`
+ * (`client.ts`'s `responseSchema.schema`) via `llm.chat`/`chatJsonWithRetry` — the provider then
+ * refuses to return anything but these exact keys, closing the coverage gap plain `jsonMode: true`
+ * leaves open: a `jsonMode` response is valid JSON but is NEVER checked against the id set it was
+ * asked for, so a model that silently drops half the ids (the same failure `buildFlatPromptPayload`
+ * itself was written to avoid at the NESTING level — see the comment above it) parses clean and
+ * ships with missing fields quietly falling back to the template's own original copy.
+ *
+ * `additionalProperties: false` at every level is required for OpenAI/OpenRouter's `strict: true`
+ * json_schema mode (`client.ts`'s default) to actually enforce the property set rather than just
+ * hint at it — a schema without it is accepted but not enforced strictly by every model.
+ *
+ * Only a shape guarantee (right keys, right type) — still pair this with a real
+ * `minChars`/`maxChars` check after parsing (`fill.ts` already clamps at write time) and with a
+ * post-parse validator if you need one call to catch a missing key BEFORE `applyPlacements` ever
+ * sees it (e.g. to retry the same page instead of silently falling back per-field).
+ */
+export function flatKeysSchema(ids: string[]): Record<string, unknown> {
+  const properties: Record<string, unknown> = {};
+  for (const id of ids) properties[id] = { type: "string", minLength: 1 };
+  return {
+    type: "object",
+    properties,
+    required: [...ids],
+    additionalProperties: false,
+  };
+}

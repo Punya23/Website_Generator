@@ -16,9 +16,12 @@ import {
   isQualityPipeline,
   useSkinFillPipeline,
   useVerbatimTemplatePipeline,
+  usePlacementsPipeline,
   visionQaEnabled,
   finalVisionMaxRedos,
 } from "../llm/pipeline-speed.js";
+import { classifyTaxonomy } from "../skins/taxonomy.js";
+import { runPlacementsPipeline } from "./placements-pipeline.js";
 import { judgeFinalScreenshots, isStrictlyBetter, type FinalVisionVerdict } from "./final-vision-gate.js";
 import { runDesignQA } from "../qa/react-qa.js";
 import { buildPageSections } from "../agents/section-builder-agent.js";
@@ -122,6 +125,27 @@ async function screenshotVerbatimPages(
   } finally {
     await fs.rm(stageDir, { recursive: true, force: true });
   }
+}
+
+/**
+ * Same root cause `screenshotVerbatimPages` documents (relative asset links never resolve without
+ * a real base URL) but no staging needed: unlike verbatim's scattered per-section corpus assets, a
+ * real-estate placements template's `assets/` folder already lives on disk exactly where the
+ * template's own HTML expects it (`real-estate/<templateId>/assets/...`) — `fillRealEstateTemplate`
+ * only ever rewrites text/image VALUES in memory, it never moves or copies files. A `file://` URL
+ * pointed straight at the template's own directory is enough.
+ */
+async function screenshotPlacementsPages(
+  htmlPages: Record<string, string>,
+  templateId: string
+): Promise<Record<string, string>> {
+  const templateDir = path.resolve(process.cwd(), "real-estate", templateId);
+  const shots: Record<string, string> = {};
+  for (const slug of Object.keys(htmlPages).filter((s) => s !== "home")) {
+    const pageUrl = pathToFileURL(path.join(templateDir, pageFileName(slug))).href;
+    shots[slug] = await screenshotPage(htmlPages[slug]!, { pageUrl });
+  }
+  return shots;
 }
 
 async function runPagePipeline(
@@ -324,11 +348,19 @@ async function hasIngestedTemplates(): Promise<boolean> {
 
 export async function generateSite(options: GenerateSiteOptions): Promise<GenerationResult> {
   const outputMode: "react" | "html" = getOutputMode();
+  // Opt-in (see `usePlacementsPipeline`'s own doc comment) and gated on the brief actually
+  // classifying as real-estate — `classifyTaxonomy` is the same industry classifier
+  // `pickSiteSkin` already uses elsewhere, just run directly on the raw brief here since this
+  // decision has to happen before any of the rest of this function's setup (design system, CMS
+  // collections, etc.) that real-estate placements sites skip entirely. Takes priority over
+  // verbatim/skin-fill when it fires — a real-estate brief with the flag on should not also burn a
+  // verbatim-corpus or skin-fill attempt first.
+  const placements = usePlacementsPipeline() && outputMode !== "react" && classifyTaxonomy(options.businessBrief).industry === "real-estate";
   // Verbatim mode owns the default path, but only once templates have actually been ingested —
   // an empty cache falls through to the skin pipeline instead of failing the run.
-  const verbatim = useVerbatimTemplatePipeline() && outputMode !== "react" && (await hasIngestedTemplates());
-  const skinFill = !verbatim && useSkinFillPipeline();
-  if (!skinFill && !verbatim) requireLlm("website generation");
+  const verbatim = !placements && useVerbatimTemplatePipeline() && outputMode !== "react" && (await hasIngestedTemplates());
+  const skinFill = !placements && !verbatim && useSkinFillPipeline();
+  if (!skinFill && !verbatim && !placements) requireLlm("website generation");
   const start = Date.now();
   llm.resetTokenUsage();
   resetFallbackTracker();
@@ -359,16 +391,20 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   // attempt — see `VerbatimPipelineResult`'s own comment on why a discarded redo used to leave an
   // orphaned record with a later timestamp than the one actually shipped.
   let verbatimRecordInput: Pick<VerbatimPipelineResult, "theme" | "themeConfidence" | "taxonomy" | "composed"> | undefined;
+  // Which `real-estate/*` folder got filled — needed after the fact for the final-vision
+  // screenshot pass (`screenshotPlacementsPages` below reads the template's real assets straight
+  // off disk, same reasoning `screenshotVerbatimPages` documents for verbatim's own case).
+  let placementsTemplateId: string | undefined;
   let finalVision: GenerationResult["finalVision"];
 
   try {
 
   const expanded =
-    skinFill || verbatim
+    skinFill || verbatim || placements
       ? expandBriefFromInput(options.businessBrief, options.businessName)
       : await expandBrief(options.businessBrief, options.businessName);
   pipelineLog(
-    skinFill || verbatim
+    skinFill || verbatim || placements
       ? "[pipeline] Brief slotted from your input (no LLM rewrite)"
       : "[pipeline] Expanding brief… done"
   );
@@ -384,7 +420,13 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   let designSystem;
   let pickedSkin: SiteSkin | undefined;
 
-  if (verbatim) {
+  if (placements) {
+    // Same reasoning as verbatim, one line down: the look comes from the chosen real-estate
+    // template's own stylesheet, not a generated design system.
+    pipelineLog("[pipeline] Real-estate placements mode — no skin, no design system");
+    sitePlan = emptySitePlan();
+    designSystem = VERBATIM_PLACEHOLDER_THEME;
+  } else if (verbatim) {
     // No skin, no design council, no token pack: the look comes from each source template's own
     // (scoped, recolored) stylesheet, so `designSystem` is only carried for context metadata.
     pipelineLog("[pipeline] Verbatim template mode — no skin, no design system");
@@ -460,7 +502,7 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     sitePlan = ctx.sitePlan;
     designSystem = ctx.designSystem;
     verticalProfile = ctx.verticalProfile!;
-  } else if (verbatim) {
+  } else if (verbatim || placements) {
     ctx.verticalProfile = {
       profileId: "luxury-dark",
       pageTone: "dark",
@@ -498,12 +540,14 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   }
   setPipelineContext({
     jobId: options.jobId,
-    // Verbatim mode's `ctx.verticalProfile` is a placeholder (see the `else if (verbatim)` branch
-    // above) needed only to satisfy SiteContext's shape — it is not a real theme decision, so it
-    // must not be stamped into every structured log line as if it were one. The real theme is
-    // resolved inside `selectSiteSections`; `runVerbatimTemplatePipeline` calls
-    // `updatePipelineContext` with it as soon as it's known.
-    profileId: verbatim ? undefined : ctx.verticalProfile?.profileId,
+    // Verbatim/placements mode's `ctx.verticalProfile` is a placeholder (see the
+    // `else if (verbatim || placements)` branch above) needed only to satisfy SiteContext's shape
+    // — it is not a real theme decision, so it must not be stamped into every structured log line
+    // as if it were one. Verbatim's real theme is resolved inside `selectSiteSections`
+    // (`runVerbatimTemplatePipeline` calls `updatePipelineContext` with it as soon as it's known);
+    // placements has no per-generation theme to resolve at all — the look is just the chosen
+    // template's own stylesheet.
+    profileId: verbatim || placements ? undefined : ctx.verticalProfile?.profileId,
     seed: variationSeed,
   });
   pipelineLog(
@@ -511,11 +555,13 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
       ? `[pipeline] Skin ${pickedSkin.id} look (${ctx.designSystem.fontHeading}, ${ctx.designSystem.pageTone}) — seed ${variationSeed}`
       : verbatim
         ? `[pipeline] Verbatim template pipeline — seed ${variationSeed} (theme resolves during template selection)`
-        : `[pipeline] Vertical profile: ${ctx.verticalProfile?.profileId} (${ctx.verticalProfile?.pageTone}) — seed ${variationSeed}`
+        : placements
+          ? `[pipeline] Real-estate placements pipeline — seed ${variationSeed}`
+          : `[pipeline] Vertical profile: ${ctx.verticalProfile?.profileId} (${ctx.verticalProfile?.pageTone}) — seed ${variationSeed}`
   );
-  ctx.cmsCollections = skinFill || verbatim ? [] : generateCmsCollections(expanded);
+  ctx.cmsCollections = skinFill || verbatim || placements ? [] : generateCmsCollections(expanded);
   ctx.reactPages = {};
-  if (!skinFill && !verbatim) {
+  if (!skinFill && !verbatim && !placements) {
     for (const collection of ctx.cmsCollections) {
       for (const item of collection.items) {
         if (!item.imageQuery) continue;
@@ -533,7 +579,27 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   registry.userMedia = options.userMedia;
   const enableVision = options.enableVisionPolish !== false;
 
-  if (verbatim) {
+  if (placements) {
+    const placementsResult = await runPlacementsPipeline(ctx, options.businessBrief);
+    htmlPages = placementsResult.htmlPages;
+    qaResults = placementsResult.qaResults;
+    placementsTemplateId = placementsResult.templateId;
+    pageResults = Object.keys(htmlPages).map((slug) => ({
+      spec: {
+        slug,
+        title: ctx.pages[slug]?.title ?? slug,
+        content: [],
+        layout: { type: "Stack", children: [] },
+        sections: [],
+      },
+      html: htmlPages[slug] ?? "",
+      qa: qaResults[slug] ?? {
+        passed: false,
+        issues: [{ severity: "hard" as const, code: "MISSING_PAGE_QA", message: `No QA result for page ${slug}` }],
+      },
+      retries: 0,
+    }));
+  } else if (verbatim) {
     const verbatimResult = await runVerbatimTemplatePipeline(ctx, registry, {
       variationSeed,
       ...(options.consumerId ? { consumerId: options.consumerId } : {}),
@@ -758,6 +824,10 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     // See `screenshotVerbatimPages` — this output has external stylesheets and local images that
     // never resolve without a real base URL.
     Object.assign(screenshots, await screenshotVerbatimPages(htmlPages, verbatimFiles));
+  } else if (!process.env.VITEST && placements && placementsTemplateId) {
+    // See `screenshotPlacementsPages` — same "no base URL, external stylesheet never loads" root
+    // cause verbatim has, simpler fix (the template's own files are already on disk, unstaged).
+    Object.assign(screenshots, await screenshotPlacementsPages(htmlPages, placementsTemplateId));
   } else if (!process.env.VITEST) {
     for (const slug of slugsToShoot) {
       screenshots[slug] = await screenshotPage(htmlPages[slug]!);

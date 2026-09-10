@@ -712,6 +712,11 @@ See `.env.example` for the full list. Grouped essentials:
 - `PIPELINE_COST_CAP_USD`, `LLM_BUDGET_*`, `PIPELINE_JSON_LOG`
 - `TEMPLATE_MIX_SECTIONS=0` (disable cross-template mixing — anchor-only fallback)
 - `TEMPLATE_MIX_COMPATIBILITY_THRESHOLD` (0-1, default 0.55 — how compatible a design fingerprint must be to mix in)
+- `PIPELINE_PLACEMENTS=1` (opt into the real-estate placements path — a hand-built `real-estate/*`
+  template filled via `src/templates/placements/`, for a brief `classifyTaxonomy` resolves to
+  `"real-estate"`; takes priority over verbatim/skin-fill when it fires. No vision-QA redo loop or
+  generation-record parity with verbatim yet — see `src/orchestrator/placements-pipeline.ts`'s own
+  doc comment. `PIPELINE_PLACEMENTS=0` forces it off even if something else would opt in.)
 - `TEMPLATE_PROBE_REMOTE_IMAGES=0` (skip the network dimension-probe for externally-hotlinked template images at ingest)
 
 ### Ingest

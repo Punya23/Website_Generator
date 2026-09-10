@@ -30,10 +30,15 @@
  *    Lawson one. See `PEOPLE_ROLES` for the one role still excluded, and why.
  *  - phone/email with no real input: an obvious, non-dialable/non-mailable placeholder — never an
  *    LLM-plausible one that could coincide with an actual stranger's number or inbox. The FORMAT
- *    (country code/grouping) is brief-aware (`placeholderPhoneFormatFor`); the digits are always
- *    zero, enforced in `fill.ts` regardless of what format string reaches it.
+ *    (country code/grouping) is brief-aware (`resolveLocale`); the digits are always zero, enforced
+ *    in `fill.ts` regardless of what format string reaches it. The same `resolveLocale` call also
+ *    fixes the currency `example_fields` answers use (see `buildUserPrompt`'s `LOCALE:` line) —
+ *    stated once and reused for every page, the same fix `summary` already is for tone drift.
  *  - a real photo (agent headshot, testimonial avatar) with no real input: unaffected either way —
- *    no stock-photo provider is wired into this script, so every image stays the template's own.
+ *    these stay `fillSource: "data"` (see `real-estate-map.ts`) — the template's own stock photo,
+ *    never a model-invented or stock-searched stand-in for a specific named person. A handful of
+ *    other, non-person photo slots (hero/page-banner backgrounds, the about-page photo) ARE now
+ *    `llmQuery` and resolve through a real stock-image provider — see `resolveImageQueries`.
  */
 import "../src/load-env.js";
 import fs from "node:fs/promises";
@@ -82,13 +87,26 @@ Phone (510) 555-0199, hello@baybreezerealty.com, 220 Harbor View Blvd, Alameda, 
 const PEOPLE_ROLES = new Set(["agentContact"]);
 
 /** Heuristic only — decides the FORMAT of the non-dialable phone placeholder (which stays all
- *  zeros regardless, enforced in fill.ts), not whether any real number is invented. Extend this
- *  list rather than trying to be clever about locale detection; a false negative just falls back to
- *  the US-shaped default, which is no less safe, only less obviously on-tone. */
+ *  zeros regardless, enforced in fill.ts) and which currency an `example_fields` answer (a listing
+ *  price, a business stat) should use, not whether any real number is invented. Extend this list
+ *  rather than trying to be clever about locale detection; a false negative just falls back to the
+ *  US-shaped default, which is no less safe, only less obviously on-tone. */
 const INDIA_HINT_RE = /\b(india|bharat|maharashtra|pune|mumbai|bengaluru|bangalore|delhi|hyderabad|chennai|kolkata|gujarat|karnataka|rera|₹|\binr\b)\b/i;
 
-function placeholderPhoneFormatFor(rawBriefText: string): string {
-  return INDIA_HINT_RE.test(rawBriefText) ? "+91 00000 00000" : "+1 (000) 000-0000";
+interface Locale {
+  phoneFormat: string;
+  /** Stated explicitly to the model as its own line in every page's prompt (see `buildUserPrompt`)
+   *  — SYSTEM_PROMPT's "right city, right currency" rule used to rely on the model inferring this
+   *  from whatever the free-text business summary happened to mention, which is exactly the kind
+   *  of per-page-independent guess that drifts across pages/calls. One resolved value, reused for
+   *  every page the same way `summary` already is, closes that gap without a second LLM call. */
+  currencyLabel: string;
+}
+
+function resolveLocale(rawBriefText: string): Locale {
+  return INDIA_HINT_RE.test(rawBriefText)
+    ? { phoneFormat: "+91 00000 00000", currencyLabel: "Indian Rupees (₹), Indian numbering (e.g. ₹85 lakh, ₹1.2 crore)" }
+    : { phoneFormat: "+1 (000) 000-0000", currencyLabel: "US Dollars ($)" };
 }
 
 /** Mirrors `fill.ts`'s own `BRIEF_ILLUSTRATIVE_FIELDS` — kept in sync manually since one lives in
@@ -168,8 +186,12 @@ rename any id, and do not add any other top-level key. Do not wrap the JSON in m
 add any other text.
 
 Rules:
-- Sound like this specific business — warm, direct, plain-English. Never generic template
-  boilerplate ("We're passionate about excellence...").
+- Sound like this specific business — warm, direct, plain-English. Never generic real-estate
+  boilerplate — avoid stock phrases like "your trusted partner", "passionate about excellence",
+  "unparalleled service", "dream home", "where dreams meet reality", "your journey home starts
+  here", "we go above and beyond". If a sentence would read the same on any other real-estate
+  site regardless of business name, rewrite it around something specific from the business summary
+  (an actual service, neighborhood, differentiator, or the stated tone) instead.
 - Stay at or under maxChars for every text field — a value that doesn't fit will be truncated
   automatically, so a shorter answer that reads well beats a longer one that gets cut off.
 - Never invent a customer's name, a customer quote, or a staff member's name — you will not be
@@ -238,6 +260,7 @@ function buildResponseJsonSchema(copyFields: Record<string, FlatPromptField>, ex
 function buildUserPrompt(
   pageKey: string,
   summary: string,
+  locale: Locale,
   copyFields: unknown,
   exampleFields: unknown,
   parseError?: string
@@ -245,7 +268,11 @@ function buildUserPrompt(
   const retrySuffix = parseError
     ? `\n\nYour previous response was not valid JSON matching the required shape (${parseError}). Return ONLY the JSON object, no prose, no markdown fences.`
     : "";
-  return `Business summary:\n${summary}\n\nPage: ${pageKey}\n\n{"copy_fields": ${JSON.stringify(copyFields)}, "example_fields": ${JSON.stringify(exampleFields)}}${retrySuffix}`;
+  // Stated once here, identically on every page's call — the same fix `summary` already is for
+  // tone/service-list drift, applied to currency: without this line the model only sees whatever
+  // the free-text business summary happens to mention, so two different pages (or a retry of the
+  // same page) can land on two different currencies for the same business's example prices.
+  return `Business summary:\n${summary}\n\nLOCALE: use ${locale.currencyLabel} for any price/currency example.\n\nPage: ${pageKey}\n\n{"copy_fields": ${JSON.stringify(copyFields)}, "example_fields": ${JSON.stringify(exampleFields)}}${retrySuffix}`;
 }
 
 /**
@@ -282,6 +309,7 @@ async function fillPageWithRealLlm(
   pageSet: PagePlacements,
   pageKey: string,
   summary: string,
+  locale: Locale,
   brief: PlacementBrief
 ): Promise<{ copyValues: Record<string, string>; exampleValues: Record<string, string> }> {
   const page = view.pages[pageKey];
@@ -295,7 +323,7 @@ async function fillPageWithRealLlm(
   const response = await chatJsonWithRetry(
     `real-site-fill:${pageKey}`,
     SYSTEM_PROMPT,
-    (parseError) => buildUserPrompt(pageKey, summary, copyFields, exampleFields, parseError),
+    (parseError) => buildUserPrompt(pageKey, summary, locale, copyFields, exampleFields, parseError),
     {
       tokenRole: "page",
       model: llm.getCompositionModel(),
@@ -327,7 +355,8 @@ async function main(): Promise<void> {
 
   const effectiveRawBrief = rawBrief && rawBrief.length > 0 ? rawBrief : DEMO_BRIEF;
   const { brief, summary } = await resolveBriefContext(effectiveRawBrief);
-  const placeholderPhone = placeholderPhoneFormatFor(effectiveRawBrief);
+  const locale = resolveLocale(effectiveRawBrief);
+  const placeholderPhone = locale.phoneFormat;
   console.log(`[real-fill] business="${brief.businessName}" ${rawBrief ? "(from your brief)" : "(demo)"}`);
 
   const raw = JSON.parse(await fs.readFile(path.join(templateDir, "placements.json"), "utf8"));
@@ -340,7 +369,7 @@ async function main(): Promise<void> {
     const pageSet = file.pages[pageKey];
     if (!pageSet) continue;
     try {
-      const { copyValues, exampleValues } = await fillPageWithRealLlm(view, pageSet, pageKey, summary, brief);
+      const { copyValues, exampleValues } = await fillPageWithRealLlm(view, pageSet, pageKey, summary, locale, brief);
       Object.assign(llmValues, copyValues);
       Object.assign(illustrativeValues, exampleValues);
       console.log(

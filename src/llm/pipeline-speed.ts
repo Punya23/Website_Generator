@@ -131,6 +131,20 @@ export function useVerbatimTemplatePipeline(): boolean {
   return true;
 }
 
+/**
+ * Real-estate briefs get a whole hand-built template (`real-estate/*`) filled via the placements
+ * contract (`src/templates/placements/`) instead of the verbatim-corpus/skin-fill paths — see
+ * `src/orchestrator/placements-pipeline.ts`. Off by default: unlike verbatim/skin-fill this path
+ * has no vision-QA redo loop and no generation-record parity yet (see that module's own doc
+ * comment) — opt in per-run with PIPELINE_PLACEMENTS=1 while it proves out, rather than putting
+ * every real-estate brief through it by default.
+ */
+export function usePlacementsPipeline(): boolean {
+  if (process.env.PIPELINE_PLACEMENTS === "0") return false;
+  if (process.env.PIPELINE_PLACEMENTS === "1") return true;
+  return false;
+}
+
 export function visionQaEnabled(): boolean {
   if (process.env.SKIP_VISION === "1") return false;
   return true;

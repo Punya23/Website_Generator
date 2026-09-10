@@ -3,7 +3,7 @@
   "vertical": "real-estate",
   "templateId": "commercial-real-estate",
   "templateName": "Cornerstone Commercial Realty",
-  "generatedAt": "2026-09-09T10:49:31.687Z",
+  "generatedAt": "2026-09-10T18:39:25.666Z",
   "pageOrder": [
     "index.html",
     "about.html",
@@ -2338,7 +2338,7 @@
           "domKind": "background",
           "section": "hero",
           "role": "heroBackground",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=1600&q=70",
           "constraints": {
             "aspectRatio": "16:9",
@@ -3277,7 +3277,7 @@
           "domKind": "background",
           "section": "banner",
           "role": "pageBannerBackground",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1600&q=70",
           "constraints": {
             "aspectRatio": "16:9",
@@ -3294,7 +3294,7 @@
           "domKind": "img",
           "section": "story",
           "role": "aboutPhoto",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1524230572899-a752b3835840?auto=format&fit=crop&w=800&q=70",
           "constraints": {
             "aspectRatio": "4:3",
@@ -4251,7 +4251,7 @@
           "domKind": "background",
           "section": "banner",
           "role": "pageBannerBackground",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1600&q=70",
           "constraints": {
             "aspectRatio": "16:9",
@@ -5483,7 +5483,7 @@
           "domKind": "background",
           "section": "banner",
           "role": "pageBannerBackground",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1521783988139-89397d761dce?auto=format&fit=crop&w=1600&q=70",
           "constraints": {
             "aspectRatio": "16:9",
@@ -7276,7 +7276,7 @@
           "domKind": "background",
           "section": "banner",
           "role": "pageBannerBackground",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=70",
           "constraints": {
             "aspectRatio": "16:9",

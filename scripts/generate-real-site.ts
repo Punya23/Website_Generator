@@ -51,8 +51,10 @@ import {
   buildFlatPromptPayload,
   buildLlmView,
   flatKeysSchema,
+  type FlatPromptField,
   type LlmTemplateView,
 } from "../src/templates/placements/llm-view.js";
+import { stockImageUrl } from "../src/media/stock-images.js";
 
 const templateId = process.argv[2] ?? "real-estate-agency";
 const templateDir = path.resolve(process.cwd(), "real-estate", templateId);
@@ -246,6 +248,35 @@ function buildUserPrompt(
   return `Business summary:\n${summary}\n\nPage: ${pageKey}\n\n{"copy_fields": ${JSON.stringify(copyFields)}, "example_fields": ${JSON.stringify(exampleFields)}}${retrySuffix}`;
 }
 
+/**
+ * `copyValues` at this point holds the model's raw answer for every editable id — for a `type:
+ * "image"` field (an `llmQuery` placement) that answer is a plain-English stock-photo search
+ * query, per `SYSTEM_PROMPT`'s own instructions, NOT a URL. `fill.ts`'s `writeImage` (via
+ * `applyPlacements`) treats every `llmValues` entry as a ready-to-write `src`/`background-image`
+ * value regardless of placement kind — handing it a bare query string would write literal text
+ * like `"wide establishing shot of..."` into an `<img src>`. Resolves each in place through this
+ * pipeline's own stock-image provider (the same one `heroImageUrl` etc. already use) before
+ * `copyValues` ever reaches `applyPlacements`.
+ *
+ * Seeded on `businessName:id` — stable across a retry or a re-run for the same business (so the
+ * hero photo doesn't change every time the page is regenerated) while still varying per slot (the
+ * hero background and the about-page photo don't collide on the same image).
+ */
+async function resolveImageQueries(
+  copyValues: Record<string, string>,
+  copyFields: Record<string, FlatPromptField>,
+  brief: PlacementBrief
+): Promise<void> {
+  const imageIds = Object.keys(copyFields).filter((id) => copyFields[id]!.type === "image" && copyValues[id]);
+  await Promise.all(
+    imageIds.map(async (id) => {
+      const field = copyFields[id]!;
+      const seed = `${brief.businessName ?? "site"}:${id}`;
+      copyValues[id] = await stockImageUrl(copyValues[id]!, seed, undefined, field.minWidthPx, field.minHeightPx);
+    })
+  );
+}
+
 async function fillPageWithRealLlm(
   view: LlmTemplateView,
   pageSet: PagePlacements,
@@ -282,6 +313,8 @@ async function fillPageWithRealLlm(
   const copyValues = page
     ? applyFlatLlmResponse({ template: view.template, pages: { [pageKey]: page } }, { values: response.copy_values })
     : {};
+
+  await resolveImageQueries(copyValues, copyFields, brief);
 
   return { copyValues, exampleValues: response.example_values };
 }

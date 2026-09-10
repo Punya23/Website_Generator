@@ -3,7 +3,7 @@
   "vertical": "real-estate",
   "templateId": "property-management",
   "templateName": "Harborview Property Management",
-  "generatedAt": "2026-09-09T10:49:31.730Z",
+  "generatedAt": "2026-09-10T18:39:25.714Z",
   "pageOrder": [
     "index.html",
     "about.html",
@@ -2338,7 +2338,7 @@
           "domKind": "background",
           "section": "hero",
           "role": "heroBackground",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1600&q=70",
           "constraints": {
             "aspectRatio": "16:9",
@@ -3277,7 +3277,7 @@
           "domKind": "background",
           "section": "banner",
           "role": "pageBannerBackground",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&w=1600&q=70",
           "constraints": {
             "aspectRatio": "16:9",
@@ -3294,7 +3294,7 @@
           "domKind": "img",
           "section": "story",
           "role": "aboutPhoto",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?auto=format&fit=crop&w=800&q=70",
           "constraints": {
             "aspectRatio": "4:3",
@@ -4251,7 +4251,7 @@
           "domKind": "background",
           "section": "banner",
           "role": "pageBannerBackground",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1600&q=70",
           "constraints": {
             "aspectRatio": "16:9",
@@ -5483,7 +5483,7 @@
           "domKind": "background",
           "section": "banner",
           "role": "pageBannerBackground",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1560184897-ae75f418493e?auto=format&fit=crop&w=1600&q=70",
           "constraints": {
             "aspectRatio": "16:9",
@@ -7276,7 +7276,7 @@
           "domKind": "background",
           "section": "banner",
           "role": "pageBannerBackground",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1571939228382-b2f2b585ce15?auto=format&fit=crop&w=1600&q=70",
           "constraints": {
             "aspectRatio": "16:9",

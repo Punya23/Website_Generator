@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("../src/llm/client.js", () => ({
   llm: {
@@ -105,10 +105,38 @@ function fullResponse() {
   });
 }
 
-describe("fillSiteSkin partial fallback", () => {
+describe("fillSiteSkin", () => {
   beforeEach(() => {
     vi.mocked(llm.chat).mockReset();
     resetFallbackTracker();
+    delete process.env.PIPELINE_SKIN_FILL_LLM;
+  });
+
+  it("slots brief copy into templates and never calls the LLM", async () => {
+    const { instances } = await fillSiteSkin(buildCtx(), SKIN, new MediaRegistry());
+    const marquee = instances.home!.find((s) => s.id === IDS.marquee)!;
+    const quote = instances.home!.find((s) => s.id === IDS.quote)!;
+    const story = instances.about!.find((s) => s.id === IDS.story)!;
+
+    expect(llm.chat).not.toHaveBeenCalled();
+    expect(Array.isArray(marquee.props.phrases)).toBe(true);
+    expect((marquee.props.phrases as string[]).join(" ")).toMatch(/Northline|plumbing|Same-day/i);
+    expect(story.props.headline).toBeTruthy();
+    expect(Array.isArray(quote.props.packages)).toBe(true);
+    const packages = quote.props.packages as Array<{ name: string; pricePerUnit: unknown }>;
+    expect(typeof packages[0]!.pricePerUnit).toBe("number");
+  });
+});
+
+describe("fillSiteSkin LLM rewrite (opt-in)", () => {
+  beforeEach(() => {
+    vi.mocked(llm.chat).mockReset();
+    resetFallbackTracker();
+    process.env.PIPELINE_SKIN_FILL_LLM = "1";
+  });
+
+  afterEach(() => {
+    delete process.env.PIPELINE_SKIN_FILL_LLM;
   });
 
   it("keeps bespoke copy for every section that validates and mocks only the section that never does", async () => {

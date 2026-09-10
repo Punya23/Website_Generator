@@ -90,14 +90,14 @@ async function main() {
       onPreviewReady: async (partial) => {
         if (previewShown || !partial.htmlPages) return;
         previewShown = true;
-        await writeSiteOutput(outputDir, partial.htmlPages);
+        await writeSiteOutput(outputDir, partial.htmlPages, partial.verbatimFiles ?? []);
         console.log(`\nPreview ready in ${((partial.timingMs ?? 0) / 1000).toFixed(1)}s → ${outputDir}`);
       },
     });
 
-    await writeSiteOutput(outputDir, result.htmlPages);
+    await writeSiteOutput(outputDir, result.htmlPages, result.verbatimFiles ?? []);
     const finalDir = path.resolve("output", result.site.businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-"));
-    if (finalDir !== outputDir) await writeSiteOutput(finalDir, result.htmlPages);
+    if (finalDir !== outputDir) await writeSiteOutput(finalDir, result.htmlPages, result.verbatimFiles ?? []);
     console.log("\n" + summarizeGeneration(result));
 
     if (cmd === "dev") {

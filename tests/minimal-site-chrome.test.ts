@@ -70,4 +70,17 @@ describe("minimalChromeSpec", () => {
     const plan = minimalMotionPlan(ctx, BLUEPRINTS, chrome);
     expect(plan.chrome.nav.shadowOnScroll).toBe(true);
   });
+
+  it("uses the skin chrome when a skin is provided, ignoring seed", () => {
+    const skin = {
+      chrome: { navShape: "floating-panel" as const, footerLayout: "cta-heavy" as const, grainOverlay: true },
+      categories: ["local-service" as const],
+      archetype: "booking" as const,
+    };
+    const a = minimalChromeSpec(ctxForSeed(1), BLUEPRINTS, skin);
+    const b = minimalChromeSpec(ctxForSeed(99), BLUEPRINTS, skin);
+    expect(a.footer.layout).toBe("cta-heavy");
+    expect(b.footer.layout).toBe("cta-heavy");
+    expect(a.immersive?.grainOverlay).toBe(true);
+  });
 });

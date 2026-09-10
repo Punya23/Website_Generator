@@ -1,8 +1,12 @@
 "use client";
 
 import { motion, useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
+import Link from "next/link";
 import { useEffect, useMemo, useRef, type CSSProperties } from "react";
 import { SectionIdProvider } from "../SectionContext";
+
+// Next's <Link> (not a raw <a>) so "/contact" etc. pick up the site's basePath, same as nav links.
+const MotionLink = motion(Link);
 
 type ImageField = { src?: string; alt?: string };
 type CtaField = { label: string; href?: string };
@@ -101,13 +105,13 @@ function StaticMetroHero({
           <p style={{ margin: "1rem 0 0", fontSize: "clamp(1rem, 1.6vw, 1.25rem)", opacity: 0.85 }}>{subcopy}</p>
         ) : null}
         {cta ? (
-          <a
-            href={cta.href ?? "#contact"}
+          <Link
+            href={cta.href ?? "/contact"}
             className="mt-8 inline-flex items-center rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white no-underline"
             style={{ marginTop: "1.5rem" }}
           >
             {cta.label}
-          </a>
+          </Link>
         ) : null}
       </div>
     </div>
@@ -345,14 +349,14 @@ export function HeroMetro({
 
           {cta ? (
             <div ref={ctaRef} style={{ position: "absolute", left: "50%", bottom: "22vh", transform: "translateX(-50%)", zIndex: 3, opacity: 0 }}>
-              <motion.a
-                href={cta.href ?? "#contact"}
+              <MotionLink
+                href={cta.href ?? "/contact"}
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 className="inline-flex items-center rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white no-underline"
               >
                 {cta.label}
-              </motion.a>
+              </MotionLink>
             </div>
           ) : null}
 

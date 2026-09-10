@@ -6,14 +6,19 @@ import { defaultSectionMotion } from "./contracts/index.js";
 import { pickFrom } from "../design/variation.js";
 import { briefTaxonomyText } from "../skins/picker.js";
 import { classifyTaxonomy, type SiteArchetype, type SkinCategory } from "../skins/taxonomy.js";
+import type { SiteSkin } from "../skins/schema.js";
 
 const FOOTER_LAYOUTS: ChromeSpec["footer"]["layout"][] = ["two-column", "centered", "cta-heavy"];
 const FOOTER_SURFACES: NonNullable<ChromeSpec["footer"]["surface"]>[] = ["none", "subtle", "bordered"];
 
-export function minimalChromeSpec(ctx: SiteContext, blueprints: PageBlueprint[]): ChromeSpec {
+export function minimalChromeSpec(
+  ctx: SiteContext,
+  blueprints: PageBlueprint[],
+  skin?: Pick<SiteSkin, "chrome" | "categories" | "archetype">
+): ChromeSpec {
   const slugs = blueprints.map((b) => b.slug);
   const seed = ctx.variationSeed ?? ctx.businessName;
-  const footerLayout = pickFrom(seed, "footer-layout", FOOTER_LAYOUTS);
+  const footerLayout = skin?.chrome.footerLayout ?? pickFrom(seed, "footer-layout", FOOTER_LAYOUTS);
   const footerSurface = pickFrom(seed, "footer-surface", FOOTER_SURFACES);
 
   return {
@@ -23,7 +28,7 @@ export function minimalChromeSpec(ctx: SiteContext, blueprints: PageBlueprint[])
       // Split the nav into real columns instead of one thin "Pages" list — the single-column
       // footer is the "minimal/sparse footer" QA flag. A dedicated contact column gives the
       // footer a second anchor even on small sites.
-      linkGroups: buildFooterLinkGroups(slugs, ctx, seed),
+      linkGroups: buildFooterLinkGroups(slugs, ctx, seed, skin),
       ctaLabel: ctx.expandedBrief.primaryCta,
       ctaHref: "/contact",
       showMood: footerLayout === "two-column",
@@ -32,7 +37,7 @@ export function minimalChromeSpec(ctx: SiteContext, blueprints: PageBlueprint[])
     },
     immersive: {
       smoothScroll: false,
-      grainOverlay: false,
+      grainOverlay: skin?.chrome.grainOverlay ?? false,
     },
   };
 }
@@ -62,10 +67,14 @@ const CONTACT_LABELS: string[] = ["Get in touch", "Say hello", "Contact", "Reach
 function buildFooterLinkGroups(
   slugs: string[],
   ctx: SiteContext,
-  seed: number | string
+  seed: number | string,
+  skin?: Pick<SiteSkin, "categories" | "archetype">
 ): Array<{ label: string; slugs: string[] }> {
-  const match = classifyTaxonomy(briefTaxonomyText(ctx.expandedBrief));
-  const explorePool = ARCHETYPE_EXPLORE_OVERRIDE[match.archetype] ?? EXPLORE_LABELS[match.category];
+  const classified = skin ? null : classifyTaxonomy(briefTaxonomyText(ctx.expandedBrief));
+  const category: SkinCategory = skin?.categories[0] ?? classified!.category;
+  const archetype: SiteArchetype | undefined = skin?.archetype ?? classified?.archetype;
+  const explorePool =
+    (archetype ? ARCHETYPE_EXPLORE_OVERRIDE[archetype] : undefined) ?? EXPLORE_LABELS[category];
   const exploreLabel = pickFrom(seed, "footer-explore-label", explorePool);
   const contactLabel = pickFrom(seed, "footer-contact-label", CONTACT_LABELS);
 

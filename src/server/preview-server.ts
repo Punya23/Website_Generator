@@ -1,10 +1,19 @@
 import express from "express";
-import { mkdir, writeFile } from "fs/promises";
+import { copyFile, mkdir, writeFile } from "fs/promises";
 import path from "path";
+
+/** A stylesheet or asset a generated page references, copied in from the template cache. */
+export interface SiteAssetCopy {
+  /** Absolute source path. */
+  from: string;
+  /** Destination path relative to the site output root. */
+  to: string;
+}
 
 export async function writeSiteOutput(
   outputDir: string,
-  htmlPages: Record<string, string>
+  htmlPages: Record<string, string>,
+  assets: SiteAssetCopy[] = []
 ): Promise<string> {
   await mkdir(outputDir, { recursive: true });
   for (const [slug, html] of Object.entries(htmlPages)) {
@@ -15,6 +24,18 @@ export async function writeSiteOutput(
     pickIndexHtml(htmlPages),
     "utf-8"
   );
+
+  // Verbatim-template sites reference their own stylesheets and images; HTML alone renders naked.
+  for (const asset of assets) {
+    const target = path.resolve(outputDir, asset.to);
+    if (!target.startsWith(path.resolve(outputDir))) continue;
+    try {
+      await mkdir(path.dirname(target), { recursive: true });
+      await copyFile(asset.from, target);
+    } catch {
+      // A referenced-but-missing vendor decoration must not fail the whole write.
+    }
+  }
   return outputDir;
 }
 

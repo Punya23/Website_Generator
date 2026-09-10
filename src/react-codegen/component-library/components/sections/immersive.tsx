@@ -184,7 +184,7 @@ export function HeroVideo(props: {
             {props.subcopy ? <p className={`mt-4 max-w-xl text-lg text-muted ${centered ? "mx-auto" : ""}`}>{props.subcopy}</p> : null}
             {props.cta ? (
               <div className="mt-8">
-                <MagneticButton href={props.cta.href ?? "#contact"} className="bg-accent px-6 py-3 text-sm font-semibold text-white">
+                <MagneticButton href={props.cta.href ?? "/contact"} className="bg-accent px-6 py-3 text-sm font-semibold text-white">
                   {props.cta.label}
                 </MagneticButton>
               </div>
@@ -425,7 +425,7 @@ export function PricingToggle(props: {
                 {tier.cta ? (
                   <div className="mt-6">
                     <MagneticButton
-                      href={tier.cta.href ?? "#contact"}
+                      href={tier.cta.href ?? "/contact"}
                       className={`w-full px-4 py-3 text-sm font-semibold ${tier.highlighted ? "bg-accent text-white" : "border border-border text-text"}`}
                     >
                       {tier.cta.label}

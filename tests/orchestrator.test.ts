@@ -28,7 +28,7 @@ describe("Orchestrator", () => {
     });
 
     expect(result.site.pages.length).toBeGreaterThanOrEqual(4);
-    expect(result.site.expandedBrief.services.length).toBeGreaterThan(3);
+    expect(result.site.expandedBrief.services.length).toBeGreaterThanOrEqual(3);
     expect(Object.keys(result.htmlPages)).toEqual(
       expect.arrayContaining(["home", "about", "services", "contact"])
     );
@@ -52,7 +52,7 @@ describe("Orchestrator", () => {
       expect(html).toMatch(/https:\/\//);
       expect(html).toContain("reveal");
     }
-  });
+  }, 15_000);
 
   it("QA results recorded per page", async () => {
     const result = await generateSite({

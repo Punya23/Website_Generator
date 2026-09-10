@@ -128,12 +128,12 @@ export function SiteFooter({
           {useStagger ? <Stagger>{linkGrid}</Stagger> : linkGrid}
           {ctaLabel ? (
             <div className={`mt-10 ${layout === "centered" || layout === "cta-heavy" ? "text-center" : ""}`}>
-              <a
+              <Link
                 href={ctaHref ?? "/contact"}
                 className="inline-flex rounded-[var(--radius)] bg-accent px-6 py-3 text-sm font-semibold text-white shadow-[var(--shadow)] transition hover:-translate-y-0.5"
               >
                 {ctaLabel}
-              </a>
+              </Link>
             </div>
           ) : null}
           {/* Richer bottom bar: copyright + a repeated inline nav so the footer has a real second

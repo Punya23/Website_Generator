@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Container,
@@ -104,7 +105,7 @@ export function HeroEditorial(props: {
               {props.subcopy ? <p className="mt-4 max-w-xl mx-auto text-lg text-muted">{props.subcopy}</p> : null}
               {props.cta ? (
                 <div className="mt-8">
-                  <PrimaryButton href={props.cta.href ?? "#contact"}>{props.cta.label}</PrimaryButton>
+                  <PrimaryButton href={props.cta.href ?? "/contact"}>{props.cta.label}</PrimaryButton>
                 </div>
               ) : null}
             </HeroReveal>
@@ -127,7 +128,7 @@ export function HeroEditorial(props: {
                 {props.subcopy ? <p className="mt-4 text-lg text-muted">{props.subcopy}</p> : null}
                 {props.cta ? (
                   <div className="mt-8">
-                    <PrimaryButton href={props.cta.href ?? "#contact"}>{props.cta.label}</PrimaryButton>
+                    <PrimaryButton href={props.cta.href ?? "/contact"}>{props.cta.label}</PrimaryButton>
                   </div>
                 ) : null}
               </HeroReveal>
@@ -155,7 +156,7 @@ export function HeroEditorial(props: {
               {props.subcopy ? <p className="mt-4 text-lg text-muted">{props.subcopy}</p> : null}
               {props.cta ? (
                 <div className="mt-8">
-                  <PrimaryButton href={props.cta.href ?? "#contact"}>{props.cta.label}</PrimaryButton>
+                  <PrimaryButton href={props.cta.href ?? "/contact"}>{props.cta.label}</PrimaryButton>
                 </div>
               ) : null}
             </HeroReveal>
@@ -200,7 +201,7 @@ export function HeroSplitCinematic(props: {
       {props.body ? <p className="mt-4 text-muted">{props.body}</p> : null}
       {props.cta ? (
         <div className="mt-8">
-          <PrimaryButton href={props.cta.href ?? "#"}>{props.cta.label}</PrimaryButton>
+          <PrimaryButton href={props.cta.href ?? "/contact"}>{props.cta.label}</PrimaryButton>
         </div>
       ) : null}
     </HeroReveal>
@@ -299,7 +300,7 @@ export function ServicesShowcase(props: {
               </div>
               {props.cta ? (
                 <div className="mt-8">
-                  <PrimaryButton href={props.cta.href ?? "#contact"}>{props.cta.label}</PrimaryButton>
+                  <PrimaryButton href={props.cta.href ?? "/contact"}>{props.cta.label}</PrimaryButton>
                 </div>
               ) : null}
             </Reveal>
@@ -480,7 +481,7 @@ export function PricingTiers(props: {
               ) : null}
               {tier.cta ? (
                 <div className="mt-8">
-                  <PrimaryButton href={tier.cta.href ?? "#"}>{tier.cta.label}</PrimaryButton>
+                  <PrimaryButton href={tier.cta.href ?? "/contact"}>{tier.cta.label}</PrimaryButton>
                 </div>
               ) : null}
             </StaggerItem>
@@ -628,12 +629,12 @@ export function CtaBand(props: {
             <p className={`mt-4 max-w-2xl ${highContrast ? "text-white/90" : "text-muted"} ${isCentered ? "mx-auto" : ""}`}>{props.subcopy}</p>
           ) : null}
           <div className={`mt-8 ${isCentered ? "flex justify-center" : ""}`}>
-            <a
-              href={props.cta.href ?? "#contact"}
+            <Link
+              href={props.cta.href ?? "/contact"}
               className={`inline-flex rounded-[var(--radius)] px-8 py-3 font-semibold ${highContrast ? "bg-white text-accent" : "bg-accent text-white"}`}
             >
               {props.cta.label}
-            </a>
+            </Link>
           </div>
         </Reveal>
       </Container>
@@ -967,19 +968,19 @@ export function FooterCta(props: {
             <DisplayHeading>{props.headline}</DisplayHeading>
             {props.subcopy ? <p className="mt-3 max-w-xl mx-auto text-muted">{props.subcopy}</p> : null}
             <div className="mt-8 flex flex-wrap justify-center gap-4">
-              <a
-                href={props.cta.href ?? "#contact"}
+              <Link
+                href={props.cta.href ?? "/contact"}
                 className="inline-flex rounded-[var(--radius)] bg-accent px-8 py-3 font-semibold text-white"
               >
                 {props.cta.label}
-              </a>
+              </Link>
               {props.secondaryCta ? (
-                <a
+                <Link
                   href={props.secondaryCta.href ?? "/contact"}
                   className="inline-flex rounded-[var(--radius)] border border-border px-8 py-3 font-semibold text-text"
                 >
                   {props.secondaryCta.label}
-                </a>
+                </Link>
               ) : null}
             </div>
           </Reveal>
@@ -1004,19 +1005,19 @@ export function FooterCta(props: {
               {props.subcopy ? <p className="mt-3 text-muted">{props.subcopy}</p> : null}
             </div>
             <div className="flex shrink-0 flex-wrap gap-4">
-              <a
-                href={props.cta.href ?? "#contact"}
+              <Link
+                href={props.cta.href ?? "/contact"}
                 className="inline-flex rounded-[var(--radius)] bg-accent px-8 py-3 font-semibold text-white"
               >
                 {props.cta.label}
-              </a>
+              </Link>
               {props.secondaryCta ? (
-                <a
+                <Link
                   href={props.secondaryCta.href ?? "/contact"}
                   className="inline-flex rounded-[var(--radius)] border border-border px-8 py-3 font-semibold text-text"
                 >
                   {props.secondaryCta.label}
-                </a>
+                </Link>
               ) : null}
             </div>
           </div>

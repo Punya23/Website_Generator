@@ -1,0 +1,277 @@
+
+
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Property Listings | Surana Real Estates Pune</title>
+<meta name="description" content="Browse current residential and commercial property listings from Surana Real Estates in Pune — luxury apartments, smart homes, and strategic business hubs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+
+
+
+<header>
+  <div class="topbar">
+    <div class="container">
+      <div class="topbar__contact">
+        <span>Surana House, Senapati Bapat Road, Pune, Maharashtra 411016</span>
+        <span>+91 00000 00000</span>
+        <span>hello@surana-real-estates.com</span>
+      </div>
+      <div class="topbar__social">
+        <a href="#">Facebook</a><a href="#">Instagram</a><a href="#">LinkedIn</a>
+      </div>
+    </div>
+  </div>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="navbar__logo">Surana Real Estates</a>
+      <ul class="navbar__links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="listings.html" class="is-active">Listings</a></li>
+        <li><a href="agents.html">Agents</a></li>
+        <li><a href="services.html">Services</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+      <div class="navbar__actions">
+        <a href="contact.html" class="btn btn--secondary btn--sm">Explore Properties</a>
+      </div>
+      <button class="navbar__toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+</header>
+
+<main>
+
+  <section class="page-banner" style="background-image:url('https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&amp;fit=crop&amp;w=1600&amp;q=70');">
+    <div class="container">
+      <div class="page-banner__content">
+        <div class="breadcrumb"><a href="index.html">Home</a><span>/</span><span>Listings</span></div>
+        <h1 class="page-banner__title">Property Listings</h1>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+
+      <form class="filter-bar" data-demo-form="">
+        <div class="filter-bar__field">
+          <label>Location</label>
+          <input type="text" placeholder="City or ZIP">
+        </div>
+        <div class="filter-bar__field">
+          <label>Property Type</label>
+          <select>
+            <option>Any Type</option>
+            <option>Single-Family Home</option>
+            <option>Condo / Townhome</option>
+            <option>Luxury Estate</option>
+            <option>Multi-Family</option>
+          </select>
+        </div>
+        <div class="filter-bar__field">
+          <label>Min Price</label>
+          <select><option>No Min</option><option>$500k</option><option>$1M</option><option>$2M</option></select>
+        </div>
+        <div class="filter-bar__field">
+          <label>Bedrooms</label>
+          <select><option>Any</option><option>1+</option><option>2+</option><option>3+</option><option>4+</option></select>
+        </div>
+        <div class="filter-bar__field" style="justify-content:flex-end;">
+          <button type="submit" class="btn btn--secondary btn--block">Filter</button>
+        </div>
+      </form>
+
+      <div class="results-bar">
+        <span style="color:var(--color-gray);">Showing <strong>9</strong> of <strong>142</strong> properties</span>
+        <div class="results-bar__sort">
+          <span>Sort by</span>
+          <select><option>Newest</option><option>Price: Low to High</option><option>Price: High to Low</option><option>Most Popular</option></select>
+        </div>
+      </div>
+
+      <div class="grid grid--3">
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="Modern family home in Palo Alto">
+            <span class="property-card__badge property-card__badge--sale">For Sale</span>
+            <span class="property-card__price">₹2.45 Cr</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">Wakad, Pune</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Luxury 4 BHK Residence</a></h3>
+            <div class="property-card__meta"><span>4 Beds</span><span>4 Baths</span><span>2,450 sqft</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="Downtown luxury condo in San Francisco">
+            <span class="property-card__badge property-card__badge--sale">For Sale</span>
+            <span class="property-card__price">₹1.15 Cr</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">Bibwewadi, Pune</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Smart 2 BHK Apartment</a></h3>
+            <div class="property-card__meta"><span>2 Beds</span><span>2 Baths</span><span>1,180 sqft</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="Craftsman bungalow in Berkeley">
+            <span class="property-card__badge">New Launch</span>
+            <span class="property-card__price">₹1.65 Cr</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">Lullanagar, Pune</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Premium 3 BHK Haven</a></h3>
+            <div class="property-card__meta"><span>3 Beds</span><span>3 Baths</span><span>1,820 sqft</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="Hillside view estate in Oakland">
+            <span class="property-card__badge property-card__badge--sale">For Sale</span>
+            <span class="property-card__price">₹3.80 Cr</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">Koregaon Park Annex, Pune</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Penthouses with Skyline Views</a></h3>
+            <div class="property-card__meta"><span>4 Beds</span><span>4.5 Baths</span><span>3,600 sqft</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1615874959474-d609969a20ed?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="Modern townhome in San Rafael">
+            <span class="property-card__badge">Commercial</span>
+            <span class="property-card__price">₹95 Lakhs</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">Wakad IT Corridor, Pune</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Strategic Retail Hub Office</a></h3>
+            <div class="property-card__meta"><span>1 Room</span><span>1 Bath</span><span>750 sqft</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="Charming cottage in Menlo Park">
+            <span class="property-card__badge">New Launch</span>
+            <span class="property-card__price">₹1.40 Cr</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">Baner Link Road, Pune</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Contemporary 3 BHK Home</a></h3>
+            <div class="property-card__meta"><span>3 Beds</span><span>2 Baths</span><span>1,550 sqft</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1558036117-15d82a90b9b1?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="Contemporary new build in San Jose">
+            <span class="property-card__badge property-card__badge--sale">For Sale</span>
+            <span class="property-card__price">₹2.10 Cr</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">Aundh, Pune</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Designer Duplex Apartment</a></h3>
+            <div class="property-card__meta"><span>4 Beds</span><span>4 Baths</span><span>2,300 sqft</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="Bayview penthouse in San Francisco">
+            <span class="property-card__badge property-card__badge--sale">Commercial</span>
+            <span class="property-card__price">₹2.50 Cr</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">Shivajinagar, Pune</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Prime Corporate Office Space</a></h3>
+            <div class="property-card__meta"><span>Open Layout</span><span>2 Baths</span><span>1,950 sqft</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="Garden duplex in Alameda">
+            <span class="property-card__badge property-card__badge--sale">For Sale</span>
+            <span class="property-card__price">₹88 Lakhs</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">Undri, Pune</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Spacious 2 BHK Garden Home</a></h3>
+            <div class="property-card__meta"><span>2 Beds</span><span>2 Baths</span><span>1,100 sqft</span></div>
+          </div>
+        </article>
+
+      </div>
+
+      <div class="pagination">
+        <a href="#" class="is-active">1</a>
+        <a href="#">2</a>
+        <a href="#">3</a>
+        <a href="#">→</a>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__col">
+        <a href="index.html" class="footer__logo">Surana Real Estates</a>
+        <p class="footer__about">Building Pune's finest residential and commercial legacy with structural excellence and absolute trust since inception.</p>
+        <div class="footer__socials">
+          <a href="#">FB</a><a href="#">IG</a><a href="#">LI</a><a href="#">TW</a>
+        </div>
+      </div>
+      <div class="footer__col">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="listings.html">Property Listings</a></li>
+          <li><a href="agents.html">Our Agents</a></li>
+          <li><a href="services.html">Services</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h4>Our Portfolio</h4>
+        <ul>
+          <li><a href="listings.html">Residential Apartments</a></li>
+          <li><a href="listings.html">Commercial Hubs</a></li>
+          <li><a href="listings.html">Smart Living Spaces</a></li>
+          <li><a href="listings.html">Investment Properties</a></li>
+          <li><a href="listings.html">New Developments</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h4>Stay Updated</h4>
+        <p class="footer__about">Get Pune real estate updates and new project launches in your inbox.</p>
+        <form class="footer__newsletter" data-demo-form="">
+          <input type="email" placeholder="Your email address" required="">
+          <button type="submit">Join</button>
+        </form>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>© 2026 Surana Real Estates. All rights reserved.</span>
+      <span>DRE #01923847 · <a href="contact.html">Privacy Policy</a> · <a href="contact.html">Terms</a></span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+
+

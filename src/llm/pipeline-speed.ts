@@ -100,11 +100,34 @@ export function usePageCodegenPipeline(): boolean {
   return process.env.PIPELINE_PAGE_CODEGEN === "1";
 }
 
-/** Authored whole-site skin + one copy-fill call. Default on; disable with PIPELINE_SKIN_FILL=0
+/** Authored whole-site skin + copy slotted from the brief. Default on; disable with PIPELINE_SKIN_FILL=0
  *  (and optionally PIPELINE_PAGE_CODEGEN=1 to restore the old composer). */
 export function useSkinFillPipeline(): boolean {
   if (process.env.PIPELINE_SKIN_FILL === "0") return false;
   if (usePageCodegenPipeline()) return false;
+  return true;
+}
+
+/** Opt-in: ask an LLM to rewrite copy into skin slots. Off by default — the skin-fill path
+ *  slots the user's brief into each template as-is. */
+export function useSkinFillLlm(): boolean {
+  return process.env.PIPELINE_SKIN_FILL_LLM === "1";
+}
+
+/**
+ * Sites built from ingested third-party HTML templates, kept verbatim and recolored — the default
+ * generation path. Falls back to the skin pipeline when no templates have been ingested yet, so a
+ * fresh checkout with an empty `templates_bundle/` still generates.
+ * Escape hatch: PIPELINE_VERBATIM_TEMPLATES=0.
+ */
+export function useVerbatimTemplatePipeline(): boolean {
+  if (process.env.PIPELINE_VERBATIM_TEMPLATES === "0") return false;
+  if (process.env.PIPELINE_VERBATIM_TEMPLATES === "1") return true;
+  // Under the test runner the machine's own ingested cache must not decide which pipeline runs —
+  // same opt-in convention the ingest config already uses (`ingestUseLlm`, `ingestScreenshotMode`).
+  if (process.env.VITEST) return false;
+  if (usePageCodegenPipeline()) return false;
+  if (process.env.PIPELINE_SKIN_FILL === "0") return false;
   return true;
 }
 
@@ -117,6 +140,15 @@ export function visionQaEnabled(): boolean {
 export function visionQaHomeOnly(): boolean {
   if (process.env.VISION_QA_HOME_ONLY === "1") return true;
   return false;
+}
+
+/** How many times the final whole-site visual QA gate (`orchestrator.ts`, after CMS merge, before
+ *  publish) may redo generation on a failing verdict. 0 disables the redo — the gate still judges
+ *  and reports, it just never retries. Bounded like `MAX_QA_RETRIES`: a fixed cap, not a
+ *  loop-until-pass, so one stubbornly bad-fitting corpus can't stall a generation indefinitely. */
+export function finalVisionMaxRedos(): number {
+  const n = Number.parseInt(process.env.FINAL_VISION_MAX_REDOS ?? "1", 10);
+  return Number.isFinite(n) && n >= 0 ? n : 1;
 }
 
 export function maxVisionRetries(): number {

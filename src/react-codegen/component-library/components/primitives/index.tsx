@@ -1,10 +1,16 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { useMotionPreset, useRevealVariants, useStaggerDelay, useSectionMotion } from "../MotionProvider";
 import { useCurrentSectionId } from "../SectionContext";
 import { bandFillClass, dividerClass, type BandFill, type Divider } from "./design-language";
+
+/** Next's <Link> — not a raw <a> — so internal hrefs ("/contact", "/about", …) pick up the
+ *  site's basePath (e.g. "/preview" while previewing) the same way nav links already do.
+ *  External/mailto/tel/# hrefs pass through untouched, so this is safe to use everywhere. */
+export const MotionLink = motion(Link);
 
 export function Reveal({
   children,
@@ -194,9 +200,9 @@ export function PrimaryButton({ href, children }: { href?: string; children: Rea
   const transition = { type: "spring" as const, stiffness: 420, damping: 26 };
   if (href) {
     return (
-      <motion.a href={href} className={cls} whileHover={hover} whileTap={tap} transition={transition}>
+      <MotionLink href={href} className={cls} whileHover={hover} whileTap={tap} transition={transition}>
         {children}
-      </motion.a>
+      </MotionLink>
     );
   }
   return (
@@ -218,7 +224,7 @@ export function MagneticButton({
   const cls = `magnetic-btn inline-flex items-center justify-center rounded-[var(--radius)] transition ${className}`;
   if (href) {
     return (
-      <motion.a
+      <MotionLink
         href={href}
         className={cls}
         whileHover={{ scale: 1.04 }}
@@ -226,7 +232,7 @@ export function MagneticButton({
         transition={{ type: "spring", stiffness: 400, damping: 20 }}
       >
         {children}
-      </motion.a>
+      </MotionLink>
     );
   }
   return (

@@ -27,11 +27,11 @@ const EXAMPLES = [
 
 const PIPELINE_STEPS = [
   { id: "brief", match: /expanding brief|starting generation/i },
-  { id: "plan", match: /planning site|site plan/i },
-  { id: "design", match: /design system|skin:/i },
-  { id: "content", match: /copy|props \(|section fill|unified section/i },
+  { id: "plan", match: /picking site skin|site plan|html site from skin/i },
+  { id: "design", match: /skin look|skin \S+ look|design system|skin:/i },
+  { id: "content", match: /skin copy|skin fill|copy|props \(|section fill|unified section/i },
   { id: "media", match: /image providers|openverse|pexels|media curator|uploading images/i },
-  { id: "build", match: /output mode|next\.js|static export|preview:/i },
+  { id: "build", match: /html site from skin|output mode|next\.js|static export|preview:/i },
   { id: "ready", match: /^complete|completed with warnings/i },
 ];
 
@@ -83,6 +83,7 @@ let activePageSlug = "home";
 let lastVariationSeed = null;
 let lastSiteSlug = null;
 let lastPreviewBase = "/preview/";
+let lastPreviewSource = "html-fallback";
 
 function consumerId() {
   const typed = consumerEl?.value?.trim();
@@ -369,7 +370,10 @@ function previewUrlForPage(slug) {
     return slug === "home" ? `${lastPreviewBase}` : `${base}/${slug}`;
   }
   if (slug === "home") return "/preview/index.html";
-  return `/preview/${slug}`;
+  if (lastPreviewSource === "live-server" || lastPreviewSource === "next-static") {
+    return `/preview/${slug}`;
+  }
+  return `/preview/${slug}.html`;
 }
 
 function refreshPreview(url) {
@@ -413,6 +417,23 @@ async function loadEditorSession() {
 }
 
 function populateThemeControls() {
+  const themePanel = document.querySelector(".editor-theme");
+  if (isVerbatim()) {
+    // Colors come from the target palette applied at ingest, not from a design system — and
+    // /api/theme refuses verbatim sessions, so showing this form would only produce an error.
+    if (themePanel) {
+      themePanel.hidden = true;
+      const grid = themePanel.closest(".editor-grid");
+      // Sections take the full width once the theme column is gone.
+      if (grid) grid.style.gridTemplateColumns = "1fr";
+    }
+    return;
+  }
+  if (themePanel) {
+    themePanel.hidden = false;
+    const grid = themePanel.closest(".editor-grid");
+    if (grid) grid.style.removeProperty("grid-template-columns");
+  }
   if (!editorState?.designSystem) return;
   const ds = editorState.designSystem;
   themeAccent.value = ds.colors?.accent ?? "#000000";
@@ -421,42 +442,129 @@ function populateThemeControls() {
   themeMotion.value = ds.motionPreset ?? "stagger";
 }
 
+/** Roles a verbatim site can add a band of. Chrome (nav/footer) is shared across every page and
+ *  placed once, so it is not offered here — adding a second nav is never what someone means. */
+const ADDABLE_ROLES = ["hero", "features", "story", "gallery", "pricing", "faq", "cta", "contact", "stats"];
+
+function isVerbatim() {
+  return editorState?.mode === "verbatim";
+}
+
+/** One revision through the verbatim editor, then reload the panel and the preview. */
+async function sendVerbatimEdit(revisions, label) {
+  const res = await fetch("/api/edit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ page: activePageSlug, revisions }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.error) {
+    appendLog(data.error ?? "Edit failed", true);
+    return false;
+  }
+  if (data.rejected?.length) {
+    appendLog(data.rejected[0], true);
+    return false;
+  }
+  await loadEditorSession();
+  refreshPreview(previewUrlForPage(activePageSlug));
+  appendLog(label);
+  return true;
+}
+
 function renderSectionList() {
   sectionList.innerHTML = "";
   const page = editorState?.pages?.find((p) => p.slug === activePageSlug);
   if (!page) return;
+  const verbatim = isVerbatim();
 
   page.sections.forEach((section, index) => {
     const li = document.createElement("li");
-    li.draggable = true;
+    li.draggable = !verbatim;
     li.dataset.sectionId = section.id;
+    // A verbatim section is addressed by <templateId>:<sectionId>; the label shows the role and
+    // which source template it came from, which is the useful thing when the mix spans ~18 of them.
+    const label = verbatim ? section.intent : section.id;
+    const sub = verbatim
+      ? `${String(section.archetype ?? "").slice(0, 14)}`
+      : `${section.archetype ?? section.intent} · ${section.blockCount} blocks`;
     li.innerHTML = `
       <div class="section-meta">
-        <strong>${section.id}</strong>
-        <small>${section.archetype ?? section.intent} · ${section.blockCount} blocks</small>
+        <strong>${label}</strong>
+        <small>${sub}</small>
       </div>
       <div class="section-actions">
         <button type="button" data-action="up" ${index === 0 ? "disabled" : ""}>↑</button>
         <button type="button" data-action="down" ${index === page.sections.length - 1 ? "disabled" : ""}>↓</button>
-        <button type="button" data-action="regen">Regen</button>
+        ${
+          verbatim
+            ? '<button type="button" data-action="swap" title="Use a different template for this section">⟳</button>' +
+              '<button type="button" data-action="remove" title="Remove section">✕</button>'
+            : '<button type="button" data-action="regen">Regen</button>'
+        }
       </div>`;
 
     li.addEventListener("dragstart", () => li.classList.add("dragging"));
     li.addEventListener("dragend", () => li.classList.remove("dragging"));
-    li.querySelector('[data-action="regen"]')?.addEventListener("click", () =>
-      regenerateSection(section.id)
-    );
-    li.querySelector('[data-action="up"]')?.addEventListener("click", () =>
-      reorderSection(index, index - 1)
-    );
-    li.querySelector('[data-action="down"]')?.addEventListener("click", () =>
-      reorderSection(index, index + 1)
-    );
+
+    if (verbatim) {
+      li.querySelector('[data-action="up"]')?.addEventListener("click", () =>
+        sendVerbatimEdit([{ kind: "moveSection", target: section.id, direction: "up" }], `Moved ${section.intent} up`)
+      );
+      li.querySelector('[data-action="down"]')?.addEventListener("click", () =>
+        sendVerbatimEdit([{ kind: "moveSection", target: section.id, direction: "down" }], `Moved ${section.intent} down`)
+      );
+      li.querySelector('[data-action="swap"]')?.addEventListener("click", () =>
+        sendVerbatimEdit([{ kind: "swapSection", target: section.id }], `Swapped ${section.intent}`)
+      );
+      li.querySelector('[data-action="remove"]')?.addEventListener("click", () =>
+        sendVerbatimEdit([{ kind: "removeSection", target: section.id }], `Removed ${section.intent}`)
+      );
+    } else {
+      li.querySelector('[data-action="regen"]')?.addEventListener("click", () => regenerateSection(section.id));
+      li.querySelector('[data-action="up"]')?.addEventListener("click", () => reorderSection(index, index - 1));
+      li.querySelector('[data-action="down"]')?.addEventListener("click", () => reorderSection(index, index + 1));
+    }
 
     sectionList.appendChild(li);
   });
 
-  enableDragReorder(page);
+  if (verbatim) {
+    renderAddSection(page);
+  } else {
+    enableDragReorder(page);
+  }
+}
+
+/** "Add section" control — the one structural edit the preview overlay cannot offer, since there
+ *  is no existing band to hang it off. */
+function renderAddSection(page) {
+  const li = document.createElement("li");
+  li.className = "section-add";
+  li.innerHTML = `
+    <div class="section-meta"><strong>Add a section</strong></div>
+    <div class="section-actions">
+      <select data-role="add-role">
+        ${ADDABLE_ROLES.map((role) => `<option value="${role}">${role}</option>`).join("")}
+      </select>
+      <button type="button" data-action="add">+</button>
+    </div>`;
+  li.querySelector('[data-action="add"]')?.addEventListener("click", () => {
+    const role = li.querySelector('[data-role="add-role"]').value;
+    const last = page.sections[page.sections.length - 1];
+    sendVerbatimEdit(
+      [
+        {
+          kind: "addSection",
+          page: activePageSlug,
+          role,
+          ...(last && last.intent !== "footer" ? { after: last.id } : {}),
+        },
+      ],
+      `Added a ${role} section`
+    );
+  });
+  sectionList.appendChild(li);
 }
 
 function enableDragReorder(page) {
@@ -662,16 +770,11 @@ async function generate() {
           if (json.previewSource === "live-server") {
             appendLog(`Preview: ${json.previewUrl} (built Next.js app)`);
           } else if (json.previewSource === "html-fallback") {
-            appendLog("Preview: HTML fallback (Next build unavailable)");
-            if (json.outputMode === "react" && json.buildSucceeded === false) {
-              appendLog(
-                "Debug: output/_playground-react — run npm run build there to inspect errors",
-                true
-              );
-            }
+            appendLog("Preview: HTML pages from the skin (index.html / about.html / …)");
           }
           previewTitle.textContent = json.businessName ?? "Preview";
           lastPreviewBase = json.previewUrl ?? "/preview/";
+          lastPreviewSource = json.previewSource ?? "html-fallback";
           activePageSlug = "home";
           renderPageTabs(json.pages ?? []);
           refreshPreview(previewUrlForPage("home"));
@@ -858,3 +961,44 @@ briefEl.addEventListener("keydown", (e) => {
 renderExamples();
 renderRecentBriefs();
 setWorkspace("preview");
+
+/**
+ * Restore whatever the server is already holding when the page loads.
+ *
+ * The editor session lives on the server, but `loadEditorSession` only ever ran as a step of
+ * generating or editing — so reloading the tab (or opening a second one) left the sections panel
+ * and the preview empty next to a site that was still very much there.
+ */
+async function restoreExistingSession() {
+  try {
+    const res = await fetch("/api/session");
+    if (!res.ok) return;
+    const session = await res.json();
+    if (!session?.pages?.length) return;
+
+    editorState = session;
+    previewTitle.textContent = session.businessName ?? "Preview";
+    lastPreviewBase = "/preview/";
+    lastPreviewSource = session.outputMode === "react" ? "next-static" : "html-fallback";
+    activePageSlug = session.pages.some((page) => page.slug === "home") ? "home" : session.pages[0].slug;
+    renderPageTabs(session.pages.map((page) => page.slug));
+    editorPageLabel.textContent = `(${activePageSlug})`;
+    populateThemeControls();
+    renderSectionList();
+    if (emptyPreview) emptyPreview.hidden = true;
+    refreshPreview(previewUrlForPage(activePageSlug));
+    setStep("ready");
+    setStatus("Ready", "done");
+    setWorkspace("preview");
+    if (revisePanel) revisePanel.hidden = false;
+    appendLog(
+      session.mode === "verbatim"
+        ? `Restored ${session.businessName} — click Edit in the preview to change text, or use Theme & sections.`
+        : `Restored ${session.businessName}.`
+    );
+  } catch {
+    /* no session yet — the empty state is correct */
+  }
+}
+
+restoreExistingSession();

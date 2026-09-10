@@ -5,6 +5,8 @@ const TITLES = {
   queue: "Review queue",
   skins: "Live skins",
   runs: "Agent runs",
+  corpus: "Template corpus",
+  generations: "Generations",
 };
 
 const PAGE_ORDER = ["home", "about", "services", "contact"];
@@ -25,7 +27,8 @@ const QUEUE_PAGE_SIZE = 200;
 let queueRows = [];
 let queueTotal = 0;
 let searchQuery = "";
-let cache = { sources: [], candidates: [], skins: { authored: [], approved: [] }, runs: [], templates: [] };
+let cache = { sources: [], candidates: [], skins: { authored: [], approved: [] }, runs: [], templates: [], generations: [], corpus: null };
+let corpusFilter = "all";
 let trayPhase = null;
 
 const $ = (id) => document.getElementById(id);
@@ -86,6 +89,8 @@ async function refresh() {
     if (view === "queue") await renderQueue();
     if (view === "skins") await renderSkins();
     if (view === "runs") await renderRuns();
+    if (view === "corpus") await renderCorpus();
+    if (view === "generations") await renderGenerations();
   } catch (err) {
     showBanner(err.message, true);
   }
@@ -225,6 +230,293 @@ async function renderTemplates() {
       }
     </div>
   `;
+}
+
+const CORPUS_FILTERS = [
+  { id: "all", label: "All" },
+  { id: "ready", label: "Ready" },
+  { id: "needs_review", label: "Needs review" },
+  { id: "failed", label: "Failed" },
+];
+
+// Only ever true or false — no dedicated backend filter for it, but the corpus view already
+// fetches the full (up to 500-row) template list in one request, so filtering the already-fetched
+// rows client-side is simplest and needs no new query param.
+let corpusQualityOnly = false;
+
+function countRow(map, limit) {
+  var entries = Object.entries(map || {}).sort(function (a, b) { return b[1] - a[1]; });
+  if (limit) entries = entries.slice(0, limit);
+  if (!entries.length) return '<span class="meta">none</span>';
+  return entries
+    .map(function (row) {
+      return '<span class="pill">' + escapeHtml(row[0]) + " · " + row[1] + "</span>";
+    })
+    .join(" ");
+}
+
+/** Flags below the quality gate (`ingest/quality-score.ts`) as short warn-colored pills — `null`
+ *  (not yet backfilled) and "clean" (0-1 flags, passes the gate) both render nothing here; the
+ *  gate itself excludes only 2+ flags together, so a lone flag is shown but not called out as bad. */
+function qualityBadges(flags) {
+  if (!flags) return '<span class="meta">—</span>';
+  var labels = { thinContent: "thin content", lowConfidence: "low confidence", noAnimation: "no animation" };
+  var active = Object.keys(labels).filter(function (key) { return flags[key]; });
+  if (!active.length) return '<span class="meta">clean</span>';
+  var belowGate = active.length >= 2;
+  return active
+    .map(function (key) {
+      return '<span class="pill ' + (belowGate ? "quality-warn" : "") + '">' + labels[key] + "</span>";
+    })
+    .join(" ");
+}
+
+async function renderCorpus() {
+  var query = "?status=" + encodeURIComponent(corpusFilter) + (searchQuery ? "&search=" + encodeURIComponent(searchQuery) : "");
+  const data = await api("/local-templates" + query);
+  cache.corpus = data;
+  const t = data.totals || {};
+  const b = data.bundle || {};
+  const bundleGap = (b.zipsOnDisk ?? 0) - (b.ingested ?? 0);
+  const rows = corpusQualityOnly
+    ? (data.templates || []).filter(function (row) {
+        var flags = row.qualityFlags;
+        return flags && Object.keys(flags).filter(function (k) { return flags[k]; }).length >= 2;
+      })
+    : data.templates || [];
+  $("view-corpus").innerHTML = `
+    <p class="muted">Local template corpus in <code>${escapeHtml(data.bundleDir || "")}</code>. These are the vendored
+      HTML templates generation actually composes from — separate from the React section templates above.</p>
+    <div class="cards">
+      <div class="card"><b>${t.ready ?? 0}</b><span>Ready</span></div>
+      <div class="card"><b>${t.sections ?? 0}</b><span>Sections</span></div>
+      <div class="card"><b>${t.needsReview ?? 0}</b><span>Needs review</span></div>
+      <div class="card"><b>${t.failed ?? 0}</b><span>Failed</span></div>
+      <div class="card"><b>${t.untagged ?? 0}</b><span>Untagged (no vertical)</span></div>
+      <div class="card${bundleGap > 0 ? " card-warn" : ""}" title="${b.zipsOnDisk ?? 0} .zip file(s) currently in the bundle directory vs. ${b.ingested ?? 0} ever ingested (any status)">
+        <b>${b.ingested ?? 0}/${b.zipsOnDisk ?? 0}</b><span>Ingested / on disk</span>
+      </div>
+      <div class="card${(t.qualityBelowGate ?? 0) > 0 ? " card-warn" : ""}"><b>${t.qualityBelowGate ?? 0}</b><span>Below quality gate</span></div>
+    </div>
+    <p class="meta">Verticals (distinct templates — hover a vertical's own section count):
+      ${
+        Object.entries(data.byIndustryTemplates || {})
+          .sort(function (a, b) { return b[1] - a[1]; })
+          .map(function (row) {
+            var sections = (data.byIndustry || {})[row[0]] ?? 0;
+            return '<span class="pill" title="' + sections + ' section(s) across ' + row[1] + ' template(s)">' +
+              escapeHtml(row[0]) + " · " + row[1] + "</span>";
+          })
+          .join(" ") || '<span class="meta">none</span>'
+      }
+    </p>
+    <p class="meta">Themes: ${countRow(data.byTheme)} · Roles: ${countRow(data.sectionsByRole, 8)}</p>
+    <div class="actions">
+      <button class="btn" id="corpus-ingest">Ingest bundle</button>
+      <button class="btn-ghost" id="corpus-reindex">Rebuild index</button>
+      <label class="check-label"><input type="checkbox" id="corpus-quality-only" ${corpusQualityOnly ? "checked" : ""}> Below quality gate only</label>
+    </div>
+    <pre class="agent-log" id="corpus-log" hidden></pre>
+    <div class="filters">
+      ${CORPUS_FILTERS.map(
+        (f) => `<button type="button" data-corpus-filter="${f.id}" class="${corpusFilter === f.id ? "active" : ""}">${f.label}</button>`
+      ).join("")}
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Template</th><th>Status</th><th>Vertical</th><th>Theme</th><th>Sections</th><th>Quality</th><th></th></tr></thead>
+        <tbody>
+          ${
+            rows.length
+              ? rows
+                  .map(
+                    (row) => `<tr>
+                      <td>${escapeHtml(row.name)}<div class="meta"><code>${escapeHtml(row.templateId)}</code></div>
+                        ${row.reviewReason ? `<div class="meta">${escapeHtml(row.reviewReason)}</div>` : ""}</td>
+                      <td>${pill(row.status)}</td>
+                      <td>${row.industry ? escapeHtml(row.industry) : '<span class="meta">—</span>'}</td>
+                      <td>${row.theme ? escapeHtml(row.theme) : '<span class="meta">—</span>'}</td>
+                      <td>${row.sectionCount ?? 0}</td>
+                      <td>${qualityBadges(row.qualityFlags)}</td>
+                      <td>${
+                        row.status === "ready"
+                          ? `<a class="text-btn" target="_blank" rel="noopener"
+                               href="${escapeHtml(withAdminToken("/api/admin/local-templates/" + row.templateId + "/preview"))}">Preview ↗</a>`
+                          : ""
+                      }</td>
+                    </tr>`
+                  )
+                  .join("")
+              : `<tr><td colspan="7"><p class="empty">No templates match. Drop zips in the bundle directory and run ingest.</p></td></tr>`
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+  $("view-corpus").querySelectorAll("[data-corpus-filter]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      corpusFilter = btn.dataset.corpusFilter;
+      renderCorpus();
+    });
+  });
+  $("corpus-reindex").addEventListener("click", async function () {
+    try {
+      await api("/local-templates/reindex", { method: "POST", body: "{}" });
+      showBanner("Index rebuilt from the template cache.");
+      renderCorpus();
+    } catch (err) {
+      showBanner(err.message, true);
+    }
+  });
+  $("corpus-ingest").addEventListener("click", function () { runCorpusIngest(); });
+  $("corpus-quality-only").addEventListener("change", function (e) {
+    corpusQualityOnly = e.target.checked;
+    renderCorpus();
+  });
+}
+
+/** Streams newline-delimited progress from the bundle ingest route. */
+async function runCorpusIngest() {
+  const log = $("corpus-log");
+  log.hidden = false;
+  log.textContent = "Scanning the bundle directory…\n";
+  const res = await fetch("/api/admin/local-templates/ingest", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  if (!res.ok || !res.body) {
+    showBanner("Ingest failed to start", true);
+    return;
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    log.textContent += decoder.decode(value, { stream: true });
+    log.scrollTop = log.scrollHeight;
+  }
+  showBanner("Ingest finished");
+  renderCorpus();
+}
+
+async function renderGenerations() {
+  const data = await api("/local-templates/generations?limit=200");
+  cache.generations = data.generations ?? [];
+  const rows = cache.generations.filter((g) =>
+    matchesSearch(g.businessName, g.rawBrief, g.id, ...(g.templateIds ?? []))
+  );
+  $("view-generations").innerHTML = `
+    <p class="muted">${data.count ?? rows.length} generation(s) — which source template filled every page, and exactly what changed. Newest first.</p>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Business</th><th>When</th><th>Theme</th><th>Templates</th><th>Sections</th><th>Copy changes</th></tr></thead>
+        <tbody>
+          ${
+            rows.length
+              ? rows
+                  .map((g) => {
+                    const changeCount = Object.values(g.pages ?? {})
+                      .flat()
+                      .reduce((sum, row) => sum + (row.changes?.length ?? 0), 0);
+                    return `<tr data-generation="${escapeHtml(g.id)}">
+                      <td>${escapeHtml(g.businessName)}</td>
+                      <td>${new Date(g.createdAt).toLocaleString()}</td>
+                      <td>${g.theme ? pill(g.theme) + (g.themeConfidence === "partial-fallback" ? ' <span class="pill quality-warn" title="At least one section had no on-theme candidate and used a theme-unknown fallback">partial</span>' : "") : "—"}</td>
+                      <td>${g.templateIds?.length ?? 0}</td>
+                      <td>${g.stats?.sectionsPlaced ?? 0}</td>
+                      <td>${changeCount}</td>
+                    </tr>`;
+                  })
+                  .join("")
+              : `<tr><td colspan="6"><p class="empty">No generations recorded yet — generate a site to see it here.</p></td></tr>`
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+  $("view-generations").querySelectorAll("[data-generation]").forEach((row) => {
+    row.addEventListener("click", () => openGeneration(row.dataset.generation));
+  });
+}
+
+async function openGeneration(id) {
+  const record = await api(`/local-templates/generations/${id}`);
+  $("drawer").hidden = false;
+  $("drawer-title").textContent = record.businessName;
+  const pages = Object.entries(record.pages ?? {});
+  // "confirmed" means every placed section's own origin theme matched the lock; "partial-fallback"
+  // means at least one role had no on-theme candidate and used a themeless (not yet backfilled)
+  // section instead — previously indistinguishable from the record alone (see select.ts).
+  const themeText = record.theme
+    ? `${pill(record.theme)} mix` +
+      (record.themeConfidence === "partial-fallback"
+        ? ' <span class="pill quality-warn">some sections theme-unknown</span>'
+        : record.themeConfidence === "confirmed"
+          ? ' <span class="meta">(every section confirmed)</span>'
+          : "")
+    : "";
+  $("drawer-body").innerHTML = `
+    <p class="muted">${escapeHtml(record.rawBrief)}</p>
+    <p>${new Date(record.createdAt).toLocaleString()} ${themeText ? `· ${themeText}` : ""} ${record.consumerId ? `· consumer <code>${escapeHtml(record.consumerId)}</code> <button type="button" class="text-btn" id="gen-history-btn">view anti-repeat history</button>` : ""}</p>
+    <div id="gen-history" hidden></div>
+    <p class="meta">${record.stats.sectionsPlaced} sections · ${record.stats.slotsApplied} slots filled (${record.stats.slotsSkipped} skipped) · ${record.stats.fillerRewritten} filler rewrites · ${record.stats.photosApplied} photos resolved</p>
+    ${pages
+      .map(([slug, sections]) => `
+        <h3>${escapeHtml(slug)}</h3>
+        ${sections
+          .map(
+            (section) => `
+              <div class="gen-section">
+                <p class="meta"><b>${escapeHtml(section.role)}</b> ← <code>${escapeHtml(section.templateName)}</code> (<code>${escapeHtml(section.templateId)}</code> / ${escapeHtml(section.sectionId)})</p>
+                ${
+                  section.changes.length
+                    ? `<div class="table-wrap diff-table">
+                        <table class="table">
+                          <thead><tr><th>Kind</th><th>Before</th><th>After</th></tr></thead>
+                          <tbody>
+                            ${section.changes
+                              .map(
+                                (c) => `<tr><td><code>${escapeHtml(c.kind)}</code></td><td class="diff-before">${escapeHtml(c.before)}</td><td class="diff-after">${escapeHtml(c.after)}</td></tr>`
+                              )
+                              .join("")}
+                          </tbody>
+                        </table>
+                      </div>`
+                    : `<p class="meta">No copy changes in this section.</p>`
+                }
+                ${section.photosApplied ? `<p class="meta">${section.photosApplied} photo(s) resolved${section.photosSkipped ? `, ${section.photosSkipped} skipped` : ""}</p>` : ""}
+              </div>`
+          )
+          .join("")}
+      `)
+      .join("")}
+  `;
+  const historyBtn = $("gen-history-btn");
+  if (historyBtn) {
+    historyBtn.addEventListener("click", async () => {
+      const box = $("gen-history");
+      box.hidden = false;
+      box.innerHTML = '<p class="meta">Loading…</p>';
+      try {
+        const history = await api(`/local-templates/consumers/${encodeURIComponent(record.consumerId)}/history`);
+        box.innerHTML = `
+          <p class="meta">${history.sectionsUsed} section(s) across ${history.distinctTemplates} distinct template(s) previously given to this consumer — the memory <code>select.ts</code>'s anchor/section picking reads to avoid repeating one.</p>
+          <div class="table-wrap"><table class="table">
+            <thead><tr><th>Template</th><th>Role</th><th>Section</th></tr></thead>
+            <tbody>${history.used
+              .map(
+                (row) =>
+                  `<tr><td>${escapeHtml(row.templateName ?? row.templateId)}</td><td>${row.role ? pill(row.role) : "—"}</td><td><code>${escapeHtml(row.sectionId)}</code></td></tr>`
+              )
+              .join("")}</tbody>
+          </table></div>`;
+      } catch (err) {
+        box.innerHTML = `<p class="meta">Could not load history: ${escapeHtml(err.message)}</p>`;
+      }
+    });
+  }
 }
 
 async function renderSources() {
@@ -551,6 +843,104 @@ function themeFeaturesBlock(candidate) {
   `;
 }
 
+function headingsList(outline) {
+  if (!outline?.headings?.length) return "";
+  return `<ul class="recipe-list">${outline.headings
+    .slice(0, 14)
+    .map((h) => `<li>H${h.level} — ${escapeHtml(h.text)}</li>`)
+    .join("")}</ul>`;
+}
+
+/** What the ingest pipeline actually captured from the source, distinct from the demo
+ *  screenshot above it — this is structure only (headings + landmarks), never HTML/CSS/JS. */
+function ingestedBlock(candidate) {
+  const outline = candidate.outline;
+  const pageOutlines = candidate.pageOutlines ?? {};
+  const recipe = candidate.recipe;
+  const otherPages = Object.entries(pageOutlines).filter(([slug]) => slug !== "home");
+
+  if (!outline && !recipe) {
+    return `<h3>What was ingested</h3><p class="muted">Nothing captured yet — no outline or recipe on this candidate.</p>`;
+  }
+
+  return `
+    <h3>What was ingested</h3>
+    <p class="muted">Structure only, read from the source's own HTML: headings and section landmarks. No markup, styling, or scripts are ever copied — the preview below is composed entirely from our own React section library and sample copy.</p>
+    ${
+      outline
+        ? `<p class="meta"><b>Home</b> — ${outline.headings.length} heading(s) · landmarks: ${escapeHtml(outline.landmarks.join(", ") || "none")}</p>${headingsList(outline)}`
+        : ""
+    }
+    ${
+      otherPages.length
+        ? otherPages
+            .map(
+              ([slug, o]) =>
+                `<p class="meta"><b>${escapeHtml(slug)}</b> — ${o.headings.length} heading(s) · landmarks: ${escapeHtml(o.landmarks.join(", ") || "none")}</p>`
+            )
+            .join("")
+        : ""
+    }
+    ${
+      recipe
+        ? `<p class="meta">Mapping confidence: ${Math.round((recipe.confidence ?? 0) * 100)}%${recipe.notes?.length ? ` — ${escapeHtml(recipe.notes.join("; "))}` : ""}</p>`
+        : ""
+    }
+  `;
+}
+
+async function runCandidatePreview(id) {
+  const btn = $("do-preview");
+  const log = $("preview-log");
+  const status = $("preview-status");
+  if (!log || !status) return;
+  btn.disabled = true;
+  log.hidden = false;
+  status.innerHTML = "";
+  log.textContent = "Starting preview build…\n";
+  try {
+    const res = await fetch(`/api/admin/candidates/${id}/preview`, { method: "POST" });
+    if (!res.ok || !res.body) {
+      showBanner("Preview failed to start", true);
+      return;
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const chunks = buffer.split("\n\n");
+      buffer = chunks.pop() ?? "";
+      for (const chunk of chunks) {
+        const line = chunk.replace(/^data:\s*/, "");
+        if (!line) continue;
+        let event;
+        try {
+          event = JSON.parse(line);
+        } catch {
+          continue;
+        }
+        if (event.type === "log") {
+          log.textContent += event.line + "\n";
+          log.scrollTop = log.scrollHeight;
+        }
+        if (event.type === "done") {
+          if (event.ok) {
+            status.innerHTML = `<p class="muted">Previewing as <b>${escapeHtml(event.businessName)}</b> — sample copy on the real layout, motion, and section templates.</p>
+              <a class="btn" href="${withAdminToken(event.previewUrl)}" target="_blank" rel="noopener">Open full preview ↗</a>`;
+          } else {
+            showBanner(event.error ?? "Preview failed", true);
+          }
+        }
+      }
+    }
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 async function openCandidate(id) {
   selectedId = id;
   const { candidate } = await api(`/candidates/${id}`);
@@ -567,6 +957,13 @@ async function openCandidate(id) {
       <button class="btn" id="do-approve">Approve as skin</button>
       <button class="btn-ghost" id="do-reject">Reject</button>
     </div>
+    <div class="actions">
+      <button class="btn-ghost" id="do-preview" ${candidate.draftSkin ? "" : "disabled"}>Full preview</button>
+      ${candidate.draftSkin ? "" : `<span class="meta">Re-verify first — no draft skin yet</span>`}
+    </div>
+    <pre class="agent-log" id="preview-log" hidden></pre>
+    <div id="preview-status"></div>
+    ${ingestedBlock(candidate)}
     ${themeFeaturesBlock(candidate)}
     <h3>Recipe wireframe</h3>
     ${
@@ -607,6 +1004,7 @@ async function openCandidate(id) {
     openCandidate(id);
     refresh();
   };
+  $("do-preview")?.addEventListener("click", () => runCandidatePreview(id));
 }
 
 async function runAgent(options = {}) {

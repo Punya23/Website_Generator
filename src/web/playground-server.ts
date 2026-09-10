@@ -6,7 +6,10 @@ import { generateReactProject, buildReactProject } from "../react-codegen/assemb
 import { generateSite } from "../orchestrator/orchestrator.js";
 import { planRevision } from "../agents/revise-site-agent.js";
 import { applyRevision } from "../editor/apply-revision.js";
-import { writeSiteOutput } from "../server/preview-server.js";
+import { writeSiteOutput, type SiteAssetCopy } from "../server/preview-server.js";
+import { withEditLayer } from "../templates/compose.js";
+import { applyVerbatimRevisions, composeVerbatimSite, type VerbatimRevision, type VerbatimSiteState } from "../templates/revise.js";
+import { loadSiteState, saveSiteState } from "../templates/site-state-store.js";
 import { subscribePipelineLogs } from "../util/pipeline-log.js";
 import { extractBusinessName } from "../util/extract-name.js";
 import { llm } from "../llm/client.js";
@@ -36,7 +39,7 @@ import {
 import { ensurePlaywrightBrowsers } from "../util/ensure-playwright.js";
 import { getSiteBySlug } from "../hosting/site-repository.js";
 import { isSupabaseConfigured } from "../hosting/supabase-client.js";
-import { publishSite } from "../hosting/publish-site.js";
+import { publishSite, publishVerbatimSite } from "../hosting/publish-site.js";
 import { siteSlugFromName } from "../hosting/slug.js";
 import { mountAdmin } from "../admin/http.js";
 import {
@@ -73,8 +76,16 @@ async function persistReactPreview(reactOutPath: string): Promise<void> {
   await fs.cp(reactOutPath, PLAYGROUND_OUTPUT, { recursive: true });
 }
 
-async function persistHtmlPreview(htmlPages: Record<string, string>): Promise<void> {
-  await writeSiteOutput(PLAYGROUND_OUTPUT, htmlPages);
+async function persistHtmlPreview(
+  htmlPages: Record<string, string>,
+  assets: SiteAssetCopy[] = [],
+  options: { editable?: boolean } = {}
+): Promise<void> {
+  // The authoring layer belongs to the preview copy only — never to what gets published/exported.
+  const pages = options.editable
+    ? Object.fromEntries(Object.entries(htmlPages).map(([slug, html]) => [slug, withEditLayer(html)]))
+    : htmlPages;
+  await writeSiteOutput(PLAYGROUND_OUTPUT, pages, assets);
 }
 
 function mountPreviewRoutes(app: express.Express): void {
@@ -104,10 +115,43 @@ export interface PlaygroundServerOptions {
   port?: number;
 }
 
+/**
+ * Edits are applied one at a time.
+ *
+ * Every edit reads the current state, recomposes the whole site and rewrites the preview directory.
+ * Two of them in flight together read the same state (so the second silently drops the first's
+ * change) and write the same files at the same time (confirmed live: clicking swap and add in quick
+ * succession returned 200 then 500). Serializing is both the correctness fix and the crash fix —
+ * and an edit is fast enough that queueing is invisible.
+ */
+let editQueue: Promise<unknown> = Promise.resolve();
+function queueEdit<T>(task: () => Promise<T>): Promise<T> {
+  const run = editQueue.then(task, task);
+  editQueue = run.then(
+    () => undefined,
+    () => undefined
+  );
+  return run;
+}
+
 async function persistPreview(): Promise<{ previewUrl: string; previewSource: string }> {
   const session = getEditorSession();
   if (!session?.siteContext) {
     throw new Error("No active site session — generate a site first");
+  }
+
+  // A verbatim site has no React project and no `SectionInstance` props — rendering it through
+  // `rerenderFromContext` below produced a blank legacy page and dropped every vendored asset,
+  // so the first theme/reorder call silently destroyed the preview. It recomposes from its own
+  // state instead, which is also what makes edits stick.
+  const verbatimState = session.verbatimState;
+  if (verbatimState) {
+    const site = await composeVerbatimSite(verbatimState);
+    session.htmlPages = site.htmlPages;
+    session.verbatimFiles = site.files;
+    await persistHtmlPreview(site.htmlPages, site.files, { editable: true });
+    session.previewSource = "html-fallback";
+    return { previewUrl: "/preview/", previewSource: "html-fallback" };
   }
 
   const reactPages = session.siteContext.reactPages;
@@ -181,16 +225,120 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
       }
     });
 
+    /**
+     * In-preview editing for verbatim sites.
+     *
+     * The overlay composition injects (`withEditLayer`) posts here: text edits carry the anchor
+     * they were made on, structural edits carry the section wrapper's `<templateId>:<sectionId>`.
+     * State is recomposed through the same path a first generation uses and re-persisted, so what
+     * the preview shows after an edit is exactly what a fresh render of that state would produce.
+     */
+    app.post("/api/edit", async (req, res) => {
+      const session = getEditorSession();
+      // Session state dies with the process; disk state does not. Falling back means an edit made
+      // after a dev restart still lands instead of failing with "generate a site first".
+      const current: VerbatimSiteState | null = session?.verbatimState ?? (await loadSiteState());
+      if (!current) {
+        res.status(409).json({ error: "No editable site — generate one first" });
+        return;
+      }
+      const revisions = Array.isArray(req.body?.revisions) ? (req.body.revisions as VerbatimRevision[]) : [];
+      if (revisions.length === 0) {
+        res.status(400).json({ error: "No revisions supplied" });
+        return;
+      }
+      const page = typeof req.body?.page === "string" ? req.body.page : undefined;
+      try {
+        const payload = await queueEdit(async () => {
+          // Re-read inside the queue: an edit that waited must build on the one before it, not on
+          // the state as it looked when this request arrived.
+          const live = getEditorSession();
+          const base: VerbatimSiteState = live?.verbatimState ?? (await loadSiteState()) ?? current;
+          const result = await applyVerbatimRevisions(base, revisions, { ...(page ? { page } : {}) });
+          await persistHtmlPreview(result.site.htmlPages, result.site.files, { editable: true });
+          await saveSiteState(result.state);
+          if (live) {
+            live.verbatimState = result.state;
+            live.htmlPages = result.site.htmlPages;
+            live.verbatimFiles = result.site.files;
+          }
+          return {
+            ok: result.applied.length > 0,
+            applied: result.applied,
+            rejected: result.rejected,
+            stats: result.site.stats,
+          };
+        });
+        res.json(payload);
+      } catch (err) {
+        res.status(500).json({ error: err instanceof Error ? err.message : "Edit failed" });
+      }
+    });
+
+    /** The placed sections of the current verbatim site, for the sections panel. */
+    app.get("/api/edit/state", async (_req, res) => {
+      const session = getEditorSession();
+      const current: VerbatimSiteState | null = session?.verbatimState ?? (await loadSiteState());
+      if (!current) {
+        res.status(404).json({ error: "No editable site" });
+        return;
+      }
+      res.json({
+        businessName: current.brief.businessName,
+        theme: current.theme ?? null,
+        editCount: Object.keys(current.overrides ?? {}).length,
+        pages: Object.fromEntries(
+          Object.entries(current.pages).map(([slug, sections]) => [
+            slug,
+            sections.map((section) => ({
+              key: `${section.templateId}:${section.sectionId}`,
+              role: section.role,
+              templateId: section.templateId,
+            })),
+          ])
+        ),
+      });
+    });
+
     app.get("/api/session", (_req, res) => {
       const session = getEditorSession();
       if (!session) {
         res.status(404).json({ error: "No active session" });
         return;
       }
+      // A verbatim site has no `reactPages` and its `ctx.pages[].sections` are a stub, so the
+      // sections panel used to render empty. Report the placed sections instead, keyed the way the
+      // preview and /api/edit address them.
+      const verbatim = session.verbatimState;
+      if (verbatim) {
+        res.json({
+          businessName: session.site.businessName,
+          designSystem: session.siteContext.designSystem,
+          outputMode: session.outputMode ?? "html",
+          mode: "verbatim",
+          theme: verbatim.theme ?? null,
+          editCount: Object.keys(verbatim.overrides ?? {}).length,
+          pages: Object.entries(verbatim.pages).map(([slug, sections]) => ({
+            slug,
+            title: slug,
+            sections: sections.map((section) => ({
+              id: `${section.templateId}:${section.sectionId}`,
+              intent: section.role,
+              archetype: section.templateId,
+              blockCount: 0,
+            })),
+          })),
+          reactPages: [],
+          cmsCollections: session.siteContext.cmsCollections ?? [],
+        });
+        return;
+      }
+
       res.json({
         businessName: session.site.businessName,
         designSystem: session.siteContext.designSystem,
         outputMode: session.outputMode ?? "html",
+        mode: "skin",
         pages: session.siteContext.reactPages
           ? Object.entries(session.siteContext.reactPages).map(([slug, page]) => ({
               slug,
@@ -224,6 +372,14 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
     });
 
     app.post("/api/revise", async (req, res) => {
+      const guard = getEditorSession();
+      if (guard?.verbatimState) {
+        res
+          .status(409)
+          .json({ error: "This site is built from vendored templates — edit it in the preview (Edit button) instead." });
+        return;
+      }
+
       res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
       res.setHeader("Cache-Control", "no-cache, no-transform");
       res.setHeader("Connection", "keep-alive");
@@ -290,6 +446,14 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
     });
 
     app.patch("/api/theme", async (req, res) => {
+      const guard = getEditorSession();
+      if (guard?.verbatimState) {
+        res
+          .status(409)
+          .json({ error: "This site is built from vendored templates — edit it in the preview (Edit button) instead." });
+        return;
+      }
+
       try {
         updateEditorSession((session) => {
           applyThemePatch(session.siteContext, req.body ?? {});
@@ -303,6 +467,14 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
     });
 
     app.post("/api/sections/reorder", async (req, res) => {
+      const guard = getEditorSession();
+      if (guard?.verbatimState) {
+        res
+          .status(409)
+          .json({ error: "This site is built from vendored templates — edit it in the preview (Edit button) instead." });
+        return;
+      }
+
       try {
         const pageSlug = String(req.body?.pageSlug ?? "");
         const sectionIds = req.body?.sectionIds as string[];
@@ -407,11 +579,27 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
           return;
         }
         const session = getEditorSession();
+        const slug = req.params.slug!;
+
+        // A verbatim site has no React build to publish; it publishes the composed pages it
+        // already has. The clean HTML is recomposed here rather than read from the preview copy,
+        // which carries the authoring layer.
+        if (session?.verbatimState) {
+          const site = await composeVerbatimSite(session.verbatimState);
+          const result = await publishVerbatimSite({
+            ctx: session.siteContext,
+            htmlPages: site.htmlPages,
+            files: site.files,
+            slug,
+          });
+          res.json(result);
+          return;
+        }
+
         if (!session?.reactStaticOutPath || !session.reactProjectPath) {
           res.status(400).json({ error: "No built React site in session — generate first" });
           return;
         }
-        const slug = req.params.slug!;
         const result = await publishSite({
           ctx: session.siteContext,
           outPath: session.reactStaticOutPath,
@@ -529,7 +717,11 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
           await persistReactPreview(result.reactStaticOutPath);
           previewSource = "next-static";
         } else {
-          await persistHtmlPreview(result.htmlPages);
+          // A verbatim site is editable in place, so its preview copy carries the authoring layer
+          // and its state is written to disk — the generated HTML itself stays clean for publish.
+          const editable = Boolean(result.verbatimState);
+          await persistHtmlPreview(result.htmlPages, result.verbatimFiles ?? [], { editable });
+          if (result.verbatimState) await saveSiteState(result.verbatimState);
           previewSource = "html-fallback";
           if (result.outputMode === "react" && result.buildSucceeded === false && result.reactProjectPath) {
             send({

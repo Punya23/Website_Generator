@@ -109,6 +109,10 @@ async function pixabayUrl(query: string, seed: string): Promise<string | null> {
   }
 }
 
+function skipRemoteImageSearch(): boolean {
+  return process.env.ALLOW_MOCKS === "1" || process.env.NODE_ENV === "test" || Boolean(process.env.VITEST);
+}
+
 /** Resolve a hotlinkable image URL for any business/query — provider-agnostic. */
 export async function resolveImageUrl(req: ImageRequest): Promise<string> {
   const key = cacheKey(req);
@@ -116,6 +120,12 @@ export async function resolveImageUrl(req: ImageRequest): Promise<string> {
   if (hit) return hit;
 
   const query = req.query.trim() || "professional business";
+
+  if (skipRemoteImageSearch()) {
+    const fallback = picsumUrl(req);
+    cache.set(key, fallback);
+    return fallback;
+  }
 
   const providers: Array<() => Promise<string | null>> = [];
   if (process.env.PEXELS_API_KEY?.trim()) {

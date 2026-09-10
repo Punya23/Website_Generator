@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prestige Realty | Bay Area Real Estate Agency</title>
+<meta name="description" content="Prestige Realty is a boutique San Francisco Bay Area brokerage helping buyers, sellers and investors find their next home.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header>
+  <div class="topbar">
+    <div class="container">
+      <div class="topbar__contact">
+        <span>1450 Market Street, Suite 400, San Francisco, CA</span>
+        <span>(415) 555-0182</span>
+        <span>hello@prestigerealty.com</span>
+      </div>
+      <div class="topbar__social">
+        <a href="#">Facebook</a><a href="#">Instagram</a><a href="#">LinkedIn</a>
+      </div>
+    </div>
+  </div>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="navbar__logo">Prestige<span>Realty</span></a>
+      <ul class="navbar__links">
+        <li><a href="index.html" class="is-active">Home</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="listings.html">Listings</a></li>
+        <li><a href="agents.html">Agents</a></li>
+        <li><a href="services.html">Services</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+      <div class="navbar__actions">
+        <a href="contact.html" class="btn btn--secondary btn--sm">Get a Free Valuation</a>
+      </div>
+      <button class="navbar__toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+</header>
+
+<main>
+
+  <section class="hero" style="background-image:url('https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=70');">
+    <div class="container">
+      <div class="hero__content">
+        <span class="hero__eyebrow">Bay Area Real Estate</span>
+        <h1 class="hero__title" data-field="hero.title">Find the home that fits <em>your</em> next chapter</h1>
+        <p class="hero__subtitle" data-field="hero.subtitle">Prestige Realty has guided Bay Area buyers and sellers for over 15 years — local expertise, honest advice, and a network of the best homes before they hit the open market.</p>
+        <div class="hero__actions">
+          <a href="listings.html" class="btn btn--primary">Browse Listings</a>
+          <a href="contact.html" class="btn btn--outline">Talk to an Agent</a>
+        </div>
+      </div>
+      <form class="search-widget" data-demo-form>
+        <div class="search-widget__field">
+          <label>Location</label>
+          <input type="text" placeholder="City or neighborhood" value="San Francisco, CA">
+        </div>
+        <div class="search-widget__field">
+          <label>Property Type</label>
+          <select>
+            <option>Any Type</option>
+            <option>Single-Family Home</option>
+            <option>Condo / Townhome</option>
+            <option>Luxury Estate</option>
+            <option>Multi-Family</option>
+          </select>
+        </div>
+        <div class="search-widget__field">
+          <label>Price Range</label>
+          <select>
+            <option>Any Price</option>
+            <option>$500k - $1M</option>
+            <option>$1M - $2M</option>
+            <option>$2M - $4M</option>
+            <option>$4M+</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn--secondary">Search</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section__header section__header--split">
+        <div>
+          <span class="section__eyebrow">Featured Properties</span>
+          <h2 class="section__title">Handpicked homes on the market now</h2>
+        </div>
+        <a href="listings.html" class="btn btn--outline-dark">View All Listings</a>
+      </div>
+      <div class="grid grid--3">
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=70" alt="Modern family home in Palo Alto">
+            <span class="property-card__badge property-card__badge--sale">For Sale</span>
+            <span class="property-card__price" data-field="property.price">$2,450,000</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">482 Willow Creek Lane, Palo Alto, CA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Modern Family Home</a></h3>
+            <div class="property-card__meta">
+              <span>4 Beds</span><span>3 Baths</span><span>2,850 sqft</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=70" alt="Downtown luxury condo in San Francisco">
+            <span class="property-card__badge property-card__badge--sale">For Sale</span>
+            <span class="property-card__price">$1,275,000</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">88 Beale Street #1204, San Francisco, CA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Downtown Luxury Condo</a></h3>
+            <div class="property-card__meta">
+              <span>2 Beds</span><span>2 Baths</span><span>1,180 sqft</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=70" alt="Craftsman bungalow in Berkeley">
+            <span class="property-card__badge">New Listing</span>
+            <span class="property-card__price">$1,690,000</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">214 Elm Street, Berkeley, CA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Craftsman Bungalow</a></h3>
+            <div class="property-card__meta">
+              <span>3 Beds</span><span>2 Baths</span><span>1,920 sqft</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=70" alt="Hillside view estate in Oakland">
+            <span class="property-card__badge property-card__badge--sale">For Sale</span>
+            <span class="property-card__price">$3,150,000</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">76 Skyline Drive, Oakland, CA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Hillside View Estate</a></h3>
+            <div class="property-card__meta">
+              <span>5 Beds</span><span>4.5 Baths</span><span>4,200 sqft</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=70" alt="Charming cottage in Menlo Park">
+            <span class="property-card__badge">New Listing</span>
+            <span class="property-card__price">$1,895,000</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">509 Oak Grove Ave, Menlo Park, CA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Charming Cottage</a></h3>
+            <div class="property-card__meta">
+              <span>3 Beds</span><span>2 Baths</span><span>1,760 sqft</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=800&q=70" alt="Bayview penthouse in San Francisco">
+            <span class="property-card__badge property-card__badge--sale">For Sale</span>
+            <span class="property-card__price">$4,750,000</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">900 Harbor View Dr #PH2, San Francisco, CA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Bayview Penthouse</a></h3>
+            <div class="property-card__meta">
+              <span>3 Beds</span><span>3.5 Baths</span><span>2,980 sqft</span>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="container">
+      <div class="grid grid--4">
+        <div class="stat-item"><div class="stat-item__number">15+</div><div class="stat-item__label">Years in Business</div></div>
+        <div class="stat-item"><div class="stat-item__number">2,300+</div><div class="stat-item__label">Properties Sold</div></div>
+        <div class="stat-item"><div class="stat-item__number">98%</div><div class="stat-item__label">Client Satisfaction</div></div>
+        <div class="stat-item"><div class="stat-item__number">32</div><div class="stat-item__label">Expert Agents</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__eyebrow">Why Prestige Realty</span>
+        <h2 class="section__title">Full-service support, from search to signing</h2>
+        <p class="section__subtitle">Whether you're buying your first home or growing an investment portfolio, our team handles every detail.</p>
+      </div>
+      <div class="grid grid--4">
+        <div class="service-card">
+          <div class="service-card__icon">01</div>
+          <h3 class="service-card__title">Local Market Expertise</h3>
+          <p class="service-card__text">Deep knowledge of every Bay Area neighborhood, from pricing trends to school districts.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-card__icon">02</div>
+          <h3 class="service-card__title">Off-Market Access</h3>
+          <p class="service-card__text">Our network surfaces homes before they're publicly listed, giving you the first look.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-card__icon">03</div>
+          <h3 class="service-card__title">Negotiation That Wins</h3>
+          <p class="service-card__text">We negotiate every offer like it's our own money on the table, so you keep more of yours.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-card__icon">04</div>
+          <h3 class="service-card__title">Support After Closing</h3>
+          <p class="service-card__text">From contractors to moving crews, our concierge team is one call away even after the keys change hands.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__eyebrow">How It Works</span>
+        <h2 class="section__title">A simple path to your next address</h2>
+      </div>
+      <div class="process">
+        <div class="process-step">
+          <div class="process-step__num">1</div>
+          <h3 class="process-step__title">Tell Us Your Goals</h3>
+          <p class="process-step__text">A quick consultation to understand your budget, timeline and must-haves.</p>
+        </div>
+        <div class="process-step">
+          <div class="process-step__num">2</div>
+          <h3 class="process-step__title">Tour Curated Homes</h3>
+          <p class="process-step__text">We shortlist and schedule tours for properties that actually match your criteria.</p>
+        </div>
+        <div class="process-step">
+          <div class="process-step__num">3</div>
+          <h3 class="process-step__title">Make a Confident Offer</h3>
+          <p class="process-step__text">Data-backed pricing guidance and negotiation strategy tailored to the property.</p>
+        </div>
+        <div class="process-step">
+          <div class="process-step__num">4</div>
+          <h3 class="process-step__title">Close With Ease</h3>
+          <p class="process-step__text">We coordinate inspections, paperwork and lenders so closing day is stress-free.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__eyebrow">Client Stories</span>
+        <h2 class="section__title">Trusted by Bay Area families and investors</h2>
+      </div>
+      <div class="grid grid--3">
+        <div class="testimonial-card">
+          <div class="testimonial-card__stars">★★★★★</div>
+          <p class="testimonial-card__quote">"Prestige Realty found us a home in Palo Alto we didn't even know was coming to market. Sarah's negotiation saved us over $80,000."</p>
+          <div class="testimonial-card__author">
+            <img src="https://randomuser.me/api/portraits/women/12.jpg" alt="Jennifer Lawson">
+            <div><strong>Jennifer Lawson</strong><span>Homebuyer, Palo Alto</span></div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-card__stars">★★★★★</div>
+          <p class="testimonial-card__quote">"We sold our Oakland home 12% above asking in nine days. The marketing and staging advice made all the difference."</p>
+          <div class="testimonial-card__author">
+            <img src="https://randomuser.me/api/portraits/men/41.jpg" alt="Marcus Diaz">
+            <div><strong>Marcus Diaz</strong><span>Home Seller, Oakland</span></div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-card__stars">★★★★★</div>
+          <p class="testimonial-card__quote">"As out-of-state investors, we needed a team we could trust completely. Prestige has managed three acquisitions for us flawlessly."</p>
+          <div class="testimonial-card__author">
+            <img src="https://randomuser.me/api/portraits/women/65.jpg" alt="Angela Foster">
+            <div><strong>Angela Foster</strong><span>Investor, Remote Client</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="cta-banner">
+        <h2>Ready to find your next home?</h2>
+        <p>Schedule a free, no-pressure consultation with one of our local agents today.</p>
+        <div class="cta-banner__actions">
+          <a href="contact.html" class="btn btn--primary">Schedule a Consultation</a>
+          <a href="listings.html" class="btn btn--outline">Browse Listings</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__col">
+        <a href="index.html" class="footer__logo">Prestige<span>Realty</span></a>
+        <p class="footer__about">A boutique San Francisco Bay Area brokerage helping buyers, sellers, and investors move with confidence since 2011.</p>
+        <div class="footer__socials">
+          <a href="#">FB</a><a href="#">IG</a><a href="#">LI</a><a href="#">TW</a>
+        </div>
+      </div>
+      <div class="footer__col">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="listings.html">Property Listings</a></li>
+          <li><a href="agents.html">Our Agents</a></li>
+          <li><a href="services.html">Services</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h4>Property Types</h4>
+        <ul>
+          <li><a href="listings.html">Single-Family Homes</a></li>
+          <li><a href="listings.html">Condos &amp; Townhomes</a></li>
+          <li><a href="listings.html">Luxury Estates</a></li>
+          <li><a href="listings.html">Investment Properties</a></li>
+          <li><a href="listings.html">New Construction</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h4>Stay Updated</h4>
+        <p class="footer__about">Get new listings and market updates in your inbox every week.</p>
+        <form class="footer__newsletter" data-demo-form>
+          <input type="email" placeholder="Your email address" required>
+          <button type="submit">Join</button>
+        </form>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>&copy; 2026 Prestige Realty. All rights reserved.</span>
+      <span>DRE #01923847 &middot; <a href="contact.html">Privacy Policy</a> &middot; <a href="contact.html">Terms</a></span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+</body>
+</html>

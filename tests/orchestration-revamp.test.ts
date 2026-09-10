@@ -32,6 +32,41 @@ describe("react pipeline paths", () => {
     expect(src).not.toContain("directPageBlueprints");
     expect(src).not.toContain("fillSectionProps");
   });
+
+  it("skin fill uses the skin as-is and does not overlay look-agent design language", () => {
+    const src = readFileSync(join(root, "src/orchestrator/react-pipeline.ts"), "utf8");
+    const start = src.indexOf("async function runSkinFillReactPipeline");
+    const end = src.indexOf("async function runPageCodegenReactPipeline");
+    const fn = src.slice(start, end);
+    expect(fn).toContain("applySkinToContext");
+    expect(fn).not.toContain("lookAndContract");
+    expect(fn).not.toContain("applyPageRhythm");
+    expect(fn).not.toContain("profileId:");
+  });
+
+  it("HTML output uses skins page-to-page instead of the legacy section-builder pipeline", () => {
+    const orch = readFileSync(join(root, "src/orchestrator/orchestrator.ts"), "utf8");
+    // Skin fill is now the fallback behind the verbatim-template path, not the outright default.
+    expect(orch).toContain("const skinFill = !verbatim && useSkinFillPipeline()");
+    expect(orch).not.toContain("outputMode === \"react\" && useSkinFillPipeline()");
+    expect(orch).toContain("runSkinHtmlPipeline");
+    const theme = readFileSync(join(root, "src/skins/theme.ts"), "utf8");
+    expect(theme).not.toContain("vertical-profiles");
+    expect(theme).not.toContain("GENERIC_THEME");
+    expect(theme).not.toContain("mockPaletteForProfile");
+  });
+
+  it("does not rewrite template copy with an LLM unless PIPELINE_SKIN_FILL_LLM=1", () => {
+    const src = readFileSync(join(root, "src/agents/skin-fill-agent.ts"), "utf8");
+    expect(src).toContain("useSkinFillLlm");
+    expect(src).toContain("mockFillSkinCopy");
+    const fill = src.slice(src.indexOf("export async function fillSiteSkin"), src.indexOf("async function fillSkinCopyWithLlm"));
+    expect(fill).toContain("useSkinFillLlm()");
+    expect(fill).not.toContain("chatJsonWithRetry");
+    const orch = readFileSync(join(root, "src/orchestrator/orchestrator.ts"), "utf8");
+    expect(orch).toContain("expandBriefFromInput");
+    expect(orch).toContain("Brief slotted from your input (no LLM rewrite)");
+  });
 });
 
 describe("propsForCodegen hard-fails", () => {

@@ -3,6 +3,11 @@ import path from "path";
 
 const TEXT_EXTENSIONS = new Set([".html", ".js", ".css", ".txt", ".json"]);
 
+/** Inner page slugs CTAs may link to (see skin-fill prompt rules). Section CTAs now render
+ *  through next/link and pick up basePath at build time like nav links do — these patterns
+ *  are a defense-in-depth backstop in case some other unprefixed "/slug" href slips through. */
+const INNER_PAGE_SLUGS = ["about", "services", "contact"];
+
 /** Depth-relative prefix so assets resolve from nested pages (e.g. about/index.html). */
 export function depthRelativePrefix(fileRel: string): string {
   const dir = path.dirname(fileRel.replace(/\\/g, "/"));
@@ -37,9 +42,11 @@ export function rewritePathsForStorage(
   out = out.replaceAll(`href="${prefix}/`, `href="${rel}`);
   out = out.replaceAll(`href='${prefix}/`, `href='${rel}`);
 
-  out = out.replaceAll('href="/contact"', `href="${rel}contact/"`);
-  out = out.replaceAll("href='/contact'", `href='${rel}contact/'`);
-  out = out.replaceAll('href="/contact/"', `href="${rel}contact/"`);
+  for (const slug of INNER_PAGE_SLUGS) {
+    out = out.replaceAll(`href="/${slug}"`, `href="${rel}${slug}/"`);
+    out = out.replaceAll(`href='/${slug}'`, `href='${rel}${slug}/'`);
+    out = out.replaceAll(`href="/${slug}/"`, `href="${rel}${slug}/"`);
+  }
 
   out = out.replaceAll(`\\"${prefix}/_next/`, `\\"${rel}_next/`);
   out = out.replaceAll(`\\"${prefix}/`, `\\"${rel}`);
@@ -65,9 +72,11 @@ function rewriteToAbsoluteAssetBase(content: string, basePath: string, assetBase
   out = out.replaceAll(`href="${prefix}"`, `href="${base}"`);
   out = out.replaceAll(`href='${prefix}'`, `href='${base}'`);
 
-  out = out.replaceAll('href="/contact"', `href="${base}contact/"`);
-  out = out.replaceAll("href='/contact'", `href='${base}contact/'`);
-  out = out.replaceAll('href="/contact/"', `href="${base}contact/"`);
+  for (const slug of INNER_PAGE_SLUGS) {
+    out = out.replaceAll(`href="/${slug}"`, `href="${base}${slug}/"`);
+    out = out.replaceAll(`href='/${slug}'`, `href='${base}${slug}/'`);
+    out = out.replaceAll(`href="/${slug}/"`, `href="${base}${slug}/"`);
+  }
 
   // Prior publish pass used relative paths — upgrade to absolute
   out = out.replaceAll('href="_next/', `href="${base}_next/`);

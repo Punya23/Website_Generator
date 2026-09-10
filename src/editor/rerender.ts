@@ -2,9 +2,21 @@ import type { GenerationResult, SiteContext, SiteTheme } from "../types.js";
 import { assemblePageFromSections } from "../site-context/assemble.js";
 import { renderSite } from "../renderer/render.js";
 import { renderCmsPages } from "../cms/render.js";
-import { getPagePlan } from "../agents/site-planner-agent.js";
+import { getSkin } from "../skins/catalog.js";
+import { renderSkinHtmlSite } from "../skins/render-html-site.js";
 
 export function rerenderFromContext(ctx: SiteContext): Record<string, string> {
+  if (ctx.skinId && ctx.reactPages && Object.keys(ctx.reactPages).length > 0) {
+    const skin = getSkin(ctx.skinId);
+    if (skin) {
+      const instances: Record<string, typeof ctx.reactPages[string]["sections"]> = {};
+      for (const [slug, page] of Object.entries(ctx.reactPages)) {
+        instances[slug] = page.sections;
+      }
+      return renderSkinHtmlSite(ctx, skin, instances);
+    }
+  }
+
   const pages = Object.values(ctx.pages).map((page) => {
     const { content, layout } = assemblePageFromSections(page.sections);
     return {
@@ -20,8 +32,6 @@ export function rerenderFromContext(ctx: SiteContext): Record<string, string> {
     slug: c.slug,
     label: c.name,
   }));
-
-  const navPages = [...pages, ...cmsNav.map((n) => ({ ...n, title: n.label, content: [], layout: { type: "Stack" as const, children: [] } }))];
 
   const html = renderSite(
     ctx.businessName,

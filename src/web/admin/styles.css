@@ -154,6 +154,8 @@ h3 { margin: 1.4rem 0 0.7rem; font-size: 0.95rem; }
 .card span { color: var(--muted); font-size: 0.78rem; }
 .card.clickable { cursor: pointer; }
 .card.clickable:hover { border-color: #cfd0c8; }
+.card-warn { border-color: var(--warn); }
+.card-warn b { color: var(--warn); }
 
 .filters {
   display: flex;
@@ -212,6 +214,10 @@ h3 { margin: 1.4rem 0 0.7rem; font-size: 0.95rem; }
 .pill.approved, .pill.succeeded, .pill.active { color: var(--ok); background: var(--ok-bg); }
 .pill.blocked, .pill.rejected, .pill.failed { color: var(--bad); background: var(--bad-bg); }
 .pill.needs_review, .pill.running, .pill.queued, .pill.ingesting, .pill.verifying { color: var(--warn); background: var(--warn-bg); }
+.pill.quality-warn { color: var(--warn); background: var(--warn-bg); }
+
+.check-label { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--muted); }
+.check-label input { margin: 0; }
 
 .form {
   display: grid;
@@ -373,6 +379,10 @@ h3 { margin: 1.4rem 0 0.7rem; font-size: 0.95rem; }
   margin-bottom: 0.3rem;
 }
 .wire-block.hero { border-left: 3px solid var(--accent); }
+
+#preview-status { margin: 0 0 1rem; }
+#preview-status .btn { display: inline-block; text-decoration: none; margin-top: 0.4rem; }
+.drawer .agent-log { margin: 0.6rem 0 1rem; }
 .card-llm-error { color: var(--bad); font-size: 0.72rem; display: block; margin-top: 0.35rem; }
 
 .muted { color: var(--muted); font-size: 0.85rem; }
@@ -413,3 +423,17 @@ code { font-size: 0.75rem; background: var(--bg); padding: 0.1rem 0.3rem; border
   border: 1px solid rgba(128, 128, 128, 0.25);
   margin: 0 0 0.5rem;
 }
+
+/* Generation record drawer: one block per placed section, with its before/after diff table. */
+.gen-section {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.75rem 0.9rem;
+  margin: 0.6rem 0;
+  background: var(--surface);
+}
+.diff-table { margin-top: 0.5rem; box-shadow: none; }
+.diff-table .table tr { cursor: default; }
+.diff-table .table td { font-size: 0.8rem; }
+.diff-before { color: var(--bad); text-decoration: line-through; }
+.diff-after { color: var(--ok); }

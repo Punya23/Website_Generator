@@ -592,6 +592,25 @@ export interface GenerationResult {
   siteSlug?: string;
   publishedUrl?: string;
   outBytes?: number;
+  /** Verbatim-template mode: stylesheets and assets to copy next to the generated HTML. */
+  verbatimFiles?: Array<{ from: string; to: string }>;
+  /** Verbatim-template mode: the source templates this site drew sections from. */
+  verbatimTemplateIds?: string[];
+  /** Everything an edit needs to recompose a verbatim site without re-running selection. Set only
+   *  for the verbatim pipeline; the editor uses its presence to decide which revision system a
+   *  session belongs to. Typed loosely here to keep `src/types.ts` free of template-module imports. */
+  verbatimState?: import("./templates/revise.js").VerbatimSiteState;
+  /** The final, whole-site visual-QA verdict (after CMS merge, before publish) and whether a redo
+   *  of template/image/copy selection was attempted and helped. Absent when vision QA was
+   *  unavailable/disabled for this run (`SKIP_VISION=1`, no vision-capable provider, or the
+   *  screenshot pass itself was skipped, e.g. under `VITEST`). See
+   *  `src/orchestrator/final-vision-gate.ts`. */
+  finalVision?: {
+    passed: boolean;
+    hardIssueCount: number;
+    redoAttempted: boolean;
+    redoImproved: boolean;
+  };
 }
 
 export interface VisionPolishResult {

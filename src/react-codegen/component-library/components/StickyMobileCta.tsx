@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { panelClass, type Panel } from "./primitives";
 
@@ -25,12 +26,12 @@ export function StickyMobileCta({
 
   return (
     <div className={`fixed bottom-0 left-0 right-0 z-50 md:hidden ${panelClass(panel)}`}>
-      <a
+      <Link
         href={href}
         className="flex w-full items-center justify-center rounded-[var(--radius)] bg-accent px-6 py-3 text-sm font-semibold text-white shadow-[var(--shadow)]"
       >
         {label}
-      </a>
+      </Link>
     </div>
   );
 }

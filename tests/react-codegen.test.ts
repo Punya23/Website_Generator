@@ -692,4 +692,90 @@ export default function CustomHomeHero(props: { headline?: string }) {
     expect(index).toContain("/_next/");
     expect(index).toContain("Dstyle");
   }, 120_000);
+
+  // Regression: CTA buttons rendered as raw <a href="/contact"> (instead of next/link's
+  // basePath-aware <Link>) worked fine with an empty basePath but broke every "Book now" /
+  // "Get in touch" button as soon as a basePath was set (e.g. "/preview" while previewing —
+  // orchestrator.ts always sets this). Nav links used <Link> already and were unaffected;
+  // this guards the CTA band, footer CTA, and footer link-out CTA the same way.
+  it("prefixes CTA links (not just nav links) with basePath in the static export", async () => {
+    const brief = {
+      businessName: "Basecamp Goods",
+      tagline: "Gear that keeps up",
+      elevatorPitch: "Outdoor gear shop",
+      expandedBrief: "An outdoor gear retailer.",
+      targetAudience: "Hikers",
+      services: ["Retail"],
+      differentiators: ["Durable"],
+      tone: "Rugged",
+      primaryCta: "Shop now",
+    };
+    const sitePlan = mockPlan(brief);
+    const ctx = initSiteContext("Basecamp", brief, sitePlan, {
+      vertical: "retail",
+      mood: "rugged",
+      fontHeading: "Inter",
+      fontBody: "Inter",
+      colors: {
+        bg: "#fff",
+        surface: "#f5f5f5",
+        text: "#111",
+        muted: "#666",
+        accent: "#0a5c36",
+        accentSoft: "#e6f2ea",
+        gradientFrom: "#0a5c36",
+        gradientTo: "#137a49",
+        navBg: "#fff",
+        navText: "#111",
+        navMuted: "#666",
+        navActiveBg: "#0a5c36",
+        navActiveText: "#fff",
+      },
+    });
+
+    ctx.reactPages = {
+      home: {
+        slug: "home",
+        title: "Home",
+        sections: [
+          {
+            id: "home_hero",
+            templateId: "hero_editorial",
+            intent: "Hero",
+            props: {
+              headline: "Basecamp Goods",
+              image: { src: "https://images.pexels.com/photos/11795988/pexels-photo-11795988.jpeg", alt: "Hero" },
+              cta: { label: "Book a fitting", href: "/contact" },
+            },
+          },
+          {
+            id: "home_cta",
+            templateId: "cta_band",
+            intent: "Closer",
+            props: {
+              headline: "Ready to gear up?",
+              cta: { label: "Get in touch", href: "/contact" },
+            },
+          },
+        ],
+      },
+      contact: { slug: "contact", title: "Contact", sections: [] },
+    };
+
+    const { projectPath } = await generateReactProject(ctx, ctx.reactPages, OUT + "-cta-basepath", {
+      basePath: "/preview",
+    });
+    const { buildReactProject } = await import("../src/react-codegen/assemble-project.js");
+    const outPath = await buildReactProject(projectPath);
+    const index = await fs.readFile(path.join(outPath, "index.html"), "utf8");
+
+    // Nav + bundles were already basePath-aware; keep asserting them as a baseline.
+    expect(index).toContain('href="/preview/_next/');
+    expect(index).toContain('href="/preview/contact');
+
+    // The bug: these CTAs rendered as raw <a href="/contact"> and never picked up "/preview".
+    expect(index).not.toContain('href="/contact"');
+
+    await fs.rm(OUT + "-cta-basepath", { recursive: true, force: true });
+  }, 120_000);
 });

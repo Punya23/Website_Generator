@@ -1,0 +1,277 @@
+
+
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Available Rentals | Harborview Property Management</title>
+<meta name="description" content="Browse available rental homes and apartments managed by Harborview Property Management across greater Seattle.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+
+
+
+<header>
+  <div class="topbar">
+    <div class="container">
+      <div class="topbar__contact">
+        <span>1200 Westlake Ave N, Suite 300, Seattle, WA</span>
+        <span>510) 555-0199</span>
+        <span>hello@baybreezerealty.com</span>
+      </div>
+      <div class="topbar__social">
+        <a href="#">Facebook</a><a href="#">Instagram</a><a href="#">LinkedIn</a>
+      </div>
+    </div>
+  </div>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="navbar__logo">Bay Breeze Realty</a>
+      <ul class="navbar__links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="listings.html" class="is-active">Rentals</a></li>
+        <li><a href="agents.html">Team</a></li>
+        <li><a href="services.html">Services</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+      <div class="navbar__actions">
+        <a href="contact.html" class="btn btn--secondary btn--sm">Sign Up for Free Buyer Class</a>
+      </div>
+      <button class="navbar__toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+</header>
+
+<main>
+
+  <section class="page-banner" style="background-image:url('https://images.unsplash.com/photo-1560184897-ae75f418493e?auto=format&amp;fit=crop&amp;w=1600&amp;q=70');">
+    <div class="container">
+      <div class="page-banner__content">
+        <div class="breadcrumb"><a href="index.html">Home</a><span>/</span><span>Rentals</span></div>
+        <h1 class="page-banner__title">Explore Current East Bay Listings</h1>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+
+      <form class="filter-bar" data-demo-form="">
+        <div class="filter-bar__field">
+          <label>Location</label>
+          <input type="text" placeholder="Neighborhood or ZIP">
+        </div>
+        <div class="filter-bar__field">
+          <label>Unit Type</label>
+          <select>
+            <option>Any Type</option>
+            <option>Studio</option>
+            <option>1 Bedroom</option>
+            <option>2 Bedroom</option>
+            <option>3+ Bedroom</option>
+          </select>
+        </div>
+        <div class="filter-bar__field">
+          <label>Max Rent</label>
+          <select><option>No Max</option><option>Under $2,000</option><option>Under $3,000</option><option>Under $4,000</option><option>$4,000+</option></select>
+        </div>
+        <div class="filter-bar__field">
+          <label>Bedrooms</label>
+          <select><option>Any</option><option>Studio</option><option>1+</option><option>2+</option><option>3+</option></select>
+        </div>
+        <div class="filter-bar__field" style="justify-content:flex-end;">
+          <button type="submit" class="btn btn--secondary btn--block">Filter</button>
+        </div>
+      </form>
+
+      <div class="results-bar">
+        <span style="color:var(--color-gray);">Showing <strong>9</strong> of <strong>47</strong> available rentals</span>
+        <div class="results-bar__sort">
+          <span>Sort by</span>
+          <select><option>Newest</option><option>Rent: Low to High</option><option>Rent: High to Low</option><option>Most Popular</option></select>
+        </div>
+      </div>
+
+      <div class="grid grid--3">
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="Ballard modern one-bedroom apartment building">
+            <span class="property-card__badge property-card__badge--sale">Available Now</span>
+            <span class="property-card__price">$1,895/mo</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">1417 NW 56th St, Unit 204, Ballard, Seattle, WA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Ballard Modern 1BR Apartment</a></h3>
+            <div class="property-card__meta"><span>1 Bed</span><span>1 Bath</span><span>650 sqft</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1521783988139-89397d761dce?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="Capitol Hill studio loft interior">
+            <span class="property-card__badge">Applications Open</span>
+            <span class="property-card__price">$1,650/mo</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">1122 E Pike St, Unit 5, Capitol Hill, Seattle, WA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Capitol Hill Studio Loft</a></h3>
+            <div class="property-card__meta"><span>Studio</span><span>1 Bath</span><span>480 sqft</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="Fremont craftsman fourplex exterior">
+            <span class="property-card__badge property-card__badge--sale">Available Now</span>
+            <span class="property-card__price">$2,395/mo</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">3608 Fremont Ave N, Unit A, Fremont, Seattle, WA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Fremont 2BR Craftsman Apartment</a></h3>
+            <div class="property-card__meta"><span>2 Beds</span><span>1 Bath</span><span>950 sqft</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="Bellevue modern condo building">
+            <span class="property-card__badge property-card__badge--sale">Available Now</span>
+            <span class="property-card__price">$3,150/mo</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">10500 NE 8th St, Unit 812, Bellevue, WA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Bellevue 2BR Modern Condo</a></h3>
+            <div class="property-card__meta"><span>2 Beds</span><span>2 Baths</span><span>1,120 sqft</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="Kirkland townhome exterior">
+            <span class="property-card__badge">Applications Open</span>
+            <span class="property-card__price">$3,950/mo</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">421 Market St, Kirkland, WA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Kirkland 3BR Townhome</a></h3>
+            <div class="property-card__meta"><span>3 Beds</span><span>2.5 Baths</span><span>1,580 sqft</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="Queen Anne apartment building">
+            <span class="property-card__badge property-card__badge--sale">Available Now</span>
+            <span class="property-card__price">$2,100/mo</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">215 W Highland Dr, Unit 3, Queen Anne, Seattle, WA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Queen Anne 1BR Apartment</a></h3>
+            <div class="property-card__meta"><span>1 Bed</span><span>1 Bath</span><span>700 sqft</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1558036117-15d82a90b9b1?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="Wallingford duplex interior">
+            <span class="property-card__badge property-card__badge--sale">Available Now</span>
+            <span class="property-card__price">$2,650/mo</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">4514 Woodlawn Ave N, Wallingford, Seattle, WA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Wallingford 2BR Duplex</a></h3>
+            <div class="property-card__meta"><span>2 Beds</span><span>1.5 Baths</span><span>1,050 sqft</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1615529182904-14819c35db37?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="West Seattle house interior">
+            <span class="property-card__badge">Applications Open</span>
+            <span class="property-card__price">$3,395/mo</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">4225 California Ave SW, West Seattle, WA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">West Seattle 3BR House</a></h3>
+            <div class="property-card__meta"><span>3 Beds</span><span>2 Baths</span><span>1,650 sqft</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&amp;fit=crop&amp;w=800&amp;q=70" alt="South Lake Union high-rise interior">
+            <span class="property-card__badge property-card__badge--sale">Available Now</span>
+            <span class="property-card__price">$4,150/mo</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">101 Republican St, Unit 1408, South Lake Union, Seattle, WA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">South Lake Union 2BR High-Rise</a></h3>
+            <div class="property-card__meta"><span>2 Beds</span><span>2 Baths</span><span>1,180 sqft</span></div>
+          </div>
+        </article>
+
+      </div>
+
+      <div class="pagination">
+        <a href="#" class="is-active">1</a>
+        <a href="#">2</a>
+        <a href="#">3</a>
+        <a href="#">→</a>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__col">
+        <a href="index.html" class="footer__logo">Bay Breeze Realty</a>
+        <p class="footer__about">Patient, plain-English real estate guidance for first-time buyers and waterfront dreamers in Alameda, Oakland, and the East Bay.</p>
+        <div class="footer__socials">
+          <a href="#">FB</a><a href="#">IG</a><a href="#">LI</a><a href="#">TW</a>
+        </div>
+      </div>
+      <div class="footer__col">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="listings.html">Available Rentals</a></li>
+          <li><a href="agents.html">Our Team</a></li>
+          <li><a href="services.html">Services</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h4>East Bay Neighborhoods</h4>
+        <ul>
+          <li><a href="listings.html">Alameda Waterfront</a></li>
+          <li><a href="listings.html">Oakland</a></li>
+          <li><a href="listings.html">Berkeley</a></li>
+          <li><a href="listings.html">San Leandro</a></li>
+          <li><a href="listings.html">Emeryville</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h4>Stay Updated</h4>
+        <p class="footer__about">Get local market tips and workshop dates in your inbox.</p>
+        <form class="footer__newsletter" data-demo-form="">
+          <input type="email" placeholder="Your email address" required="">
+          <button type="submit">Join</button>
+        </form>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>© 2026 Bay Breeze Realty. All rights reserved.</span>
+      <span>WA Firm License #9231-PM · <a href="contact.html">Privacy Policy</a> · <a href="contact.html">Terms</a></span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+
+

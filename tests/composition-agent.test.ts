@@ -11,7 +11,7 @@ vi.mock("../src/llm/client.js", () => ({
 
 import { composeLayout, mockComposition, validateLayoutTree } from "../src/agents/composition-agent.js";
 import { generateContent } from "../src/agents/content-agent.js";
-import { expandBrief } from "../src/agents/expand-brief-agent.js";
+import { expandBrief, expandBriefFromInput } from "../src/agents/expand-brief-agent.js";
 import { planSite } from "../src/agents/site-planner-agent.js";
 
 describe("Composition agent", () => {
@@ -86,10 +86,19 @@ describe("Content agent", () => {
     }
   });
 
-  it("expand brief produces detailed context", async () => {
+  it("expand brief keeps the user's words when the LLM is off", async () => {
     const expanded = await expandBrief("Glow Salon — luxury cuts Austin");
-    expect(expanded.services.length).toBeGreaterThanOrEqual(6);
-    expect(expanded.expandedBrief.length).toBeGreaterThan(200);
+    expect(expanded.businessName).toMatch(/Glow/i);
+    expect(expanded.expandedBrief).toContain("luxury cuts");
+    expect(expanded.services.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("expandBriefFromInput does not invent a tagline", () => {
+    const expanded = expandBriefFromInput("Glow Salon — luxury cuts Austin", "Glow Salon");
+    expect(expanded.businessName).toBe("Glow Salon");
+    expect(expanded.expandedBrief).toBe("Glow Salon — luxury cuts Austin");
+    expect(expanded.tagline).toMatch(/Glow Salon|luxury cuts/i);
+    expect(expanded.tagline).not.toMatch(/Crafted for|Elevate your|Welcome to/i);
   });
 
   it("site plan includes core pages", async () => {

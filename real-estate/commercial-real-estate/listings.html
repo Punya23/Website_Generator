@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Available Properties | Cornerstone Commercial Realty</title>
+<meta name="description" content="Browse available Chicagoland commercial properties from Cornerstone Commercial Realty — office, retail, and industrial space for lease and sale.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header>
+  <div class="topbar">
+    <div class="container">
+      <div class="topbar__contact">
+        <span>225 W Wacker Drive, Suite 1800, Chicago, IL 60606</span>
+        <span>(312) 555-0190</span>
+        <span>info@cornerstonecre.com</span>
+      </div>
+      <div class="topbar__social">
+        <a href="#">LinkedIn</a><a href="#">X</a><a href="#">Facebook</a>
+      </div>
+    </div>
+  </div>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="navbar__logo">Cornerstone<span>Commercial Realty</span></a>
+      <ul class="navbar__links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="listings.html" class="is-active">Properties</a></li>
+        <li><a href="agents.html">Brokers</a></li>
+        <li><a href="services.html">Services</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+      <div class="navbar__actions">
+        <a href="contact.html" class="btn btn--secondary btn--sm">Request Market Analysis</a>
+      </div>
+      <button class="navbar__toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+</header>
+
+<main>
+
+  <section class="page-banner" style="background-image:url('https://images.unsplash.com/photo-1521783988139-89397d761dce?auto=format&fit=crop&w=1600&q=70');">
+    <div class="container">
+      <div class="page-banner__content">
+        <div class="breadcrumb"><a href="index.html">Home</a><span>/</span><span>Properties</span></div>
+        <h1 class="page-banner__title">Available Properties</h1>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+
+      <form class="filter-bar" data-demo-form>
+        <div class="filter-bar__field">
+          <label>Location</label>
+          <input type="text" placeholder="City or submarket">
+        </div>
+        <div class="filter-bar__field">
+          <label>Space Type</label>
+          <select>
+            <option>Any Type</option>
+            <option>Office</option>
+            <option>Retail</option>
+            <option>Industrial</option>
+            <option>Mixed-Use</option>
+          </select>
+        </div>
+        <div class="filter-bar__field">
+          <label>Size Range</label>
+          <select>
+            <option>Any Size</option>
+            <option>Under 5,000 sqft</option>
+            <option>5,000 - 10,000 sqft</option>
+            <option>10,000 - 25,000 sqft</option>
+            <option>25,000 - 50,000 sqft</option>
+            <option>50,000+ sqft</option>
+          </select>
+        </div>
+        <div class="filter-bar__field">
+          <label>Lease / Sale</label>
+          <select><option>Any</option><option>For Lease</option><option>For Sale</option></select>
+        </div>
+        <div class="filter-bar__field" style="justify-content:flex-end;">
+          <button type="submit" class="btn btn--secondary btn--block">Filter</button>
+        </div>
+      </form>
+
+      <div class="results-bar">
+        <span style="color:var(--color-gray);">Showing <strong>9</strong> of <strong>38</strong> available properties</span>
+        <div class="results-bar__sort">
+          <span>Sort by</span>
+          <select><option>Newest</option><option>Price: Low to High</option><option>Price: High to Low</option><option>Largest Space</option></select>
+        </div>
+      </div>
+
+      <div class="grid grid--3">
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=70" alt="West Loop office building exterior">
+            <span class="property-card__badge">For Lease</span>
+            <span class="property-card__price">$34.00/SF/YR</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">555 W Adams St, Suite 600, West Loop, Chicago, IL</div>
+            <h3 class="property-card__title"><a href="property-detail.html">West Loop Creative Office Suite</a></h3>
+            <div class="property-card__meta"><span>Office</span><span>8,400 SF</span><span>Class A</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1567767292278-a4f21aa2d36e?auto=format&fit=crop&w=800&q=70" alt="River North retail storefront">
+            <span class="property-card__badge">New to Market</span>
+            <span class="property-card__price">$42.00/SF/YR</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">210 W Kinzie St, River North, Chicago, IL</div>
+            <h3 class="property-card__title"><a href="property-detail.html">River North Retail Storefront</a></h3>
+            <div class="property-card__meta"><span>Retail</span><span>3,200 SF</span><span>Class A</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1571624436279-b272aff752b5?auto=format&fit=crop&w=800&q=70" alt="O'Hare corridor distribution center exterior">
+            <span class="property-card__badge">For Lease</span>
+            <span class="property-card__price">$19.50/SF/YR</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">2200 Touhy Ave, Elk Grove Village, IL</div>
+            <h3 class="property-card__title"><a href="property-detail.html">O'Hare Corridor Distribution Center</a></h3>
+            <div class="property-card__meta"><span>Industrial</span><span>84,000 SF</span><span>Class B</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=70" alt="Schaumburg corporate office building">
+            <span class="property-card__badge property-card__badge--sale">For Sale</span>
+            <span class="property-card__price">$9,800,000</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">1701 Golf Rd, Schaumburg, IL</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Schaumburg Corporate Office Building</a></h3>
+            <div class="property-card__meta"><span>Office</span><span>46,000 SF</span><span>Class B</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1519974719765-e6559eac2575?auto=format&fit=crop&w=800&q=70" alt="Naperville retail center">
+            <span class="property-card__badge property-card__badge--sale">For Sale</span>
+            <span class="property-card__price">$6,450,000</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">2450 Aurora Ave, Naperville, IL</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Naperville Mixed-Use Retail Center</a></h3>
+            <div class="property-card__meta"><span>Retail</span><span>22,500 SF</span><span>Class B</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&w=800&q=70" alt="Fulton Market office building exterior">
+            <span class="property-card__badge property-card__badge--sale">For Sale</span>
+            <span class="property-card__price">$17,250,000</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">815 W Fulton Market, West Loop, Chicago, IL</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Fulton Market Office Building</a></h3>
+            <div class="property-card__meta"><span>Office</span><span>32,000 SF</span><span>Class A</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=800&q=70" alt="Bridgeview industrial flex building">
+            <span class="property-card__badge">For Lease</span>
+            <span class="property-card__price">$18.75/SF/YR</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">7500 S Harlem Ave, Bridgeview, IL</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Bridgeview Industrial Flex Building</a></h3>
+            <div class="property-card__meta"><span>Industrial</span><span>58,000 SF</span><span>Class B</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?auto=format&fit=crop&w=800&q=70" alt="Loop high-rise office building">
+            <span class="property-card__badge">For Lease</span>
+            <span class="property-card__price">$31.00/SF/YR</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">30 N LaSalle St, Suite 2100, The Loop, Chicago, IL</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Loop High-Rise Office Space</a></h3>
+            <div class="property-card__meta"><span>Office</span><span>12,600 SF</span><span>Class A</span></div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=70" alt="Cicero Avenue retail pad site">
+            <span class="property-card__badge">New to Market</span>
+            <span class="property-card__price">$36.00/SF/YR</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">4100 S Cicero Ave, Chicago, IL</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Cicero Avenue Retail Pad Site</a></h3>
+            <div class="property-card__meta"><span>Retail</span><span>4,800 SF</span><span>Class B</span></div>
+          </div>
+        </article>
+
+      </div>
+
+      <div class="pagination">
+        <a href="#" class="is-active">1</a>
+        <a href="#">2</a>
+        <a href="#">3</a>
+        <a href="#">4</a>
+        <a href="#">&rarr;</a>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__col">
+        <a href="index.html" class="footer__logo">Cornerstone<span>Commercial Realty</span></a>
+        <p class="footer__about">A Chicago-based commercial brokerage representing tenants, landlords, and investors across office, retail, and industrial markets since 2008.</p>
+        <div class="footer__socials">
+          <a href="#">LI</a><a href="#">FB</a><a href="#">X</a><a href="#">IG</a>
+        </div>
+      </div>
+      <div class="footer__col">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="listings.html">Available Properties</a></li>
+          <li><a href="agents.html">Our Brokers</a></li>
+          <li><a href="services.html">Services</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h4>Space Types</h4>
+        <ul>
+          <li><a href="listings.html">Office Space</a></li>
+          <li><a href="listings.html">Retail Space</a></li>
+          <li><a href="listings.html">Industrial &amp; Warehouse</a></li>
+          <li><a href="listings.html">Investment Properties</a></li>
+          <li><a href="listings.html">Mixed-Use</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h4>Market Updates</h4>
+        <p class="footer__about">Get new listings and Chicagoland market reports in your inbox every month.</p>
+        <form class="footer__newsletter" data-demo-form>
+          <input type="email" placeholder="Your work email" required>
+          <button type="submit">Subscribe</button>
+        </form>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>&copy; 2026 Cornerstone Commercial Realty. All rights reserved.</span>
+      <span>Illinois Broker Lic. #481.011923 &middot; <a href="contact.html">Privacy Policy</a> &middot; <a href="contact.html">Terms</a></span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+</body>
+</html>

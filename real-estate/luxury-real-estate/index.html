@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aurelia Estates | Los Angeles Luxury Real Estate</title>
+<meta name="description" content="Aurelia Estates is a private Los Angeles brokerage representing exceptional properties in Bel Air, Beverly Hills, Malibu, Aspen, and the Hamptons.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header>
+  <div class="topbar">
+    <div class="container">
+      <div class="topbar__contact">
+        <span>456 North Canon Drive, Suite 300, Beverly Hills, CA</span>
+        <span>(310) 555-0199</span>
+        <span>hello@aureliaestates.com</span>
+      </div>
+      <div class="topbar__social">
+        <a href="#">Facebook</a><a href="#">Instagram</a><a href="#">LinkedIn</a>
+      </div>
+    </div>
+  </div>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="navbar__logo">Aurelia<span>Estates</span></a>
+      <ul class="navbar__links">
+        <li><a href="index.html" class="is-active">Home</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="listings.html">Listings</a></li>
+        <li><a href="agents.html">Advisors</a></li>
+        <li><a href="services.html">Services</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+      <div class="navbar__actions">
+        <a href="contact.html" class="btn btn--secondary btn--sm">Request a Private Consultation</a>
+      </div>
+      <button class="navbar__toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+</header>
+
+<main>
+
+  <section class="hero" style="background-image:url('https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=70');">
+    <div class="container">
+      <div class="hero__content">
+        <span class="hero__eyebrow">Los Angeles &middot; Malibu &middot; Aspen &middot; The Hamptons</span>
+        <h1 class="hero__title" data-field="hero.title">Where <em>exceptional</em> properties find exceptional owners</h1>
+        <p class="hero__subtitle" data-field="hero.subtitle">Aurelia Estates represents the most private and prestigious addresses in Southern California — from Bel Air compounds to Malibu shoreline, with select representation in Aspen and the Hamptons. Our advisors work by referral, discretion, and results.</p>
+        <div class="hero__actions">
+          <a href="listings.html" class="btn btn--primary">View Exclusive Listings</a>
+          <a href="contact.html" class="btn btn--outline">Speak With an Advisor</a>
+        </div>
+      </div>
+      <form class="search-widget" data-demo-form>
+        <div class="search-widget__field">
+          <label>Location</label>
+          <input type="text" placeholder="City or neighborhood" value="Beverly Hills, CA">
+        </div>
+        <div class="search-widget__field">
+          <label>Property Type</label>
+          <select>
+            <option>Any Type</option>
+            <option>Single-Family Estate</option>
+            <option>Modern Architectural</option>
+            <option>Oceanfront Villa</option>
+            <option>Mountain Retreat</option>
+            <option>Penthouse</option>
+          </select>
+        </div>
+        <div class="search-widget__field">
+          <label>Price Range</label>
+          <select>
+            <option>Any Price</option>
+            <option>$2M+</option>
+            <option>$5M+</option>
+            <option>$10M+</option>
+            <option>$15M+</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn--secondary">Search</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section__header section__header--split">
+        <div>
+          <span class="section__eyebrow">Featured Listings</span>
+          <h2 class="section__title">Exceptional properties, privately represented</h2>
+        </div>
+        <a href="listings.html" class="btn btn--outline-dark">View All Listings</a>
+      </div>
+      <div class="grid grid--3">
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=70" alt="Bel Air Modern Compound exterior at dusk">
+            <span class="property-card__badge property-card__badge--sale">For Sale</span>
+            <span class="property-card__price" data-field="property.price">$12,500,000</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">1685 Stradella Road, Bel Air, Los Angeles, CA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Bel Air Modern Compound</a></h3>
+            <div class="property-card__meta">
+              <span>6 Beds</span><span>8 Baths</span><span>8,200 sqft</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=800&q=70" alt="Beverly Hills Mediterranean estate exterior">
+            <span class="property-card__badge property-card__badge--sale">For Sale</span>
+            <span class="property-card__price">$8,950,000</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">1201 Loma Vista Drive, Beverly Hills, CA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Beverly Hills Mediterranean Estate</a></h3>
+            <div class="property-card__meta">
+              <span>5 Beds</span><span>6.5 Baths</span><span>6,400 sqft</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1615874959474-d609969a20ed?auto=format&fit=crop&w=800&q=70" alt="Malibu oceanfront villa at sunset">
+            <span class="property-card__badge">Exclusive Listing</span>
+            <span class="property-card__price">$16,800,000</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">21000 Pacific Coast Highway, Malibu, CA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Malibu Oceanfront Villa</a></h3>
+            <div class="property-card__meta">
+              <span>5 Beds</span><span>7 Baths</span><span>7,100 sqft</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=800&q=70" alt="Holmby Hills Georgian estate exterior">
+            <span class="property-card__badge property-card__badge--sale">For Sale</span>
+            <span class="property-card__price">$18,500,000</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">350 Delfern Drive, Holmby Hills, Los Angeles, CA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Holmby Hills Georgian Estate</a></h3>
+            <div class="property-card__meta">
+              <span>7 Beds</span><span>9 Baths</span><span>9,000 sqft</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?auto=format&fit=crop&w=800&q=70" alt="Aspen mountain retreat exterior in snow">
+            <span class="property-card__badge">Exclusive Listing</span>
+            <span class="property-card__price">$14,200,000</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">145 Red Mountain Road, Aspen, CO</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Aspen Mountain Retreat</a></h3>
+            <div class="property-card__meta">
+              <span>5 Beds</span><span>6 Baths</span><span>6,800 sqft</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=800&q=70" alt="Hamptons shingle-style estate exterior">
+            <span class="property-card__badge property-card__badge--sale">For Sale</span>
+            <span class="property-card__price">$10,750,000</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">88 Further Lane, East Hampton, NY</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Hamptons Shingle-Style Estate</a></h3>
+            <div class="property-card__meta">
+              <span>6 Beds</span><span>7.5 Baths</span><span>7,400 sqft</span>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="container">
+      <div class="grid grid--4">
+        <div class="stat-item"><div class="stat-item__number">12+</div><div class="stat-item__label">Years Serving Discerning Clients</div></div>
+        <div class="stat-item"><div class="stat-item__number">$3.2B+</div><div class="stat-item__label">In Closed Transactions</div></div>
+        <div class="stat-item"><div class="stat-item__number">41</div><div class="stat-item__label">Average Days to Contract</div></div>
+        <div class="stat-item"><div class="stat-item__number">6</div><div class="stat-item__label">Principal Advisors</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__eyebrow">Why Aurelia Estates</span>
+        <h2 class="section__title">Discretion and expertise, without compromise</h2>
+        <p class="section__subtitle">Whether you're acquiring a private compound or quietly bringing one to market, our advisors handle every detail personally.</p>
+      </div>
+      <div class="grid grid--4">
+        <div class="service-card">
+          <div class="service-card__icon">01</div>
+          <h3 class="service-card__title">Absolute Discretion</h3>
+          <p class="service-card__text">Off-market transactions, confidentiality agreements as standard practice, and a client list that stays private by design.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-card__icon">02</div>
+          <h3 class="service-card__title">Global Buyer Network</h3>
+          <p class="service-card__text">Direct relationships with family offices, private wealth advisors, and international buyers actively seeking Southern California real estate.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-card__icon">03</div>
+          <h3 class="service-card__title">Architectural Expertise</h3>
+          <p class="service-card__text">Deep knowledge of noted architects and builders, from midcentury pedigree to new-build craftsmanship.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-card__icon">04</div>
+          <h3 class="service-card__title">White-Glove Follow-Through</h3>
+          <p class="service-card__text">From private inspections to post-close concierge services, every detail is handled personally, long after the keys change hands.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__eyebrow">The Aurelia Experience</span>
+        <h2 class="section__title">A quiet, considered path to your next address</h2>
+      </div>
+      <div class="process">
+        <div class="process-step">
+          <div class="process-step__num">1</div>
+          <h3 class="process-step__title">Private Consultation</h3>
+          <p class="process-step__text">A confidential conversation about your goals, timeline, and the level of discretion you require.</p>
+        </div>
+        <div class="process-step">
+          <div class="process-step__num">2</div>
+          <h3 class="process-step__title">Curated Introductions</h3>
+          <p class="process-step__text">We arrange private showings of homes matched to your criteria — many before they're publicly listed.</p>
+        </div>
+        <div class="process-step">
+          <div class="process-step__num">3</div>
+          <h3 class="process-step__title">Strategic Negotiation</h3>
+          <p class="process-step__text">Every offer is built on comparable data and market intelligence, negotiated with your interests as the only priority.</p>
+        </div>
+        <div class="process-step">
+          <div class="process-step__num">4</div>
+          <h3 class="process-step__title">Seamless Closing</h3>
+          <p class="process-step__text">We coordinate escrow, inspections, and every logistic through closing day and beyond.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__eyebrow">Client Stories</span>
+        <h2 class="section__title">Trusted by discerning families and investors</h2>
+      </div>
+      <div class="grid grid--3">
+        <div class="testimonial-card">
+          <div class="testimonial-card__stars">★★★★★</div>
+          <p class="testimonial-card__quote">"Aurelia Estates found us the Stradella Road compound before it ever reached the open market. Adriana handled every detail with complete discretion."</p>
+          <div class="testimonial-card__author">
+            <img src="https://randomuser.me/api/portraits/women/29.jpg" alt="Eleanor Vance">
+            <div><strong>Eleanor Vance</strong><span>Buyer, Bel Air</span></div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-card__stars">★★★★★</div>
+          <p class="testimonial-card__quote">"We listed our Red Mountain property with Aurelia and closed within six weeks, well above our reserve. Their network of qualified buyers is unmatched."</p>
+          <div class="testimonial-card__author">
+            <img src="https://randomuser.me/api/portraits/men/48.jpg" alt="Richard Kessler">
+            <div><strong>Richard Kessler</strong><span>Seller, Aspen</span></div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-card__stars">★★★★★</div>
+          <p class="testimonial-card__quote">"From the first showing to closing, the team anticipated every question. This is what representation should feel like at this level."</p>
+          <div class="testimonial-card__author">
+            <img src="https://randomuser.me/api/portraits/women/58.jpg" alt="Camille Duarte">
+            <div><strong>Camille Duarte</strong><span>Buyer, Malibu</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="cta-banner">
+        <h2>Ready to explore what's not yet on the market?</h2>
+        <p>Speak privately with an Aurelia Estates advisor about current and upcoming exclusive listings.</p>
+        <div class="cta-banner__actions">
+          <a href="contact.html" class="btn btn--primary">Schedule a Private Consultation</a>
+          <a href="listings.html" class="btn btn--outline">View Listings</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__col">
+        <a href="index.html" class="footer__logo">Aurelia<span>Estates</span></a>
+        <p class="footer__about">A private Los Angeles brokerage representing exceptional properties in Bel Air, Beverly Hills, Malibu, Aspen, and the Hamptons since 2014.</p>
+        <div class="footer__socials">
+          <a href="#">FB</a><a href="#">IG</a><a href="#">LI</a><a href="#">TW</a>
+        </div>
+      </div>
+      <div class="footer__col">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="listings.html">Exclusive Listings</a></li>
+          <li><a href="agents.html">Our Advisors</a></li>
+          <li><a href="services.html">Services</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h4>Signature Markets</h4>
+        <ul>
+          <li><a href="listings.html">Bel Air &amp; Holmby Hills</a></li>
+          <li><a href="listings.html">Beverly Hills</a></li>
+          <li><a href="listings.html">Malibu Coastline</a></li>
+          <li><a href="listings.html">Aspen, Colorado</a></li>
+          <li><a href="listings.html">The Hamptons</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h4>Stay Ahead of the Market</h4>
+        <p class="footer__about">Receive private listings and market intelligence before they're public.</p>
+        <form class="footer__newsletter" data-demo-form>
+          <input type="email" placeholder="Your email address" required>
+          <button type="submit">Subscribe</button>
+        </form>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>&copy; 2026 Aurelia Estates. All rights reserved.</span>
+      <span>CA DRE #01987654 &middot; <a href="contact.html">Privacy Policy</a> &middot; <a href="contact.html">Terms</a></span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+</body>
+</html>

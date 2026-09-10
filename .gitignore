@@ -20,8 +20,15 @@ data/thumbs/
 .cursor/
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+templates_bundle/
+templates_bundle_raw/
+data/template-cache/
+data/template-store.json
+data/template-sections.ndjson
+data/consumer-template-sections.json
+data/generation-history.ndjson
 
 # Demo output from scripts/demo-placements-fill.ts — throwaway proof-of-concept renders, not the
 # shipped pipeline's output (that's placements.json, which IS committed).
 real-estate/*/*.filled.html
-real-estate/*/*.generated.html
+data/site-state/

@@ -288,3 +288,83 @@ describe("contact form config", () => {
     expect(String(stamped.email)).toContain("@");
   });
 });
+
+describe("theme from skin", () => {
+  it("takes chrome and motion from the skin, not from brief-regex profile defaults", async () => {
+    const { themeFromSkin, applySkinToContext } = await import("../src/skins/theme.js");
+    const skin = getSkin("local-service-salon")!;
+    expect(skin.chrome.navShape).toBe("floating-panel");
+    expect(skin.motionPreset).toBe("stagger");
+    expect(skin.chrome.grainOverlay).toBe(true);
+
+    // A finance brief would regex-classify as corporate-light (full-width nav, fade-up motion).
+    const financeBrief = brief({
+      businessName: "Harbor Wealth",
+      expandedBrief: "Financial advisory and wealth management for families",
+      services: ["Advisory", "Planning", "Tax"],
+    });
+    const theme = themeFromSkin(skin, financeBrief);
+    expect(theme.navShape).toBe("floating-panel");
+    expect(theme.motionPreset).toBe("stagger");
+    expect(theme.pageTone).toBe("dark");
+    expect(theme.colors.bg).toBe("#140f12");
+    expect(theme.fontHeading).toBe("Cormorant Garamond");
+    expect(theme.colors.bg).not.toBe("#f1f5f9");
+
+    const ctx = initSiteContext("Wealth", financeBrief, mockPlan(financeBrief), theme);
+    applySkinToContext(ctx, skin);
+    expect(ctx.verticalProfile?.profileId).toBe("luxury-dark");
+    expect(ctx.verticalProfile?.grainOverlay).toBe(true);
+    expect(ctx.designSystem.navShape).toBe(skin.chrome.navShape);
+    expect(ctx.sitePlan.pages.map((p) => p.slug)).toEqual(Object.keys(skin.pages));
+  });
+
+  it("assembles pages from the skin templates without stamping visual-contract paint", async () => {
+    const { applySkinToContext } = await import("../src/skins/theme.js");
+    const { assembleReactPages, directorQaFrom } = await import("../src/orchestrator/react-pipeline.js");
+    const { skinInstancesToBlueprints } = await import("../src/agents/skin-fill-agent.js");
+    const skin = getSkin("hospitality-restaurant")!;
+    const expanded = brief({
+      businessName: "Marigold",
+      expandedBrief: "Neighborhood restaurant",
+    });
+    const ctx = initSiteContext("Dining", expanded, mockPlan(expanded), {
+      vertical: "food",
+      mood: "warm",
+      fontHeading: "Inter",
+      fontBody: "Inter",
+      colors: {
+        bg: "#fff",
+        surface: "#fff",
+        text: "#111",
+        muted: "#666",
+        accent: "#ea580c",
+        accentSoft: "#ffedd5",
+        gradientFrom: "#ea580c",
+        gradientTo: "#f97316",
+        navBg: "#fff",
+      },
+    });
+    applySkinToContext(ctx, skin);
+    const copy = mockFillSkinCopy(ctx, skin);
+    const heroId = skinSectionId("home", 0, "hero_editorial");
+    expect(copy.home![heroId]!.headline).toBe("Marigold");
+    expect((copy.home![heroId]!.cta as { label: string }).label).toBe("Book a visit");
+    const instances = await instancesFromSkinCopy(ctx, skin, copy, new MediaRegistry(), { enrichMedia: false });
+    const blueprints = skinInstancesToBlueprints(skin, instances);
+    directorQaFrom(ctx, blueprints, instances, skin);
+    const pages = assembleReactPages(
+      ctx,
+      ctx.sitePlan.pages.map((page) => ({
+        blueprint: blueprints.find((bp) => bp.slug === page.slug)!,
+        instances: instances[page.slug] ?? [],
+      }))
+    );
+    expect(pages.home.sections.map((s) => s.templateId)).toEqual(skin.pages.home.map((s) => s.templateId));
+    expect(pages.home.sections[0]?.props.layoutVariant).toBe("full-bleed-left");
+    expect(pages.home.sections[0]?.props.bandFill).toBeUndefined();
+    expect(pages.home.sections[0]?.props.visualFx).toBeUndefined();
+    expect(ctx.chromeSpec?.footer.layout).toBe(skin.chrome.footerLayout);
+    expect(ctx.designSystem.navShape).toBe(skin.chrome.navShape);
+  });
+});

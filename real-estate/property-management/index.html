@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harborview Property Management | Seattle Rental Property Management</title>
+<meta name="description" content="Harborview Property Management manages rental homes across greater Seattle for property owners and tenants — leasing, maintenance, and rent collection made simple.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header>
+  <div class="topbar">
+    <div class="container">
+      <div class="topbar__contact">
+        <span>1200 Westlake Ave N, Suite 300, Seattle, WA</span>
+        <span>(206) 555-0140</span>
+        <span>hello@harborviewpm.com</span>
+      </div>
+      <div class="topbar__social">
+        <a href="#">Facebook</a><a href="#">Instagram</a><a href="#">LinkedIn</a>
+      </div>
+    </div>
+  </div>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="navbar__logo">Harborview<span>PM</span></a>
+      <ul class="navbar__links">
+        <li><a href="index.html" class="is-active">Home</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="listings.html">Rentals</a></li>
+        <li><a href="agents.html">Team</a></li>
+        <li><a href="services.html">Services</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+      <div class="navbar__actions">
+        <a href="contact.html" class="btn btn--secondary btn--sm">Get a Free Rental Analysis</a>
+      </div>
+      <button class="navbar__toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+</header>
+
+<main>
+
+  <section class="hero" style="background-image:url('https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1600&q=70');">
+    <div class="container">
+      <div class="hero__content">
+        <span class="hero__eyebrow">Greater Seattle Property Management</span>
+        <h1 class="hero__title" data-field="hero.title">Property management that respects <em>your</em> time</h1>
+        <p class="hero__subtitle" data-field="hero.subtitle">Harborview Property Management handles the day-to-day of owning and renting property across Seattle and the Eastside — responsive maintenance, transparent reporting, and a team that actually picks up the phone.</p>
+        <div class="hero__actions">
+          <a href="listings.html" class="btn btn--primary">Find a Rental</a>
+          <a href="contact.html" class="btn btn--outline">For Property Owners</a>
+        </div>
+      </div>
+      <form class="search-widget" data-demo-form>
+        <div class="search-widget__field">
+          <label>Location</label>
+          <input type="text" placeholder="Neighborhood or ZIP" value="Seattle, WA">
+        </div>
+        <div class="search-widget__field">
+          <label>Unit Type</label>
+          <select>
+            <option>Any Type</option>
+            <option>Studio</option>
+            <option>1 Bedroom</option>
+            <option>2 Bedroom</option>
+            <option>3+ Bedroom</option>
+          </select>
+        </div>
+        <div class="search-widget__field">
+          <label>Max Rent</label>
+          <select>
+            <option>No Max</option>
+            <option>Under $2,000</option>
+            <option>Under $3,000</option>
+            <option>Under $4,000</option>
+            <option>$4,000+</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn--secondary">Search</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section__header section__header--split">
+        <div>
+          <span class="section__eyebrow">Available Now</span>
+          <h2 class="section__title">Rentals ready for move-in</h2>
+        </div>
+        <a href="listings.html" class="btn btn--outline-dark">View All Rentals</a>
+      </div>
+      <div class="grid grid--3">
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=800&q=70" alt="Ballard modern one-bedroom apartment building">
+            <span class="property-card__badge property-card__badge--sale">Available Now</span>
+            <span class="property-card__price" data-field="property.price">$1,895/mo</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">1417 NW 56th St, Unit 204, Ballard, Seattle, WA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Ballard Modern 1BR Apartment</a></h3>
+            <div class="property-card__meta">
+              <span>1 Bed</span><span>1 Bath</span><span>650 sqft</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1521783988139-89397d761dce?auto=format&fit=crop&w=800&q=70" alt="Capitol Hill studio loft interior">
+            <span class="property-card__badge">Applications Open</span>
+            <span class="property-card__price">$1,650/mo</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">1122 E Pike St, Unit 5, Capitol Hill, Seattle, WA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Capitol Hill Studio Loft</a></h3>
+            <div class="property-card__meta">
+              <span>Studio</span><span>1 Bath</span><span>480 sqft</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=70" alt="Fremont craftsman fourplex exterior">
+            <span class="property-card__badge property-card__badge--sale">Available Now</span>
+            <span class="property-card__price">$2,395/mo</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">3608 Fremont Ave N, Unit A, Fremont, Seattle, WA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Fremont 2BR Craftsman Apartment</a></h3>
+            <div class="property-card__meta">
+              <span>2 Beds</span><span>1 Bath</span><span>950 sqft</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&w=800&q=70" alt="Bellevue modern condo building">
+            <span class="property-card__badge property-card__badge--sale">Available Now</span>
+            <span class="property-card__price">$3,150/mo</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">10500 NE 8th St, Unit 812, Bellevue, WA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Bellevue 2BR Modern Condo</a></h3>
+            <div class="property-card__meta">
+              <span>2 Beds</span><span>2 Baths</span><span>1,120 sqft</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=70" alt="Kirkland townhome exterior">
+            <span class="property-card__badge">Applications Open</span>
+            <span class="property-card__price">$3,950/mo</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">421 Market St, Kirkland, WA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Kirkland 3BR Townhome</a></h3>
+            <div class="property-card__meta">
+              <span>3 Beds</span><span>2.5 Baths</span><span>1,580 sqft</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="property-card">
+          <div class="property-card__media">
+            <img src="https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?auto=format&fit=crop&w=800&q=70" alt="Queen Anne apartment building">
+            <span class="property-card__badge property-card__badge--sale">Available Now</span>
+            <span class="property-card__price">$2,100/mo</span>
+          </div>
+          <div class="property-card__body">
+            <div class="property-card__location">215 W Highland Dr, Unit 3, Queen Anne, Seattle, WA</div>
+            <h3 class="property-card__title"><a href="property-detail.html">Queen Anne 1BR Apartment</a></h3>
+            <div class="property-card__meta">
+              <span>1 Bed</span><span>1 Bath</span><span>700 sqft</span>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="container">
+      <div class="grid grid--4">
+        <div class="stat-item"><div class="stat-item__number">410+</div><div class="stat-item__label">Units Managed</div></div>
+        <div class="stat-item"><div class="stat-item__number">11</div><div class="stat-item__label">Avg. Vacancy Days</div></div>
+        <div class="stat-item"><div class="stat-item__number">96%</div><div class="stat-item__label">Owner Retention</div></div>
+        <div class="stat-item"><div class="stat-item__number">10+</div><div class="stat-item__label">Years in Business</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__eyebrow">Why Harborview</span>
+        <h2 class="section__title">Built for owners and tenants alike</h2>
+        <p class="section__subtitle">Good property management works both ways — owners get their investment protected, tenants get a management company that treats them well.</p>
+      </div>
+      <div class="grid grid--4">
+        <div class="service-card">
+          <div class="service-card__icon">01</div>
+          <h3 class="service-card__title">Maximized Rental Income</h3>
+          <p class="service-card__text">We price every unit against real-time Seattle-area market data and keep vacancy days low, so your property earns what it should.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-card__icon">02</div>
+          <h3 class="service-card__title">Transparent Financial Reporting</h3>
+          <p class="service-card__text">Monthly owner statements and a live portal show exactly where your rent income and expenses stand, always.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-card__icon">03</div>
+          <h3 class="service-card__title">Responsive Maintenance</h3>
+          <p class="service-card__text">Submit a request online any time, day or night, and our vetted vendor network handles it fast.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-card__icon">04</div>
+          <h3 class="service-card__title">Easy Online Rent Payments</h3>
+          <p class="service-card__text">Pay rent, view your lease, and message our team from a tenant portal that actually works.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__eyebrow">How It Works</span>
+        <h2 class="section__title">From search to move-in, made simple</h2>
+      </div>
+      <div class="process">
+        <div class="process-step">
+          <div class="process-step__num">1</div>
+          <h3 class="process-step__title">Browse &amp; Tour</h3>
+          <p class="process-step__text">Search available rentals online and schedule an in-person or self-guided tour.</p>
+        </div>
+        <div class="process-step">
+          <div class="process-step__num">2</div>
+          <h3 class="process-step__title">Apply Online</h3>
+          <p class="process-step__text">Submit your application and required documents through our secure applicant portal.</p>
+        </div>
+        <div class="process-step">
+          <div class="process-step__num">3</div>
+          <h3 class="process-step__title">Sign Your Lease</h3>
+          <p class="process-step__text">We handle digital lease signing, a move-in walkthrough, and key handoff.</p>
+        </div>
+        <div class="process-step">
+          <div class="process-step__num">4</div>
+          <h3 class="process-step__title">Move In &amp; Manage</h3>
+          <p class="process-step__text">Pay rent, track your lease, and submit maintenance requests all in one tenant portal.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__eyebrow">Client Stories</span>
+        <h2 class="section__title">Trusted by Seattle-area owners and renters</h2>
+      </div>
+      <div class="grid grid--3">
+        <div class="testimonial-card">
+          <div class="testimonial-card__stars">★★★★★</div>
+          <p class="testimonial-card__quote">"Harborview took over management of my triplex two years ago and vacancy dropped from six weeks to under two. Their monthly statements make tax season painless."</p>
+          <div class="testimonial-card__author">
+            <img src="https://randomuser.me/api/portraits/women/55.jpg" alt="Linda Chao">
+            <div><strong>Linda Chao</strong><span>Property Owner, Ballard</span></div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-card__stars">★★★★★</div>
+          <p class="testimonial-card__quote">"I submitted a maintenance request on a Sunday night and someone was at my door by Monday morning. That kind of response is rare from a property manager."</p>
+          <div class="testimonial-card__author">
+            <img src="https://randomuser.me/api/portraits/men/24.jpg" alt="Jordan Metz">
+            <div><strong>Jordan Metz</strong><span>Tenant, Capitol Hill</span></div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-card__stars">★★★★★</div>
+          <p class="testimonial-card__quote">"I manage four rental properties from out of state, and Harborview's owner portal means I always know what's happening without having to call anyone."</p>
+          <div class="testimonial-card__author">
+            <img src="https://randomuser.me/api/portraits/men/50.jpg" alt="Robert Kim">
+            <div><strong>Robert Kim</strong><span>Property Owner, Bellevue</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="cta-banner">
+        <h2>Ready to work with Harborview?</h2>
+        <p>Whether you own a rental property or you're searching for your next home, our team is ready to help.</p>
+        <div class="cta-banner__actions">
+          <a href="contact.html" class="btn btn--primary">Get a Free Rental Analysis</a>
+          <a href="listings.html" class="btn btn--outline">Browse Rentals</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__col">
+        <a href="index.html" class="footer__logo">Harborview<span>PM</span></a>
+        <p class="footer__about">A Seattle-based property management company helping owners and tenants navigate the rental relationship with less stress since 2015.</p>
+        <div class="footer__socials">
+          <a href="#">FB</a><a href="#">IG</a><a href="#">LI</a><a href="#">TW</a>
+        </div>
+      </div>
+      <div class="footer__col">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="listings.html">Available Rentals</a></li>
+          <li><a href="agents.html">Our Team</a></li>
+          <li><a href="services.html">Services</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h4>Popular Areas</h4>
+        <ul>
+          <li><a href="listings.html">Capitol Hill</a></li>
+          <li><a href="listings.html">Ballard</a></li>
+          <li><a href="listings.html">Fremont</a></li>
+          <li><a href="listings.html">Bellevue</a></li>
+          <li><a href="listings.html">Kirkland</a></li>
+        </ul>
+      </div>
+      <div class="footer__col">
+        <h4>Stay Updated</h4>
+        <p class="footer__about">Get new rental listings and owner tips in your inbox every month.</p>
+        <form class="footer__newsletter" data-demo-form>
+          <input type="email" placeholder="Your email address" required>
+          <button type="submit">Join</button>
+        </form>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>&copy; 2026 Harborview Property Management. All rights reserved.</span>
+      <span>WA Firm License #9231-PM &middot; <a href="contact.html">Privacy Policy</a> &middot; <a href="contact.html">Terms</a></span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+</body>
+</html>

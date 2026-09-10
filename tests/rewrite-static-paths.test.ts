@@ -34,6 +34,18 @@ describe("rewritePathsForStorage", () => {
     );
   });
 
+  it("rewrites unprefixed inner-page CTA hrefs (not just /contact)", () => {
+    // Defense-in-depth: section CTAs now render through next/link and are basePath-prefixed
+    // at build time, so this path shouldn't be hit in practice — but if some href ever slips
+    // through unprefixed, /about and /services must be caught the same way /contact is.
+    const html =
+      '<a href="/about">Learn more</a><a href="/services">Our work</a><a href="/contact">Book now</a>';
+    const out = rewritePathsForStorage(html, "/preview", "index.html");
+    expect(out).toContain('href="about/"');
+    expect(out).toContain('href="services/"');
+    expect(out).toContain('href="contact/"');
+  });
+
   it("depthRelativePrefix counts directories", () => {
     expect(depthRelativePrefix("index.html")).toBe("");
     expect(depthRelativePrefix("about/index.html")).toBe("../");

@@ -48,9 +48,17 @@ const INDUSTRY_DEFS = [
     id: "home-services",
     category: "local-service",
     archetype: "booking",
-    strong: ["plumber", "plumbing", "hvac", "roofing", "roofer", "electrician", "handyman", "landscaping", "pest"],
-    medium: ["contractor", "remodeling", "renovation", "gutter", "septic", "locksmith", "movers", "moving"],
+    strong: ["plumber", "plumbing", "hvac", "roofing", "roofer", "electrician", "handyman", "landscaping", "pest", "cleaning", "cleaners", "janitorial", "housekeeping"],
+    medium: ["contractor", "remodeling", "renovation", "gutter", "septic", "locksmith", "movers", "moving", "carpentry", "painting"],
     weak: ["repair", "install", "installation", "emergency", "residential", "estimate"],
+  },
+  {
+    id: "construction",
+    category: "local-service",
+    archetype: "long-form",
+    strong: ["construction", "builder", "builders", "industrial", "manufacturing", "factory", "infrastructure", "excavation", "scaffolding", "concrete", "welding", "quarry"],
+    medium: ["contractor", "engineering", "machinery", "fabrication", "civil", "plant", "surveying", "demolition", "masonry"],
+    weak: ["building", "sites", "equipment", "materials", "safety"],
   },
   {
     id: "auto-services",
@@ -72,7 +80,7 @@ const INDUSTRY_DEFS = [
     id: "beauty-wellness",
     category: "local-service",
     archetype: "booking",
-    strong: ["salon", "barber", "barbershop", "spa", "manicure", "nails", "aesthetician", "lashes"],
+    strong: ["salon", "barber", "barbershop", "spa", "manicure", "nails", "aesthetician", "lashes", "makeup", "cosmetology"],
     medium: ["hairdresser", "stylist", "massage", "facial", "waxing", "grooming", "wellness"],
     weak: ["beauty", "skincare", "relax"],
   },
@@ -107,6 +115,22 @@ const INDUSTRY_DEFS = [
     strong: ["florist", "boutique", "hardware", "grocer", "grocery", "pharmacy", "bookstore"],
     medium: ["shop", "store", "storefront", "retail", "showroom", "gifts"],
     weak: ["gift", "inventory", "aisle"],
+  },
+  {
+    id: "agriculture",
+    category: "local-service",
+    archetype: "long-form",
+    strong: ["agriculture", "agricultural", "farm", "farming", "farmer", "livestock", "agri"],
+    medium: ["harvest", "crops", "organic", "sustainability", "soil", "orchard", "ranch"],
+    weak: ["environment", "environmental", "green", "produce"],
+  },
+  {
+    id: "logistics",
+    category: "local-service",
+    archetype: "booking",
+    strong: ["logistics", "freight", "shipping", "courier", "haulage", "warehousing"],
+    medium: ["delivery", "fleet", "distribution", "supply chain", "cargo", "dispatch"],
+    weak: ["transport", "tracking", "route"],
   },
 
   // ---- hospitality ---------------------------------------------------------
@@ -204,7 +228,7 @@ const INDUSTRY_DEFS = [
     id: "saas-tech",
     category: "professional",
     archetype: "saas",
-    strong: ["saas", "api", "platform", "dashboard", "devtools", "integrations"],
+    strong: ["saas", "api", "platform", "dashboard", "devtools", "integrations", "technology", "tech", "ai", "crypto"],
     medium: ["software", "product", "analytics", "workflow", "automation", "onboarding"],
     weak: ["teams", "data", "cloud"],
   },
@@ -215,6 +239,14 @@ const INDUSTRY_DEFS = [
     strong: ["nonprofit", "charity", "ngo", "foundation", "philanthropy"],
     medium: ["donations", "donors", "volunteers", "mission", "fundraising"],
     weak: ["impact", "community", "programs"],
+  },
+  {
+    id: "directory-listing",
+    category: "professional",
+    archetype: "storefront",
+    strong: ["directory", "classifieds", "listings", "marketplace"],
+    medium: ["categories", "browse", "search results", "vendors", "submissions"],
+    weak: ["filter", "location", "reviews"],
   },
 
   // ---- creative ------------------------------------------------------------
@@ -265,6 +297,14 @@ const INDUSTRY_DEFS = [
     strong: ["wedding", "weddings", "bridal", "elopement"],
     medium: ["ceremony", "florals", "engagement"],
     weak: ["couples", "celebration", "day"],
+  },
+  {
+    id: "media-publishing",
+    category: "creative",
+    archetype: "long-form",
+    strong: ["magazine", "publication", "publishing", "journalism", "editorial"],
+    medium: ["blog", "news", "articles", "newsletter", "columnist", "press"],
+    weak: ["stories", "readers", "issue"],
   },
 ] as const satisfies readonly IndustryDef[];
 
@@ -353,12 +393,33 @@ export interface TaxonomyMatch {
 
 const DEFAULT_INDUSTRY = INDUSTRY_DEFS[0]!.id as Industry;
 
-export function classifyTaxonomy(input: string): TaxonomyMatch {
-  const bag = toBag(input);
+/**
+ * One piece of evidence about what a business (or a template) is, plus how much it counts.
+ *
+ * Exists because a template's classification is not one string: the bundle folder an operator
+ * dropped it in, its filename, its hero headline, its nav labels and its page titles are separate
+ * observations of wildly different reliability, and collapsing them into one concatenated blob
+ * would let 4000 characters of body copy outvote the one sentence in the hero that actually says
+ * what the template is for. Scoring each source on its own and summing the weighted scores keeps
+ * "the hero says restaurant" worth more than "the word 'shop' appears somewhere in the footer".
+ */
+export interface WeightedSource {
+  text: string;
+  weight: number;
+}
+
+/** Weighted multi-source classification. `classifyTaxonomy(text)` is the single-source case. */
+export function classifyTaxonomyWeighted(sources: readonly WeightedSource[]): TaxonomyMatch {
+  const bags = sources
+    .filter((row) => row.weight > 0 && row.text.trim().length > 0)
+    .map((row) => ({ bag: toBag(row.text), weight: row.weight }));
 
   const ranked = INDUSTRY_DEFS.map((def) => ({
     id: def.id as Industry,
-    score: scoreIndustry(bag, def as unknown as IndustryDef),
+    score: bags.reduce(
+      (sum, row) => sum + scoreIndustry(row.bag, def as unknown as IndustryDef) * row.weight,
+      0
+    ),
   })).sort((a, b) => b.score - a.score);
 
   const top = ranked[0]!;
@@ -368,7 +429,11 @@ export function classifyTaxonomy(input: string): TaxonomyMatch {
 
   const archetypeRanked = ARCHETYPE_DEFS.map((row) => ({
     id: row.id,
-    score: hits(bag, row.strong) * WEIGHTS.strong + hits(bag, row.medium) * WEIGHTS.medium,
+    score: bags.reduce(
+      (sum, src) =>
+        sum + (hits(src.bag, row.strong) * WEIGHTS.strong + hits(src.bag, row.medium) * WEIGHTS.medium) * src.weight,
+      0
+    ),
   })).sort((a, b) => b.score - a.score);
   const archetypeTop = archetypeRanked[0]!;
 
@@ -381,6 +446,10 @@ export function classifyTaxonomy(input: string): TaxonomyMatch {
     archetypeScore: archetypeTop.score,
     runnersUp: ranked.filter((row) => row.score > 0 && row.score >= top.score * 0.6).map((row) => row.id),
   };
+}
+
+export function classifyTaxonomy(input: string): TaxonomyMatch {
+  return classifyTaxonomyWeighted([{ text: input, weight: 1 }]);
 }
 
 export function industryCategory(industry: string): SkinCategory {

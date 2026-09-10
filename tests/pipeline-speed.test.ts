@@ -51,4 +51,12 @@ describe("pipeline-speed", () => {
     process.env.PIPELINE_SKIN_FILL = "0";
     expect(useSkinFillPipeline()).toBe(false);
   });
+
+  it("does not rewrite skin copy with an LLM unless opted in", async () => {
+    const { useSkinFillLlm } = await import("../src/llm/pipeline-speed.js");
+    delete process.env.PIPELINE_SKIN_FILL_LLM;
+    expect(useSkinFillLlm()).toBe(false);
+    process.env.PIPELINE_SKIN_FILL_LLM = "1";
+    expect(useSkinFillLlm()).toBe(true);
+  });
 });

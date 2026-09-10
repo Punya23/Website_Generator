@@ -49,11 +49,13 @@ import {
 import { minimalChromeSpec, minimalMotionPlan } from "../agents/minimal-site-chrome.js";
 import { acceptGeneratedProject } from "../react-codegen/accept-generated.js";
 import { fillSiteSkin } from "../agents/skin-fill-agent.js";
-import { alignSitePlanToSkin, pickSiteSkin } from "../skins/picker.js";
+import { pickSiteSkin, getSkin } from "../skins/picker.js";
+import { applySkinToContext } from "../skins/theme.js";
+import type { SiteSkin } from "../skins/schema.js";
 
 export function getOutputMode(): "react" | "html" {
-  const mode = (process.env.OUTPUT_MODE ?? "react").toLowerCase();
-  return mode === "html" ? "html" : "react";
+  const mode = (process.env.OUTPUT_MODE ?? "html").toLowerCase();
+  return mode === "react" ? "react" : "html";
 }
 
 export function parseFailedCustomComponent(buildError: string): string | null {
@@ -325,10 +327,10 @@ function buildLayoutPlanFromInstances(pages: Record<string, SectionInstance[]>):
   return { sections };
 }
 
-function assembleReactPages(
+export function assembleReactPages(
   ctx: SiteContext,
   pageRows: Array<{ blueprint: PageBlueprint; instances: SectionInstance[] }>,
-  visualContract: ReturnType<typeof resolveSiteVisualContract>
+  visualContract?: ReturnType<typeof resolveSiteVisualContract>
 ): Record<string, ReactPage> {
   const reactPages: Record<string, ReactPage> = {};
   for (const pagePlan of ctx.sitePlan.pages) {
@@ -338,7 +340,9 @@ function assembleReactPages(
       ...s,
       props: { ...s.props },
     }));
-    applyPageRhythm(stamped, visualContract);
+    // Skin-fill leaves paint fields unset so each template renders as authored. Page-codegen
+    // still receives a visual contract and gets the positional rhythm overlay.
+    if (visualContract) applyPageRhythm(stamped, visualContract);
     const composed = attachMotionPlan(
       composePageSections(row.blueprint, stamped),
       ctx.motionPlan!
@@ -367,11 +371,11 @@ async function lookAndContract(ctx: SiteContext) {
   return { lookProfile, visualContract };
 }
 
-function directorQaFrom(
+export function directorQaFrom(
   ctx: SiteContext,
   blueprints: PageBlueprint[],
   instances: Record<string, SectionInstance[]>,
-  skinChrome?: { footerLayout?: "two-column" | "centered" | "cta-heavy"; grainOverlay?: boolean }
+  skin?: Pick<SiteSkin, "chrome" | "categories" | "archetype">
 ) {
   const blueprintQa = runBlueprintQA(blueprints, ctx);
   if (blueprintQa.issues.length > 0) {
@@ -379,14 +383,7 @@ function directorQaFrom(
       `[pipeline] Blueprint QA notes: ${blueprintQa.issues.map((i) => i.message).join("; ")}`
     );
   }
-  const chromeSpec0 = minimalChromeSpec(ctx, blueprints);
-  if (skinChrome?.footerLayout) chromeSpec0.footer.layout = skinChrome.footerLayout;
-  if (skinChrome?.grainOverlay !== undefined) {
-    chromeSpec0.immersive = {
-      ...chromeSpec0.immersive,
-      grainOverlay: skinChrome.grainOverlay,
-    };
-  }
+  const chromeSpec0 = minimalChromeSpec(ctx, blueprints, skin);
   const motionPlan = minimalMotionPlan(ctx, blueprints, chromeSpec0);
   const layoutPlan = buildLayoutPlanFromInstances(instances);
   ctx.chromeSpec = chromeSpec0;
@@ -409,25 +406,9 @@ async function runSkinFillReactPipeline(
   pipelineLog(
     `[pipeline] Skin fill (default React path)${isQualityPipeline() ? " · quality" : isFastPipeline() ? " · fast" : ""}`
   );
-  const { lookProfile, visualContract } = await lookAndContract(ctx);
-  void lookProfile;
 
-  const skin = await timedStep("site", "pick skin", () =>
-    pickSiteSkin({
-      brief: ctx.expandedBrief,
-      consumerId: ctx.consumerId,
-      variationSeed: ctx.variationSeed,
-      profileId: ctx.verticalProfile?.profileId,
-    })
-  );
-  ctx.skinId = skin.id;
-  ctx.skinName = skin.name;
-  ctx.sitePlan = alignSitePlanToSkin(ctx.sitePlan, skin);
-  ctx.designSystem = {
-    ...ctx.designSystem,
-    navShape: skin.chrome.navShape,
-    motionPreset: skin.motionPreset,
-  };
+  const skin = await timedStep("site", "pick skin", () => resolveSkin(ctx));
+  applySkinToContext(ctx, skin);
   pipelineLog(
     `[pipeline] Skin ${skin.id} (${skin.name}) · ${skin.categories.join(", ")} · ${skin.visualFamily}`
   );
@@ -437,16 +418,25 @@ async function runSkinFillReactPipeline(
     pipelineLog(`[pipeline] ${slug}: ${list.map((s) => s.templateId).join("→")}`);
   }
 
-  const directorQa = directorQaFrom(ctx, filled.blueprints, filled.instances, {
-    footerLayout: skin.chrome.footerLayout,
-    grainOverlay: skin.chrome.grainOverlay,
-  });
+  const directorQa = directorQaFrom(ctx, filled.blueprints, filled.instances, skin);
   const pageRows = ctx.sitePlan.pages.map((page) => ({
     blueprint: filled.blueprints.find((bp) => bp.slug === page.slug)!,
     instances: filled.instances[page.slug] ?? [],
   }));
-  const reactPages = assembleReactPages(ctx, pageRows, visualContract);
+  const reactPages = assembleReactPages(ctx, pageRows);
   return finishReactPipeline(ctx, reactPages, filled.blueprints, registry, outputDir, options, directorQa);
+}
+
+async function resolveSkin(ctx: SiteContext): Promise<SiteSkin> {
+  if (ctx.skinId) {
+    const existing = getSkin(ctx.skinId);
+    if (existing) return existing;
+  }
+  return pickSiteSkin({
+    brief: ctx.expandedBrief,
+    consumerId: ctx.consumerId,
+    variationSeed: ctx.variationSeed,
+  });
 }
 
 async function runPageCodegenReactPipeline(

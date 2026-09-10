@@ -1,5 +1,6 @@
 import type { Express, NextFunction, Request, Response } from "express";
 import express from "express";
+import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { IngestStore } from "./store.js";
@@ -14,6 +15,8 @@ import {
 } from "./pipeline.js";
 import { loadApprovedSkins } from "./approved-skins.js";
 import { readThumbnail } from "./theme-features.js";
+import { renderSkinPreview } from "./preview-skin.js";
+import { templateRoutes } from "./template-routes.js";
 import { SITE_SKINS } from "../skins/catalog.js";
 import { IngestSourceSchema } from "./types.js";
 import {
@@ -27,6 +30,41 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ADMIN_PUBLIC = path.resolve(__dirname, "../web/admin");
 
 const store = new IngestStore();
+
+// A single reused project directory (kept across builds so repeat previews skip `npm install`
+// and only pay for the Next.js build itself) and a single served output directory — mirrors how
+// the main playground keeps one "hot" preview at a time rather than one per candidate.
+const PREVIEW_BASE_PATH = "/admin-preview";
+const PREVIEW_PROJECT_DIR = path.resolve("output", "_admin-preview-react");
+const PREVIEW_SERVE_DIR = path.resolve("output", "_admin-preview");
+let previewInFlight: Promise<unknown> | null = null;
+
+async function persistAdminPreview(outPath: string): Promise<void> {
+  await fs.rm(PREVIEW_SERVE_DIR, { recursive: true, force: true });
+  await fs.cp(outPath, PREVIEW_SERVE_DIR, { recursive: true });
+}
+
+/** Static preview output contains nothing but our own section templates, mock copy, and
+ *  properly-licensed stock photos — never third-party demo HTML/CSS/JS — so unlike `/thumbs`
+ *  it does not need to sit behind `adminGuard`. Kept as its own top-level mount (like `/preview`
+ *  in the playground) so every sub-resource request (JS/CSS chunks) just works without a token. */
+function mountPreviewOutputRoute(app: Express): void {
+  app.get(`${PREVIEW_BASE_PATH}/:slug`, async (req, res, next) => {
+    const slug = req.params.slug ?? "";
+    if (!slug || slug.includes(".") || slug === "_next") return next();
+    const file = path.join(PREVIEW_SERVE_DIR, slug, "index.html");
+    try {
+      await fs.access(file);
+      res.sendFile(file);
+    } catch {
+      next();
+    }
+  });
+  app.use(
+    PREVIEW_BASE_PATH,
+    express.static(PREVIEW_SERVE_DIR, { index: "index.html", extensions: ["html"] })
+  );
+}
 
 function clientIp(req: Request): string {
   return String(req.socket.remoteAddress ?? "");
@@ -58,6 +96,9 @@ export function adminGuard(req: Request, res: Response, next: NextFunction): voi
 export function mountAdmin(app: Express): void {
   const api = express.Router();
   api.use(adminGuard);
+
+  // Local verbatim-template corpus (zips in templates_bundle/), separate from GitHub ingest.
+  api.use("/local-templates", templateRoutes());
 
   api.get("/overview", async (_req, res) => {
     const status = await buildAdminStatus(store);
@@ -195,6 +236,72 @@ export function mountAdmin(app: Express): void {
     }
   });
 
+  /**
+   * Full preview: mock-fills the candidate's draft skin with a sample brief and runs it through
+   * the real React codegen + Next.js static-export build, so an admin can see actual composition
+   * and motion — not just the wireframe — before approving. Streamed like `/runs` since a cold
+   * build (npm install + Next build) can take real time; a warm one (project already built once)
+   * is much faster.
+   */
+  api.post("/candidates/:id/preview", async (req, res) => {
+    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders?.();
+    const send = (payload: unknown) => {
+      if (res.writableEnded) return;
+      res.write(`data: ${JSON.stringify(payload)}\n\n`);
+    };
+
+    if (previewInFlight) {
+      send({ type: "done", ok: false, error: "Another preview build is already running — try again shortly." });
+      res.end();
+      return;
+    }
+
+    const run = (async () => {
+      const candidate = await store.getCandidate(req.params.id);
+      if (!candidate) throw new Error("Candidate not found");
+      if (!candidate.draftSkin) {
+        throw new Error("No draft skin to preview yet — re-verify this candidate first.");
+      }
+      send({ type: "log", line: `Building preview for ${candidate.draftSkin.name}…` });
+      const reuseProject = await fs
+        .access(path.join(PREVIEW_PROJECT_DIR, "node_modules", "next"))
+        .then(() => true)
+        .catch(() => false);
+      if (!reuseProject) send({ type: "log", line: "First preview build — installing dependencies (slower)…" });
+      const result = await renderSkinPreview(candidate.draftSkin, PREVIEW_PROJECT_DIR, {
+        basePath: PREVIEW_BASE_PATH,
+        reuseProject,
+      });
+      for (const [slug, ids] of Object.entries(result.sectionsByPage)) {
+        send({ type: "log", line: `${slug}: ${ids.join(" → ")}` });
+      }
+      if (!result.buildSucceeded) {
+        throw new Error(result.buildError ?? "React build failed");
+      }
+      await persistAdminPreview(result.outPath!);
+      send({
+        type: "done",
+        ok: true,
+        previewUrl: `${PREVIEW_BASE_PATH}/`,
+        businessName: result.businessName,
+        candidateId: candidate.id,
+      });
+    })().catch((err) => {
+      send({ type: "done", ok: false, error: err instanceof Error ? err.message : String(err) });
+    });
+
+    previewInFlight = run;
+    try {
+      await run;
+    } finally {
+      previewInFlight = null;
+      res.end();
+    }
+  });
+
   api.post("/candidates/:id/reject", async (req, res) => {
     try {
       const reason = String(req.body?.reason ?? "Rejected in dashboard");
@@ -255,6 +362,7 @@ export function mountAdmin(app: Express): void {
 
   app.use("/api/admin", api);
   app.use("/admin", express.static(ADMIN_PUBLIC, { index: "index.html" }));
+  mountPreviewOutputRoute(app);
 }
 
 export { store as adminStore };

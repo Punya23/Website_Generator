@@ -86,6 +86,15 @@ export function inferVerticalProfile(
   return profileDefaults(profileId, brief, sitePlan);
 }
 
+/** Look up the visual-family defaults for an already-chosen skin. Does not classify the brief. */
+export function profileFromVisualFamily(
+  family: VerticalProfileId,
+  brief: ExpandedBrief,
+  sitePlan?: Pick<SitePlan, "visualArchetype" | "industryFamily">
+): VerticalDesignProfile {
+  return profileDefaults(family, brief, sitePlan);
+}
+
 function profileDefaults(
   profileId: VerticalProfileId,
   brief: ExpandedBrief,

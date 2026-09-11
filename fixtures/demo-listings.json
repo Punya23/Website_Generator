@@ -1,0 +1,126 @@
+{
+  "us": [
+    {
+      "price": "$685,000",
+      "badge": "New Listing",
+      "location": "142 Birchwood Lane, Maple Grove",
+      "title": "Sunlit Craftsman Bungalow",
+      "beds": "3 Beds",
+      "baths": "2 Baths",
+      "sqft": "1,840 sqft",
+      "description": "A fully renovated 1920s craftsman with original hardwood floors, a wraparound porch, and a detached studio out back — a short walk to the Maple Grove farmers market."
+    },
+    {
+      "price": "$1,240,000",
+      "badge": "Open House",
+      "location": "88 Ridgeline Court, Hillcrest",
+      "title": "Modern Hillside Retreat",
+      "beds": "4 Beds",
+      "baths": "3 Baths",
+      "sqft": "2,910 sqft",
+      "description": "Floor-to-ceiling windows frame the valley from every main room; a chef's kitchen and a lower-level bonus suite make this one flexible for a growing family."
+    },
+    {
+      "price": "$429,000",
+      "badge": "Price Reduced",
+      "location": "27 Willow Court, Fairview Heights",
+      "title": "Cozy Two-Story Colonial",
+      "beds": "3 Beds",
+      "baths": "2 Baths",
+      "sqft": "1,520 sqft",
+      "description": "Move-in ready with an updated kitchen, a fenced backyard, and top-rated schools two blocks over — a solid first home."
+    },
+    {
+      "price": "$895,000",
+      "badge": "For Sale",
+      "location": "615 Harbor View Drive, Bayside",
+      "title": "Waterfront Contemporary",
+      "beds": "3 Beds",
+      "baths": "3 Baths",
+      "sqft": "2,240 sqft",
+      "description": "Private dock access and unobstructed bay views from the primary suite; the open-plan main floor was rebuilt in 2021."
+    },
+    {
+      "price": "$2,150,000",
+      "badge": "Exclusive",
+      "location": "9 Vineyard Ridge Road, Oak Valley",
+      "title": "Estate Vineyard Property",
+      "beds": "5 Beds",
+      "baths": "4 Baths",
+      "sqft": "4,680 sqft",
+      "description": "Sits on 3.2 acres of producing vines with a separate guest cottage, a wine cellar, and a pool overlooking the valley."
+    },
+    {
+      "price": "$349,000",
+      "badge": "New Listing",
+      "location": "310 Elmwood Ave, Unit 4B, Downtown",
+      "title": "Downtown Loft Condo",
+      "beds": "1 Beds",
+      "baths": "1 Baths",
+      "sqft": "890 sqft",
+      "description": "Exposed brick, 12-foot ceilings, and an in-unit washer/dryer in a converted 1908 warehouse two blocks from the transit station."
+    }
+  ],
+  "india": [
+    {
+      "price": "₹85 lakh",
+      "badge": "New Listing",
+      "location": "Wakad, Pune",
+      "title": "Sunlit 2BHK Apartment",
+      "beds": "2 Beds",
+      "baths": "2 Baths",
+      "sqft": "1,050 sqft",
+      "description": "A fully fitted 2BHK on the 6th floor of a gated society, close to the IT corridor, with covered parking and a children's play area on-site."
+    },
+    {
+      "price": "₹1.6 crore",
+      "badge": "Ready to Move",
+      "location": "Baner, Pune",
+      "title": "Premium 3BHK Residence",
+      "beds": "3 Beds",
+      "baths": "3 Baths",
+      "sqft": "1,680 sqft",
+      "description": "Corner unit with a private balcony on both bedrooms, modular kitchen, and clubhouse access in a well-maintained, RERA-registered project."
+    },
+    {
+      "price": "₹52 lakh",
+      "badge": "Price Reduced",
+      "location": "Bibwewadi, Pune",
+      "title": "Compact 1BHK Flat",
+      "beds": "1 Beds",
+      "baths": "1 Baths",
+      "sqft": "620 sqft",
+      "description": "Ideal for a first-time buyer or rental investment — close to schools, a hospital, and the main bus route into the city."
+    },
+    {
+      "price": "₹2.4 crore",
+      "badge": "Exclusive",
+      "location": "Koregaon Park, Pune",
+      "title": "Luxury 4BHK Penthouse",
+      "beds": "4 Beds",
+      "baths": "4 Baths",
+      "sqft": "2,950 sqft",
+      "description": "Duplex penthouse with a private terrace, imported fittings, and dedicated staff quarters in one of Pune's most established addresses."
+    },
+    {
+      "price": "₹1.1 crore",
+      "badge": "Open House",
+      "location": "Lullanagar, Pune",
+      "title": "Family 3BHK Bungalow",
+      "beds": "3 Beds",
+      "baths": "2 Baths",
+      "sqft": "1,750 sqft",
+      "description": "Independent bungalow with a small garden and terrace, on a quiet residential lane close to Swargate."
+    },
+    {
+      "price": "₹68 lakh",
+      "badge": "For Sale",
+      "location": "Hinjewadi Phase 2, Pune",
+      "title": "Modern 2BHK Society Flat",
+      "beds": "2 Beds",
+      "baths": "2 Baths",
+      "sqft": "980 sqft",
+      "description": "Five minutes from the IT park by shuttle, with a gym, a landscaped podium garden, and 24-hour security in the society."
+    }
+  ]
+}

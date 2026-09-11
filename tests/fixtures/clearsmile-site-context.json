@@ -1,0 +1,1023 @@
+{
+  "businessName": "ClearSmile Dental",
+  "businessBrief": "ClearSmile Dental — family dentistry, cosmetic whitening, same-week appointments",
+  "expandedBrief": {
+    "businessName": "ClearSmile Dental",
+    "tagline": "Transforming Smiles, Transforming Lives",
+    "elevatorPitch": "ClearSmile Dental is a family-friendly dental practice dedicated to providing top-notch care and exceptional patient experiences. From routine cleanings to cosmetic whitening, our team is committed to helping you achieve a healthy, radiant smile. With same-week appointments available, we make it easy to prioritize your oral health without sacrificing your busy schedule.",
+    "expandedBrief": "Located in the heart of a bustling suburban area, ClearSmile Dental is a state-of-the-art facility that combines cutting-edge technology with a warm, welcoming atmosphere. Our team of experienced dentists and hygienists take the time to listen to each patient's unique needs and concerns, tailoring their care to ensure a personalized experience. Whether you're looking for a routine check-up, a cosmetic makeover, or emergency dental services, ClearSmile Dental is the go-to destination for families and individuals seeking exceptional oral care. With a strong focus on education and prevention, we empower our patients to take control of their oral health and maintain a beautiful, healthy smile for years to come.",
+    "targetAudience": "Families with young children, working professionals, and individuals seeking cosmetic dental services in the suburban area",
+    "services": [
+      "Family dentistry",
+      "Cosmetic whitening",
+      "Same-week appointments",
+      "Routine cleanings",
+      "Fillings and crowns",
+      "Dental implants",
+      "Emergency dental services",
+      "Oral cancer screenings",
+      "Customized dental plans"
+    ],
+    "differentiators": [
+      "Personalized patient care",
+      "State-of-the-art technology",
+      "Experienced and compassionate team",
+      "Flexible appointment scheduling",
+      "Education and prevention-focused approach"
+    ],
+    "tone": "Warm, Welcoming, Professional",
+    "primaryCta": "Schedule Your Appointment Today",
+    "secondaryCta": "Take Our Online Smile Assessment"
+  },
+  "sitePlan": {
+    "pages": [
+      {
+        "slug": "home",
+        "title": "Transforming Smiles, Transforming Lives",
+        "navLabel": "Home",
+        "goal": "Establish trust and encourage appointments",
+        "minBlocks": 12,
+        "layoutHint": "Hero section with a warm, inviting atmosphere",
+        "contentFocus": [
+          "Personalized patient care",
+          "State-of-the-art technology"
+        ],
+        "sections": [
+          {
+            "id": "home_hero",
+            "intent": "Introduce the practice and its mission",
+            "blockTypes": [
+              "headline",
+              "backgroundImage"
+            ]
+          },
+          {
+            "id": "home_services",
+            "intent": "Highlight key services and differentiators",
+            "blockTypes": [
+              "card",
+              "icon"
+            ]
+          },
+          {
+            "id": "home_callToAction",
+            "intent": "Encourage scheduling an appointment",
+            "blockTypes": [
+              "button",
+              "testimonial"
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "about",
+        "title": "Our Story and Mission",
+        "navLabel": "About Us",
+        "goal": "Build trust and showcase the team's expertise",
+        "minBlocks": 10,
+        "layoutHint": "Clean and modern design with a personal touch",
+        "contentFocus": [
+          "Team profiles",
+          "Practice history",
+          "Community involvement"
+        ],
+        "sections": [
+          {
+            "id": "about_team",
+            "intent": "Introduce the team and their expertise",
+            "blockTypes": [
+              "profileCard",
+              "photo"
+            ]
+          },
+          {
+            "id": "about_mission",
+            "intent": "Explain the practice's mission and values",
+            "blockTypes": [
+              "text",
+              "quote"
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "services",
+        "title": "Our Dental Services",
+        "navLabel": "Services",
+        "goal": "Educate patients about available services and encourage scheduling",
+        "minBlocks": 16,
+        "layoutHint": "Easy-to-scan layout with clear headings and concise descriptions",
+        "contentFocus": [
+          "Family dentistry",
+          "Cosmetic whitening",
+          "Emergency dental services"
+        ],
+        "sections": [
+          {
+            "id": "services_familyDentistry",
+            "intent": "Describe family dentistry services",
+            "blockTypes": [
+              "accordion",
+              "list"
+            ]
+          },
+          {
+            "id": "services_cosmeticWhitening",
+            "intent": "Explain cosmetic whitening options",
+            "blockTypes": [
+              "imageComparison",
+              "beforeAfter"
+            ]
+          }
+        ]
+      },
+      {
+        "slug": "contact",
+        "title": "Get in Touch with Us",
+        "navLabel": "Contact",
+        "goal": "Make it easy for patients to schedule an appointment or ask a question",
+        "minBlocks": 8,
+        "layoutHint": "Simple and intuitive design with a prominent call-to-action",
+        "contentFocus": [
+          "Contact information",
+          "Appointment scheduling",
+          "Insurance and payment options"
+        ],
+        "sections": [
+          {
+            "id": "contact_info",
+            "intent": "Provide contact information and office hours",
+            "blockTypes": [
+              "text",
+              "map"
+            ]
+          },
+          {
+            "id": "contact_schedule",
+            "intent": "Allow patients to schedule an appointment online",
+            "blockTypes": [
+              "form",
+              "button"
+            ]
+          }
+        ]
+      }
+    ],
+    "compositionStrategy": "Use a mix of asymmetrical and symmetrical layouts to create visual interest and balance",
+    "avoidPatterns": [
+      "Overly clinical or sterile design",
+      "Too much technical jargon"
+    ],
+    "visualArchetype": "Warm and Inviting Smile",
+    "motionStyle": "Smooth and subtle animations to enhance the user experience"
+  },
+  "designSystem": {
+    "vertical": "healthcare-dental",
+    "mood": "Friendly Professional Care",
+    "fontHeading": "Montserrat",
+    "fontBody": "Lato",
+    "motionStyle": "smooth-scroll",
+    "motionPreset": "fade-up",
+    "layout": {
+      "maxWidth": "1280px",
+      "gridColumns": 3,
+      "sectionGap": "40px",
+      "cardMinHeight": "250px"
+    },
+    "colors": {
+      "bg": "#F7F7F7",
+      "surface": "#FFFFFF",
+      "text": "#333333",
+      "muted": "#666666",
+      "accent": "#03A9F4",
+      "accentSoft": "#87CEEB",
+      "gradientFrom": "#66CCCC",
+      "gradientTo": "#33B5E5",
+      "navBg": "#333333",
+      "navText": "#FFFFFF",
+      "navMuted": "#999999",
+      "navActiveBg": "#03A9F4",
+      "navActiveText": "#f8fafc"
+    }
+  },
+  "pages": {
+    "home": {
+      "slug": "home",
+      "title": "Transforming Smiles, Transforming Lives",
+      "navLabel": "Home",
+      "sections": [
+        {
+          "id": "home_hero",
+          "intent": "Introduce the practice and its mission",
+          "blocks": [
+            {
+              "id": "home_hero_headline",
+              "type": "headline",
+              "text": "Transforming Smiles, Transforming Lives",
+              "size": "xl",
+              "heroImage": "https://images.pexels.com/photos/37065094/pexels-photo-37065094.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+            },
+            {
+              "id": "home_hero_backgroundImage",
+              "type": "image",
+              "imageQuery": "family-smiling-at-dentist",
+              "altText": "Family smiling at dentist",
+              "src": "https://images.pexels.com/photos/26288741/pexels-photo-26288741.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+            },
+            {
+              "id": "home_hero_tagline",
+              "type": "text",
+              "text": "ClearSmile Dental is a family-friendly dental practice dedicated to providing top-notch care and exceptional patient experiences.",
+              "size": "md"
+            }
+          ],
+          "layout": {
+            "type": "Section",
+            "fullBleed": true,
+            "children": [
+              {
+                "type": "Grid",
+                "children": [
+                  {
+                    "type": "Stack",
+                    "children": [
+                      "home_hero_backgroundImage"
+                    ]
+                  },
+                  {
+                    "type": "Stack",
+                    "children": [
+                      "home_hero_headline",
+                      "home_hero_tagline"
+                    ]
+                  }
+                ],
+                "columns": 1
+              }
+            ],
+            "id": "home_hero"
+          }
+        },
+        {
+          "id": "home_services",
+          "intent": "Highlight key services and differentiators",
+          "blocks": [
+            {
+              "id": "home_services_1",
+              "type": "headline",
+              "text": "Our Services",
+              "level": 2,
+              "heroImage": "https://images.pexels.com/photos/28490243/pexels-photo-28490243.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+            },
+            {
+              "id": "home_services_2",
+              "type": "text",
+              "text": "At ClearSmile Dental, we offer a wide range of services to help you achieve a healthy, radiant smile."
+            },
+            {
+              "id": "home_services_3",
+              "type": "feature",
+              "title": "Family Dentistry",
+              "description": "Personalized care for the whole family, from routine cleanings to fillings and crowns.",
+              "icon": "family"
+            },
+            {
+              "id": "home_services_4",
+              "type": "feature",
+              "title": "Cosmetic Whitening",
+              "description": "Transform your smile with our professional teeth whitening services.",
+              "icon": "smile"
+            },
+            {
+              "id": "home_services_5",
+              "type": "feature",
+              "title": "Same-Week Appointments",
+              "description": "We make it easy to prioritize your oral health without sacrificing your busy schedule.",
+              "icon": "calendar"
+            },
+            {
+              "id": "home_services_6",
+              "type": "feature",
+              "title": "Emergency Dental Services",
+              "description": "We're here to help in case of a dental emergency.",
+              "icon": "emergency"
+            },
+            {
+              "id": "home_services_7",
+              "type": "feature",
+              "title": "Customized Dental Plans",
+              "description": "We create personalized plans to help you maintain a beautiful, healthy smile for years to come.",
+              "icon": "plan"
+            },
+            {
+              "id": "home_services_8",
+              "type": "cta",
+              "text": "Schedule Your Appointment Today",
+              "buttonText": "Book Now"
+            }
+          ],
+          "layout": {
+            "type": "Section",
+            "fullBleed": false,
+            "children": [
+              "home_services_1",
+              "home_services_2",
+              {
+                "type": "Grid",
+                "children": [
+                  "home_services_3",
+                  "home_services_4",
+                  "home_services_5",
+                  "home_services_6",
+                  "home_services_7"
+                ],
+                "columns": 3
+              },
+              "home_services_8"
+            ],
+            "id": "home_services"
+          }
+        },
+        {
+          "id": "home_callToAction",
+          "intent": "Encourage scheduling an appointment",
+          "blocks": [
+            {
+              "id": "home_callToAction_cta",
+              "type": "cta",
+              "text": "Schedule Your Appointment Today",
+              "buttonText": "Book Now",
+              "url": "/contact"
+            },
+            {
+              "id": "home_callToAction_testimonial",
+              "type": "testimonial",
+              "text": "ClearSmile Dental has been a game-changer for my family's oral health. The team is friendly, professional, and always takes the time to listen to our needs.",
+              "author": "Emily R."
+            }
+          ],
+          "layout": {
+            "type": "Section",
+            "id": "home_callToAction",
+            "fullBleed": false,
+            "children": [
+              {
+                "type": "Row",
+                "children": [
+                  "home_callToAction_testimonial",
+                  "home_callToAction_cta"
+                ],
+                "columns": 2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "about": {
+      "slug": "about",
+      "title": "Our Story and Mission",
+      "navLabel": "About Us",
+      "sections": [
+        {
+          "id": "about_team",
+          "intent": "Introduce the team and their expertise",
+          "blocks": [
+            {
+              "id": "about_team_1",
+              "type": "headline",
+              "text": "Meet Our Experienced Team",
+              "level": 2
+            },
+            {
+              "id": "about_team_2",
+              "type": "text",
+              "text": "Our team of dentists and hygienists are dedicated to providing personalized care and exceptional patient experiences. With years of experience and ongoing training, we stay up-to-date on the latest techniques and technologies to ensure you receive the best care possible."
+            },
+            {
+              "id": "about_team_3",
+              "type": "image",
+              "imageQuery": "team-of-dentists",
+              "caption": "Our team is committed to your care and comfort",
+              "src": "https://images.pexels.com/photos/5622026/pexels-photo-5622026.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+            },
+            {
+              "id": "about_team_4",
+              "type": "headline",
+              "text": "Our Team's Expertise",
+              "level": 3
+            },
+            {
+              "id": "about_team_5",
+              "type": "text",
+              "text": "From routine cleanings to cosmetic whitening, our team has the expertise to address all your dental needs. We take the time to listen to your unique concerns and tailor our care to ensure a personalized experience."
+            },
+            {
+              "id": "about_team_6",
+              "type": "gallery",
+              "imageQuery": "dentists-at-work",
+              "images": [
+                {
+                  "imageQuery": "dentist-1",
+                  "caption": "Dr. Smith, Lead Dentist"
+                },
+                {
+                  "imageQuery": "dentist-2",
+                  "caption": "Dr. Johnson, Cosmetic Specialist"
+                },
+                {
+                  "imageQuery": "hygienist",
+                  "caption": "Our experienced hygienists"
+                }
+              ],
+              "src": "https://images.pexels.com/photos/4269490/pexels-photo-4269490.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+            }
+          ],
+          "layout": {
+            "type": "Section",
+            "fullBleed": false,
+            "children": [
+              {
+                "type": "Grid",
+                "children": [
+                  {
+                    "type": "Stack",
+                    "children": [
+                      "about_team_1",
+                      "about_team_2"
+                    ]
+                  },
+                  {
+                    "type": "Stack",
+                    "children": [
+                      "about_team_3",
+                      "about_team_4"
+                    ]
+                  },
+                  {
+                    "type": "Stack",
+                    "children": [
+                      "about_team_5",
+                      "about_team_6"
+                    ]
+                  }
+                ],
+                "columns": 3
+              }
+            ],
+            "id": "about_team"
+          }
+        },
+        {
+          "id": "about_mission",
+          "intent": "Explain the practice's mission and values",
+          "blocks": [
+            {
+              "id": "about_mission_1",
+              "type": "text",
+              "text": "At ClearSmile Dental, our mission is to provide exceptional, personalized care to each and every patient who walks through our doors. We believe that a healthy, radiant smile is the key to a happy and confident life, and we're dedicated to helping you achieve just that."
+            },
+            {
+              "id": "about_mission_2",
+              "type": "quote",
+              "text": "Transforming Smiles, Transforming Lives",
+              "citation": "Our guiding philosophy"
+            },
+            {
+              "id": "about_mission_3",
+              "type": "text",
+              "text": "Our values are built around a simple yet powerful idea: that every patient deserves to be treated with kindness, respect, and compassion. We take the time to listen to your unique needs and concerns, and we tailor our care to ensure a personalized experience that meets your individual goals and priorities."
+            },
+            {
+              "id": "about_mission_4",
+              "type": "text",
+              "text": "By combining cutting-edge technology with a warm, welcoming atmosphere, we've created a dental practice that truly feels like home. Our experienced team of dentists and hygienists are committed to staying at the forefront of the latest advancements in oral care, and we're passionate about sharing our knowledge with you to help you make informed decisions about your health."
+            }
+          ],
+          "layout": {
+            "type": "Section",
+            "fullBleed": true,
+            "children": [
+              {
+                "type": "Grid",
+                "children": [
+                  "about_mission_1",
+                  "about_mission_2"
+                ],
+                "columns": 2
+              },
+              {
+                "type": "Grid",
+                "children": [
+                  "about_mission_3",
+                  "about_mission_4"
+                ],
+                "columns": 2
+              }
+            ],
+            "id": "about_mission"
+          }
+        }
+      ]
+    },
+    "services": {
+      "slug": "services",
+      "title": "Our Dental Services",
+      "navLabel": "Services",
+      "sections": [
+        {
+          "id": "services_familyDentistry",
+          "intent": "Describe family dentistry services",
+          "blocks": [
+            {
+              "id": "services_familyDentistry_headline",
+              "type": "headline",
+              "text": "Family Dentistry Services"
+            },
+            {
+              "id": "services_familyDentistry_text",
+              "type": "text",
+              "text": "At ClearSmile Dental, we understand the importance of providing top-notch dental care for the whole family. Our family dentistry services are designed to meet the unique needs of patients of all ages, from routine cleanings and exams to fillings and crowns."
+            },
+            {
+              "id": "services_familyDentistry_list",
+              "type": "list",
+              "title": "Our Family Dentistry Services Include:",
+              "items": [
+                "Routine cleanings and exams",
+                "Fillings and crowns",
+                "Dental sealants",
+                "Fluoride treatments",
+                "Oral cancer screenings"
+              ]
+            },
+            {
+              "id": "services_familyDentistry_text2",
+              "type": "text",
+              "text": "Our experienced and compassionate team is dedicated to providing personalized care to each patient, taking the time to listen to their unique needs and concerns. We believe in educating our patients on the importance of oral health and empowering them to take control of their smile."
+            },
+            {
+              "id": "services_familyDentistry_cta",
+              "type": "cta",
+              "buttonText": "Schedule Your Family Dentistry Appointment Today",
+              "text": "Contact us to schedule your appointment and experience the ClearSmile Dental difference."
+            }
+          ],
+          "layout": {
+            "type": "Section",
+            "fullBleed": false,
+            "children": [
+              {
+                "type": "Stack",
+                "children": [
+                  "services_familyDentistry_headline"
+                ]
+              },
+              {
+                "type": "Stack",
+                "children": [
+                  "services_familyDentistry_text"
+                ]
+              },
+              {
+                "type": "Stack",
+                "children": [
+                  "services_familyDentistry_list"
+                ]
+              },
+              {
+                "type": "Stack",
+                "children": [
+                  "services_familyDentistry_text2"
+                ]
+              },
+              {
+                "type": "Stack",
+                "children": [
+                  "services_familyDentistry_cta"
+                ]
+              }
+            ],
+            "id": "services_familyDentistry"
+          }
+        },
+        {
+          "id": "services_cosmeticWhitening",
+          "intent": "Explain cosmetic whitening options",
+          "blocks": [
+            {
+              "id": "services_cosmeticWhitening_headline",
+              "type": "headline",
+              "text": "Brighten Your Smile with Our Cosmetic Whitening Options"
+            },
+            {
+              "id": "services_cosmeticWhitening_text",
+              "type": "text",
+              "text": "At ClearSmile Dental, we understand the impact a radiant smile can have on your confidence and overall well-being. That's why we offer a range of cosmetic whitening options to help you achieve the bright, beautiful smile you deserve."
+            },
+            {
+              "id": "services_cosmeticWhitening_image",
+              "type": "image",
+              "imageQuery": "smiling-woman-with-white-teeth",
+              "caption": "Get the smile you've always wanted",
+              "src": "https://images.pexels.com/photos/41208/fun-cold-elegance-face-41208.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+            },
+            {
+              "id": "services_cosmeticWhitening_beforeAfter",
+              "type": "beforeAfter",
+              "beforeImageQuery": "yellow-teeth",
+              "afterImageQuery": "white-teeth",
+              "caption": "Transform your smile in just one visit"
+            },
+            {
+              "id": "services_cosmeticWhitening_text2",
+              "type": "text",
+              "text": "Our experienced dentists will work with you to determine the best cosmetic whitening option for your unique needs and goals. From in-office whitening treatments to custom at-home whitening kits, we've got you covered."
+            },
+            {
+              "id": "services_cosmeticWhitening_cta",
+              "type": "cta",
+              "buttonText": "Schedule Your Whitening Appointment Today",
+              "url": "/contact"
+            }
+          ],
+          "layout": {
+            "type": "Section",
+            "fullBleed": true,
+            "children": [
+              "services_cosmeticWhitening_headline",
+              {
+                "type": "Grid",
+                "children": [
+                  "services_cosmeticWhitening_text",
+                  "services_cosmeticWhitening_image"
+                ],
+                "columns": 2
+              },
+              "services_cosmeticWhitening_beforeAfter",
+              "services_cosmeticWhitening_text2",
+              "services_cosmeticWhitening_cta"
+            ],
+            "id": "services_cosmeticWhitening"
+          }
+        }
+      ]
+    },
+    "contact": {
+      "slug": "contact",
+      "title": "Get in Touch with Us",
+      "navLabel": "Contact",
+      "sections": [
+        {
+          "id": "contact_info",
+          "intent": "Provide contact information and office hours",
+          "blocks": [
+            {
+              "id": "contact_info_1",
+              "type": "text",
+              "content": "Get in touch with us at ClearSmile Dental to schedule your appointment or to learn more about our services. We're always here to help you achieve a healthy, radiant smile."
+            },
+            {
+              "id": "contact_info_2",
+              "type": "text",
+              "content": "Contact Information: <br> Phone: 555-555-5555 <br> Email: [info@clearsmile.com](mailto:info@clearsmile.com) <br> Address: 123 Main St, Anytown, USA"
+            },
+            {
+              "id": "contact_info_3",
+              "type": "text",
+              "content": "Office Hours: <br> Monday: 8am - 5pm <br> Tuesday: 8am - 5pm <br> Wednesday: 8am - 5pm <br> Thursday: 8am - 5pm <br> Friday: 8am - 5pm"
+            }
+          ],
+          "layout": {
+            "type": "Section",
+            "id": "contact_info",
+            "fullBleed": false,
+            "children": [
+              {
+                "type": "Grid",
+                "children": [
+                  {
+                    "type": "Section",
+                    "children": [
+                      "contact_info_1"
+                    ]
+                  },
+                  {
+                    "type": "Section",
+                    "children": [
+                      "contact_info_2"
+                    ]
+                  },
+                  {
+                    "type": "Section",
+                    "children": [
+                      "contact_info_3"
+                    ]
+                  }
+                ],
+                "columns": 3
+              }
+            ]
+          }
+        },
+        {
+          "id": "contact_schedule",
+          "intent": "Allow patients to schedule an appointment online",
+          "blocks": [
+            {
+              "id": "contact_schedule_headline",
+              "type": "headline",
+              "text": "Schedule Your Appointment Today",
+              "level": 2
+            },
+            {
+              "id": "contact_schedule_text",
+              "type": "text",
+              "text": "Take the first step towards a healthier, happier smile. Fill out the form below to schedule your appointment with our experienced dentists."
+            },
+            {
+              "id": "contact_schedule_form",
+              "type": "form",
+              "fields": [
+                {
+                  "label": "Name",
+                  "type": "text",
+                  "required": true
+                },
+                {
+                  "label": "Email",
+                  "type": "email",
+                  "required": true
+                },
+                {
+                  "label": "Phone",
+                  "type": "tel",
+                  "required": true
+                },
+                {
+                  "label": "Preferred Date and Time",
+                  "type": "datetime-local",
+                  "required": true
+                },
+                {
+                  "label": "Services Needed",
+                  "type": "select",
+                  "options": [
+                    "Family Dentistry",
+                    "Cosmetic Whitening",
+                    "Routine Cleaning",
+                    "Other"
+                  ],
+                  "required": true
+                }
+              ]
+            },
+            {
+              "id": "contact_schedule_button",
+              "type": "button",
+              "text": "Submit",
+              "buttonType": "submit"
+            },
+            {
+              "id": "contact_schedule_cta",
+              "type": "text",
+              "text": "If you have any questions or need assistance, please don't hesitate to contact us. We're always here to help."
+            }
+          ],
+          "layout": {
+            "type": "Section",
+            "id": "contact_schedule",
+            "fullBleed": false,
+            "children": [
+              {
+                "type": "Grid",
+                "children": [
+                  "contact_schedule_headline",
+                  "contact_schedule_text",
+                  "contact_schedule_form",
+                  "contact_schedule_button",
+                  "contact_schedule_cta"
+                ],
+                "columns": 2
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "mediaRegistry": [
+    {
+      "url": "https://images.pexels.com/photos/37065094/pexels-photo-37065094.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "query": "Located in the heart of a bustling suburban area, ClearSmile Dental is a state-of-the-art facility that combines cutting-edge technology with a warm, welcoming atmosphere. Our team of experienced dentists and hygienists take the time to listen to each patient's unique needs and concerns, tailoring their care to ensure a personalized experience. Whether you're looking for a routine check-up, a cosmetic makeover, or emergency dental services, ClearSmile Dental is the go-to destination for families and individuals seeking exceptional oral care. With a strong focus on education and prevention, we empower our patients to take control of their oral health and maintain a beautiful, healthy smile for years to come. ClearSmile Dental hero",
+      "blockId": "home_hero_headline",
+      "sectionId": "home_hero",
+      "pageSlug": "home"
+    },
+    {
+      "url": "https://images.pexels.com/photos/26288741/pexels-photo-26288741.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "query": "family-smiling-at-dentist",
+      "blockId": "home_hero_backgroundImage",
+      "sectionId": "home_hero",
+      "pageSlug": "home"
+    },
+    {
+      "url": "https://images.pexels.com/photos/28490243/pexels-photo-28490243.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "query": "Located in the heart of a bustling suburban area, ClearSmile Dental is a state-of-the-art facility that combines cutting-edge technology with a warm, welcoming atmosphere. Our team of experienced dentists and hygienists take the time to listen to each patient's unique needs and concerns, tailoring their care to ensure a personalized experience. Whether you're looking for a routine check-up, a cosmetic makeover, or emergency dental services, ClearSmile Dental is the go-to destination for families and individuals seeking exceptional oral care. With a strong focus on education and prevention, we empower our patients to take control of their oral health and maintain a beautiful, healthy smile for years to come. ClearSmile Dental hero home_services_1 view 2",
+      "blockId": "home_services_1",
+      "sectionId": "home_services",
+      "pageSlug": "home"
+    },
+    {
+      "url": "https://images.pexels.com/photos/5622026/pexels-photo-5622026.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "query": "team-of-dentists",
+      "blockId": "about_team_3",
+      "sectionId": "about_team",
+      "pageSlug": "about"
+    },
+    {
+      "url": "https://images.pexels.com/photos/4269490/pexels-photo-4269490.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "query": "dentists-at-work",
+      "blockId": "about_team_6",
+      "sectionId": "about_team",
+      "pageSlug": "about"
+    },
+    {
+      "url": "https://images.pexels.com/photos/41208/fun-cold-elegance-face-41208.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "query": "smiling-woman-with-white-teeth",
+      "blockId": "services_cosmeticWhitening_image",
+      "sectionId": "services_cosmeticWhitening",
+      "pageSlug": "services"
+    }
+  ],
+  "cmsCollections": [
+    {
+      "id": "blog",
+      "name": "Blog",
+      "slug": "blog",
+      "singularName": "Post",
+      "fields": [
+        {
+          "id": "title",
+          "label": "Title",
+          "type": "text"
+        },
+        {
+          "id": "excerpt",
+          "label": "Excerpt",
+          "type": "text"
+        },
+        {
+          "id": "body",
+          "label": "Body",
+          "type": "richtext"
+        },
+        {
+          "id": "image",
+          "label": "Cover image",
+          "type": "image"
+        },
+        {
+          "id": "publishedAt",
+          "label": "Published",
+          "type": "date"
+        }
+      ],
+      "items": [
+        {
+          "id": "post_0",
+          "slug": "why-clearsmile-dental-stands-out",
+          "title": "Why ClearSmile Dental stands out",
+          "excerpt": "ClearSmile Dental is a family-friendly dental practice dedicated to providing top-notch care and exceptional patient experiences. From routine cleanings to cosmetic whitening, our team is committed to helping you achieve a healthy, radiant smile. With same-week appointments available, we make it easy to prioritize your oral health without sacrificing your busy schedule.",
+          "body": "ClearSmile Dental is a family-friendly dental practice dedicated to providing top-notch care and exceptional patient experiences. From routine cleanings to cosmetic whitening, our team is committed to helping you achieve a healthy, radiant smile. With same-week appointments available, we make it easy to prioritize your oral health without sacrificing your busy schedule.\n\nLocated in the heart of a bustling suburban area, ClearSmile Dental is a state-of-the-art facility that combines cutting-edge technology with a warm, welcoming atmosphere. Our team of experienced dentists and hygienists take the time to listen to each patient's unique needs and concerns, tailoring their care to ensure a personalized experience. Whether you're looking for a routine check-up, a cosmetic makeover, or emergency dental services, ClearSmile Dental is the go-to destination for families and individuals seeking exceptional oral care. With a strong focus on education and prevention, we empower our patients to take control of their oral health and maintain a beautiful, healthy smile for years to come.",
+          "imageQuery": "ClearSmile Dental Family dentistry",
+          "publishedAt": "2026-06-23",
+          "imageUrl": "https://images.pexels.com/photos/11768114/pexels-photo-11768114.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+        },
+        {
+          "id": "post_1",
+          "slug": "a-guide-to-family-dentistry",
+          "title": "A guide to Family dentistry",
+          "excerpt": "Everything you need to know about Family dentistry.",
+          "body": "Everything you need to know about Family dentistry.\n\nLocated in the heart of a bustling suburban area, ClearSmile Dental is a state-of-the-art facility that combines cutting-edge technology with a warm, welcoming atmosphere. Our team of experienced dentists and hygienists take the time to listen to each patient's unique needs and concerns, tailoring their care to ensure a personalized experience. Whether you're looking for a routine check-up, a cosmetic makeover, or emergency dental services, ClearSmile Dental is the go-to destination for families and individuals seeking exceptional oral care. With a strong focus on education and prevention, we empower our patients to take control of their oral health and maintain a beautiful, healthy smile for years to come.",
+          "imageQuery": "ClearSmile Dental Cosmetic whitening",
+          "publishedAt": "2026-06-09",
+          "imageUrl": "https://images.pexels.com/photos/6627571/pexels-photo-6627571.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+        },
+        {
+          "id": "post_2",
+          "slug": "behind-the-scenes-at-clearsmile-dental",
+          "title": "Behind the scenes at ClearSmile Dental",
+          "excerpt": "Personalized patient care",
+          "body": "Personalized patient care\n\nLocated in the heart of a bustling suburban area, ClearSmile Dental is a state-of-the-art facility that combines cutting-edge technology with a warm, welcoming atmosphere. Our team of experienced dentists and hygienists take the time to listen to each patient's unique needs and concerns, tailoring their care to ensure a personalized experience. Whether you're looking for a routine check-up, a cosmetic makeover, or emergency dental services, ClearSmile Dental is the go-to destination for families and individuals seeking exceptional oral care. With a strong focus on education and prevention, we empower our patients to take control of their oral health and maintain a beautiful, healthy smile for years to come.",
+          "imageQuery": "ClearSmile Dental Same-week appointments",
+          "publishedAt": "2026-05-26",
+          "imageUrl": "https://images.pexels.com/photos/5622277/pexels-photo-5622277.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+        }
+      ]
+    },
+    {
+      "id": "portfolio",
+      "name": "Portfolio",
+      "slug": "portfolio",
+      "singularName": "Project",
+      "fields": [
+        {
+          "id": "title",
+          "label": "Title",
+          "type": "text"
+        },
+        {
+          "id": "excerpt",
+          "label": "Summary",
+          "type": "text"
+        },
+        {
+          "id": "body",
+          "label": "Description",
+          "type": "richtext"
+        },
+        {
+          "id": "image",
+          "label": "Image",
+          "type": "image"
+        }
+      ],
+      "items": [
+        {
+          "id": "work_0",
+          "slug": "family-dentistry",
+          "title": "Family dentistry",
+          "excerpt": "Family dentistry — delivered with Warm, Welcoming, Professional.",
+          "body": "ClearSmile Dental specializes in Family dentistry. ClearSmile Dental is a family-friendly dental practice dedicated to providing top-notch care and exceptional patient experiences. From routine cleanings to cosmetic whitening, our team is committed to helping you achieve a healthy, radiant smile. With same-week appointments available, we make it easy to prioritize your oral health without sacrificing your busy schedule.",
+          "imageQuery": "ClearSmile Dental Family dentistry",
+          "imageUrl": "https://images.pexels.com/photos/8224633/pexels-photo-8224633.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+        },
+        {
+          "id": "work_1",
+          "slug": "cosmetic-whitening",
+          "title": "Cosmetic whitening",
+          "excerpt": "Cosmetic whitening — delivered with Warm, Welcoming, Professional.",
+          "body": "ClearSmile Dental specializes in Cosmetic whitening. ClearSmile Dental is a family-friendly dental practice dedicated to providing top-notch care and exceptional patient experiences. From routine cleanings to cosmetic whitening, our team is committed to helping you achieve a healthy, radiant smile. With same-week appointments available, we make it easy to prioritize your oral health without sacrificing your busy schedule.",
+          "imageQuery": "ClearSmile Dental Cosmetic whitening",
+          "imageUrl": "https://images.pexels.com/photos/5355899/pexels-photo-5355899.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+        },
+        {
+          "id": "work_2",
+          "slug": "same-week-appointments",
+          "title": "Same-week appointments",
+          "excerpt": "Same-week appointments — delivered with Warm, Welcoming, Professional.",
+          "body": "ClearSmile Dental specializes in Same-week appointments. ClearSmile Dental is a family-friendly dental practice dedicated to providing top-notch care and exceptional patient experiences. From routine cleanings to cosmetic whitening, our team is committed to helping you achieve a healthy, radiant smile. With same-week appointments available, we make it easy to prioritize your oral health without sacrificing your busy schedule.",
+          "imageQuery": "ClearSmile Dental Same-week appointments",
+          "imageUrl": "https://images.pexels.com/photos/5622256/pexels-photo-5622256.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+        },
+        {
+          "id": "work_3",
+          "slug": "routine-cleanings",
+          "title": "Routine cleanings",
+          "excerpt": "Routine cleanings — delivered with Warm, Welcoming, Professional.",
+          "body": "ClearSmile Dental specializes in Routine cleanings. ClearSmile Dental is a family-friendly dental practice dedicated to providing top-notch care and exceptional patient experiences. From routine cleanings to cosmetic whitening, our team is committed to helping you achieve a healthy, radiant smile. With same-week appointments available, we make it easy to prioritize your oral health without sacrificing your busy schedule.",
+          "imageQuery": "ClearSmile Dental Routine cleanings",
+          "imageUrl": "https://images.pexels.com/photos/6189073/pexels-photo-6189073.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+        }
+      ]
+    }
+  ],
+  "qaHistory": [
+    {
+      "pageSlug": "home",
+      "iteration": 0,
+      "issues": []
+    },
+    {
+      "pageSlug": "about",
+      "iteration": 0,
+      "issues": [
+        {
+          "severity": "soft",
+          "code": "MOBILE_OVERFLOW",
+          "message": "Mobile horizontal overflow on block about_team_1",
+          "targetId": "about_team_1",
+          "suggestion": "Stack columns on narrow viewports"
+        },
+        {
+          "severity": "soft",
+          "code": "MOBILE_OVERFLOW",
+          "message": "Mobile horizontal overflow on block about_team_4",
+          "targetId": "about_team_4",
+          "suggestion": "Stack columns on narrow viewports"
+        }
+      ]
+    },
+    {
+      "pageSlug": "services",
+      "iteration": 0,
+      "issues": []
+    },
+    {
+      "pageSlug": "contact",
+      "iteration": 0,
+      "issues": []
+    }
+  ]
+}

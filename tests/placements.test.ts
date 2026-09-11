@@ -450,4 +450,80 @@ describe("applyPlacements: images", () => {
     });
     expect(result.html).toContain('alt="Our downtown office"');
   });
+
+  it("records every image it actually wrote, keyed by placement id — from-corpus.ts's composePhotoKey reads this", async () => {
+    const html = `<img id="i1" src="https://example.com/old.jpg">`;
+    const p = page([], [imagePlacement({})]);
+    const result = await applyPlacements(html, p, { brief: {}, resolveData: async () => "https://cdn.example.com/new.jpg" });
+    expect(result.appliedImageUrls).toEqual({ "i.1": "https://cdn.example.com/new.jpg" });
+  });
+
+  it("records nothing for a fixed image or one nothing resolved for", async () => {
+    const fixedHtml = `<img id="i1" src="https://example.com/original.jpg">`;
+    const fixed = await applyPlacements(fixedHtml, page([], [imagePlacement({ fillSource: "fixed" })]), {
+      brief: {},
+      resolveData: async () => "https://cdn.example.com/new.jpg",
+    });
+    expect(fixed.appliedImageUrls).toEqual({});
+
+    const unresolvedHtml = `<img id="i1" src="https://example.com/original.jpg">`;
+    const unresolved = await applyPlacements(unresolvedHtml, page([], [imagePlacement({})]), { brief: {} });
+    expect(unresolved.appliedImageUrls).toEqual({});
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applyPlacements: manualOverrideKeys — the guard `from-corpus.ts`'s `reapplyPlacementsFill` relies
+// on so replaying a placements fill onto a recompose never reverts a user's own preview edit. See
+// `revise.ts`'s `composeVerbatimSite`: `composeSite` writes a manual `state.overrides` value into
+// the element's `data-wg-edit`-addressed node FIRST, so by the time a replay's `applyPlacements`
+// call resolves the SAME element via its placement `selector`, the manual text is already sitting
+// there — `manualOverrideKeys` is what stops that text from being clobbered back to the earlier
+// (now stale) LLM value.
+// ---------------------------------------------------------------------------
+
+describe("applyPlacements: manualOverrideKeys", () => {
+  it("skips a text write when the target element's data-wg-edit key is in manualOverrideKeys", async () => {
+    const html = `<p id="t1" data-wg-edit="tpl_a:sec_1#0">The user's own edit</p>`;
+    const p = page([textPlacement({})]);
+    const result = await applyPlacements(html, p, {
+      brief: {},
+      llmValues: { "t.1": "A replayed placements value" },
+      manualOverrideKeys: new Set(["tpl_a:sec_1#0"]),
+    });
+    expect(result.html).toContain("The user's own edit");
+    expect(result.html).not.toContain("A replayed placements value");
+    expect(result.appliedText).toBe(0);
+  });
+
+  it("still applies normally when the element's key is not in manualOverrideKeys", async () => {
+    const html = `<p id="t1" data-wg-edit="tpl_a:sec_1#0">Original placeholder copy that is reasonably long.</p>`;
+    const p = page([textPlacement({})]);
+    const result = await applyPlacements(html, p, {
+      brief: {},
+      llmValues: { "t.1": "A replayed placements value" },
+      manualOverrideKeys: new Set(["tpl_a:sec_1#7"]), // a different node's key
+    });
+    expect(result.html).toContain("A replayed placements value");
+    expect(result.appliedText).toBe(1);
+  });
+
+  it("applies normally when manualOverrideKeys is unset — a first fill, nothing manual exists yet", async () => {
+    const html = `<p id="t1" data-wg-edit="tpl_a:sec_1#0">Original placeholder copy that is reasonably long.</p>`;
+    const p = page([textPlacement({})]);
+    const result = await applyPlacements(html, p, { brief: {}, llmValues: { "t.1": "A fresh fill value" } });
+    expect(result.html).toContain("A fresh fill value");
+    expect(result.appliedText).toBe(1);
+  });
+
+  it("guards a composed value (e.g. callButton) the same way as a plain text placement", async () => {
+    const html = `<a id="t1" data-wg-edit="tpl_a:sec_1#0">Call the user's own edited number</a>`;
+    const p = page([textPlacement({ compose: "callButton" })]);
+    const result = await applyPlacements(html, p, {
+      brief: { phone: "(415) 555-0100" },
+      manualOverrideKeys: new Set(["tpl_a:sec_1#0"]),
+    });
+    expect(result.html).toContain("Call the user's own edited number");
+    expect(result.html).not.toContain("(415) 555-0100");
+  });
 });

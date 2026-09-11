@@ -22,6 +22,7 @@ import {
 } from "../llm/pipeline-speed.js";
 import { classifyTaxonomy } from "../skins/taxonomy.js";
 import { runPlacementsPipeline } from "./placements-pipeline.js";
+import type { BusinessDataFeed } from "../templates/placements/business-data.js";
 import { judgeFinalScreenshots, isStrictlyBetter, type FinalVisionVerdict } from "./final-vision-gate.js";
 import { runDesignQA } from "../qa/react-qa.js";
 import { buildPageSections } from "../agents/section-builder-agent.js";
@@ -93,6 +94,12 @@ export interface GenerateSiteOptions {
   jobId?: string;
   consumerId?: string;
   userMedia?: UserMediaLibrary;
+  /** The business's own real listings/agent-roster/testimonials, when the caller has them — see
+   *  `templates/placements/business-data.ts`. Read by both the curated real-estate path (`placements`)
+   *  and the corpus path (`verbatim` + `PIPELINE_PLACEMENTS_CORPUS`); a `data`-sourced placement
+   *  resolves from this before falling to an illustrative example. Omitted, behavior is
+   *  byte-identical to before this option existed. */
+  businessData?: BusinessDataFeed;
 }
 
 export interface PagePipelineResult {
@@ -580,7 +587,7 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   const enableVision = options.enableVisionPolish !== false;
 
   if (placements) {
-    const placementsResult = await runPlacementsPipeline(ctx, options.businessBrief);
+    const placementsResult = await runPlacementsPipeline(ctx, options.businessBrief, options.businessData);
     htmlPages = placementsResult.htmlPages;
     qaResults = placementsResult.qaResults;
     placementsTemplateId = placementsResult.templateId;
@@ -609,6 +616,7 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     const verbatimResult = await runVerbatimTemplatePipeline(ctx, registry, {
       variationSeed,
       ...(options.consumerId ? { consumerId: options.consumerId } : {}),
+      ...(options.businessData ? { businessData: options.businessData } : {}),
     });
     htmlPages = verbatimResult.htmlPages;
     qaResults = verbatimResult.qaResults;

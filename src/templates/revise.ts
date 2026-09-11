@@ -23,6 +23,7 @@ import { rankByTaxonomy, sectionKey } from "./select.js";
 import { templateStore, type IndexedSection, type TemplateStore } from "./store.js";
 import type { ExpandedBrief } from "../types.js";
 import type { DesignFingerprint, PlacedSection, SectionRole } from "./types.js";
+import { reapplyPlacementsFill, type PersistedPlacementsFill } from "./placements/from-corpus.js";
 
 export interface VerbatimSiteState {
   brief: ExpandedBrief;
@@ -44,6 +45,12 @@ export interface VerbatimSiteState {
    *  anchorTemplateId`) instead of silently losing that pass the moment a site is edited, and so a
    *  swap/add here can gate its own candidate pool by the same compatibility check generation used. */
   anchorTemplateId?: string;
+  /** Set only for a site `runVerbatimTemplatePipeline` generated with `PIPELINE_PLACEMENTS_CORPUS`
+   *  active. Carried so every recompose (edit, swap, add, palette, logo) REPLAYS this exact
+   *  placements fill — no new LLM call — instead of reverting to `compose.ts`'s own generic
+   *  copy-slot/filler text, which is what shipped before this field existed. See
+   *  `placements/from-corpus.ts`'s `reapplyPlacementsFill`, called from `composeVerbatimSite` below. */
+  placementsFill?: PersistedPlacementsFill;
 }
 
 /** `<templateId>:<sectionId>` — what the preview's section wrapper carries and what every
@@ -291,13 +298,21 @@ export async function applyVerbatimRevisions(
 }
 
 /** Recompose a site from its state — the same path a first generation takes, with the saved text
- *  edits, palette and logo carried through so nothing drifts between renders. */
+ *  edits, palette and logo carried through so nothing drifts between renders.
+ *
+ * `state.placementsFill` set (a site `PIPELINE_PLACEMENTS_CORPUS` generated), this ALSO replays that
+ * fill onto the freshly composed HTML — zero new LLM calls, every value comes straight from what's
+ * persisted. Without this, a placements-filled site's real business copy would revert to
+ * `compose.ts`'s own generic copy-slot text on the very first edit/swap/palette change; see
+ * `placements/from-corpus.ts`'s `reapplyPlacementsFill` for the mechanism and its own doc comment
+ * for why a manual text edit (`state.overrides`, applied by `composeSite` above BEFORE this runs)
+ * always wins over the replayed value for that same node. */
 export async function composeVerbatimSite(
   state: VerbatimSiteState,
   store: TemplateStore = templateStore(),
   options: { editable?: boolean } = {}
 ): Promise<ComposedSite> {
-  return composeSite({
+  const site = await composeSite({
     brief: state.brief,
     rawBrief: state.rawBrief,
     pages: state.pages,
@@ -309,4 +324,14 @@ export async function composeVerbatimSite(
     ...(state.overrides && Object.keys(state.overrides).length > 0 ? { overrides: state.overrides } : {}),
     ...(options.editable ? { editable: true } : {}),
   });
+  if (!state.placementsFill) return site;
+
+  const replayed = await reapplyPlacementsFill(
+    state.pages,
+    store,
+    state.placementsFill,
+    site.htmlPages,
+    new Set(Object.keys(state.overrides ?? {}))
+  );
+  return { ...site, htmlPages: replayed.htmlPages };
 }

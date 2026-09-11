@@ -53,6 +53,13 @@ export interface ApplyPlacementsOptions {
    *  `"+1 (000) 000-0000"`). The digits stay all-zero regardless of what's passed here; see
    *  `PLACEHOLDER_PHONE`'s own doc comment for why that's the one part of this that's non-negotiable. */
   placeholderPhone?: string;
+  /** `data-wg-edit` keys (`VerbatimSiteState.overrides`, `compose.ts`'s `anchorEditableText`) that
+   *  already carry a manual edit for this render — checked before every text write so a placements
+   *  REPLAY (`from-corpus.ts`'s `reapplyPlacementsFill`, run on every edit/swap/palette recompose of
+   *  a placements-filled site) never reverts a user's own edit back to the earlier LLM-filled value.
+   *  Unset on a first fill, where nothing manual exists yet. See `revise.ts`'s `composeVerbatimSite`
+   *  for the one call site that populates this. */
+  manualOverrideKeys?: Set<string>;
 }
 
 /** Unmistakably a placeholder, never a number that could ring an actual stranger — a plausible-
@@ -118,6 +125,12 @@ export interface FillResult {
   clamped: ClampNote[];
   /** `fixed` placements a caller supplied a value for anyway — recorded, never applied. */
   rejectedFixed: string[];
+  /** Every `ImagePlacement.id` this call actually wrote a `src`/`background-image` for, mapped to
+   *  the final URL — lets a caller (`verbatim-template-pipeline.ts`) patch its own photo-pinning
+   *  dict with whatever placements resolved, so a later recompose keeps the SAME photo instead of
+   *  reverting to compose.ts's own generic stock pick for that slot. See `from-corpus.ts`'s
+   *  `composePhotoKey` for the key translation. */
+  appliedImageUrls: Record<string, string>;
 }
 
 function escapeHtml(value: string): string {
@@ -246,8 +259,18 @@ export async function applyPlacements(html: string, page: PagePlacements, option
   const clamped: ClampNote[] = [];
   const skipped: string[] = [];
   const rejectedFixed: string[] = [];
+  const appliedImageUrls: Record<string, string> = {};
   let appliedText = 0;
   let appliedImages = 0;
+  const manualKeys = options.manualOverrideKeys;
+  /** True when `selector`'s element already carries a manual edit (`data-wg-edit` in `manualKeys`)
+   *  — see `ApplyPlacementsOptions.manualOverrideKeys`'s own doc comment. Only relevant on a REPLAY
+   *  (`reapplyPlacementsFill`); `manualKeys` is unset on a first fill, so this is always `false` then. */
+  const hasManualEdit = (selector: string): boolean => {
+    if (!manualKeys || manualKeys.size === 0) return false;
+    const key = $(selector).first().attr("data-wg-edit");
+    return Boolean(key && manualKeys.has(key));
+  };
   // Phone/email specifically default to an obvious, deterministic placeholder rather than falling
   // through to `illustrativeFill` — see `withPlaceholderContact`'s own doc comment on why those two
   // are a different risk tier from a fake price or fake address.
@@ -260,6 +283,7 @@ export async function applyPlacements(html: string, page: PagePlacements, option
     }
 
     if (placement.compose === "phoneAndEmail") {
+      if (hasManualEdit(placement.selector)) continue; // user's own edit wins over a replay
       const el = $(placement.selector).first();
       if (el.length === 0) {
         skipped.push(placement.id);
@@ -291,6 +315,7 @@ export async function applyPlacements(html: string, page: PagePlacements, option
       raw = options.llmValues?.[placement.id] ?? null;
     }
     if (!raw) continue; // nothing resolved — the template's own original copy is the safe default
+    if (hasManualEdit(placement.selector)) continue; // user's own edit wins over a replay
 
     // Composed values are already short and shape-controlled (a business name, a phone number);
     // only a free-form value (brief/data/llm) needs the character-budget check.
@@ -324,9 +349,13 @@ export async function applyPlacements(html: string, page: PagePlacements, option
           : null
         : (options.llmValues?.[image.id] ?? null);
     if (!url) continue;
-    if (writeImage($, image, url)) appliedImages += 1;
-    else skipped.push(image.id);
+    if (writeImage($, image, url)) {
+      appliedImages += 1;
+      appliedImageUrls[image.id] = url;
+    } else {
+      skipped.push(image.id);
+    }
   }
 
-  return { html: $.html(), appliedText, appliedImages, skipped, clamped, rejectedFixed };
+  return { html: $.html(), appliedText, appliedImages, skipped, clamped, rejectedFixed, appliedImageUrls };
 }

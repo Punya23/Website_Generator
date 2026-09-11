@@ -56,8 +56,10 @@ export function _resetDemoListingsCache(): void {
 
 /** Property-card grid roles (`real-estate-map.ts`'s `propertyCardDescriptors`) share one generic
  *  `role` for beds/baths/sqft (`"propertyMeta"`) — only the placement id's own trailing segment
- *  (`.beds`, `.baths`, `.sqft`) tells them apart, so this is matched against the id, not the role. */
-const FIELD_BY_SUFFIX: Record<string, keyof DemoListing> = {
+ *  (`.beds`, `.baths`, `.sqft`) tells them apart, so this is matched against the id, not the role.
+ *  Exported so `business-data.ts`'s real-listing resolver matches placements the identical way,
+ *  instead of a second, driftable copy of the same suffix table. */
+export const FIELD_BY_SUFFIX: Record<string, keyof DemoListing> = {
   price: "price",
   badge: "badge",
   location: "location",
@@ -67,14 +69,14 @@ const FIELD_BY_SUFFIX: Record<string, keyof DemoListing> = {
   sqft: "sqft",
 };
 
-const CARD_ROLES = new Set(["propertyPrice", "propertyBadge", "propertyLocation", "propertyTitle", "propertyMeta"]);
+export const CARD_ROLES = new Set(["propertyPrice", "propertyBadge", "propertyLocation", "propertyTitle", "propertyMeta"]);
 
 /** `property-detail.html`'s own roles (one listing per page, not a grid) map directly, one role to
  *  one `DemoListing` field. Real-estate-map.ts's `property.description.body` is `fillSource: "llm"`,
  *  not `"data"` — there is no detail-page description role for this resolver to answer, so
  *  `DemoListing.description` is currently unused; kept on the type for whichever future placement
  *  (or template) does add one, rather than removed and re-added later. */
-const DETAIL_ROLE_TO_FIELD: Record<string, keyof DemoListing> = {
+export const DETAIL_ROLE_TO_FIELD: Record<string, keyof DemoListing> = {
   detailPrice: "price",
   detailBadge: "badge",
   detailLocation: "location",
@@ -84,8 +86,10 @@ const DETAIL_ROLE_TO_FIELD: Record<string, keyof DemoListing> = {
 /** Picks a listing deterministically from a placement's own id — the same id always gets the same
  *  listing (stable across a re-run), and a different listing per card index (`.0.`, `.1.`, ...) so a
  *  six-card grid doesn't show the same price six times. Cycles via modulo, so this works unmodified
- *  regardless of a page's own card count (3, 6, or 9 — see `real-estate-map.ts`'s per-page loops). */
-function listingIndexFor(id: string, count: number): number {
+ *  regardless of a page's own card count (3, 6, or 9 — see `real-estate-map.ts`'s per-page loops).
+ *  Exported: nothing about the regex/modulo is listing-specific, and `business-data.ts` reuses it
+ *  unchanged to cycle through a real agent roster or testimonial list the same way. */
+export function listingIndexFor(id: string, count: number): number {
   const match = id.match(/\.(\d+)\.[^.]+$/);
   const n = match ? Number(match[1]) : 0;
   return count > 0 ? n % count : 0;

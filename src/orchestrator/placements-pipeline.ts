@@ -29,6 +29,7 @@ import { pathToFileURL } from "node:url";
 import type { QAIssue, QAResult, SiteContext } from "../types.js";
 import { fillRealEstateTemplate } from "../templates/placements/fill-real-estate-template.js";
 import { checkBrandLeak } from "../templates/placements/brand-leak.js";
+import { businessDataResolver, type BusinessDataFeed } from "../templates/placements/business-data.js";
 import { runCodeQA } from "../qa/code-qa.js";
 import { pipelineLog } from "../util/pipeline-log.js";
 import { timedStep } from "../util/timed.js";
@@ -115,7 +116,14 @@ export interface PlacementsPipelineResult {
   files: FileCopy[];
 }
 
-export async function runPlacementsPipeline(ctx: SiteContext, businessBrief: string): Promise<PlacementsPipelineResult> {
+export async function runPlacementsPipeline(
+  ctx: SiteContext,
+  businessBrief: string,
+  /** The business's own real listings/agent-roster/testimonials, when the caller has them — see
+   *  `business-data.ts`. Omitted, behavior is byte-identical to before this option existed (every
+   *  `data` placement falls to `illustrativeFill`'s plausible example, same as today). */
+  businessData?: BusinessDataFeed
+): Promise<PlacementsPipelineResult> {
   const templateId = pickRealEstateTemplate(businessBrief);
   const templateDir = path.resolve(process.cwd(), "real-estate", templateId);
   pipelineLog(`[pipeline] Real-estate placements — template ${templateId}`);
@@ -123,6 +131,7 @@ export async function runPlacementsPipeline(ctx: SiteContext, businessBrief: str
   const filled = await timedStep("site", "placements fill", () =>
     fillRealEstateTemplate(templateDir, businessBrief, {
       onProgress: (line) => pipelineLog(`[pipeline] placements: ${line}`),
+      ...(businessData ? { resolveData: businessDataResolver(businessData) } : {}),
     })
   );
 

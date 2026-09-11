@@ -12,50 +12,37 @@
  * site for the branch.
  *
  * nav/footer sections are excluded before `buildPlacementsFromSelection` is even called, not
- * filtered out afterward. The Phase 2A spike (`scripts/spike-corpus-placements.ts`, run against
- * the real 910-template cache) measured 100% selector hit rate on body sections but only 86.2%
- * once nav/footer were included — every miss was one of the two, because `compose.ts` deliberately
- * rebuilds both regardless of what a placement would have written: `rewriteNavLinks` replaces every
- * `<li>` in the primary menu with one built from this site's own pages, and a logo `<img>` becomes a
- * `<span class="tpl-wordmark">` text node when no logo was uploaded. Chrome copy is compose-owned;
- * asking placements to fill it is 14 points of guaranteed skip for nothing.
+ * filtered out afterward — see `from-corpus.ts`'s `excludeChromeSections` (moved there so
+ * `templates/revise.ts`'s `reapplyPlacementsFill` replay path can share the same exclusion without
+ * `templates/` importing from `orchestrator/`). The Phase 2A spike (`scripts/spike-corpus-
+ * placements.ts`, run against the real 910-template cache) measured 100% selector hit rate on body
+ * sections but only 86.2% once nav/footer were included — every miss was one of the two, because
+ * `compose.ts` deliberately rebuilds both regardless of what a placement would have written.
  *
- * Known gap (matches `placements-pipeline.ts`'s own documented gap for the curated path): the
- * result here is written straight into `composed.htmlPages`, never through `composeSite`'s
- * `overrides` mechanism — so `VerbatimSiteState.overrides` stays empty for a placements-filled
- * site, and a later edit/recompose session would rebuild from `compose.ts`'s own deterministic
- * copy-slots pass with no placements copy at all. Not a regression (the curated path has the
- * analogous gap already), but real — revise/edit parity is not in this phase's scope.
+ * Edit/recompose parity (`VerbatimSiteState.placementsFill` + `from-corpus.ts`'s
+ * `reapplyPlacementsFill`) and corpus-side brand-leak detection (`brand-leak.ts`'s
+ * `collectTemplateBrandNames`/`checkBrandLeakAgainst`, wired into `verbatim-template-pipeline.ts`'s
+ * QA loop) are both built — see those modules. This file's own job stays narrow: run ONE fresh LLM
+ * fill and apply it, via the same `applyPlacementsFillToPages` a recompose's replay also uses.
  */
 import type { PlacedSection } from "../templates/types.js";
 import type { TemplateStore } from "../templates/store.js";
-import { buildPlacementsFromSelection, type CorpusPlacementsMeta } from "../templates/placements/from-corpus.js";
-import { fillPlacementsFile } from "../templates/placements/fill-real-estate-template.js";
-import { applyPlacements, type ClampNote } from "../templates/placements/fill.js";
+import {
+  applyPlacementsFillToPages,
+  buildPlacementsFromSelection,
+  excludeChromeSections,
+  type CorpusPlacementsMeta,
+  type PlacementsFillPageResult,
+} from "../templates/placements/from-corpus.js";
+import { fillPlacementsFile, type Locale } from "../templates/placements/fill-real-estate-template.js";
+import type { ClampNote, PlacementBrief } from "../templates/placements/fill.js";
+import type { BusinessDataFeed } from "../templates/placements/business-data.js";
+import { businessDataResolver } from "../templates/placements/business-data.js";
 
-/** Sections `compose.ts` rebuilds unconditionally regardless of what a placement would write —
- *  see this module's own doc comment and the Phase 2A spike for the measured cost of not excluding
- *  them. Keep in sync with `compose.ts`'s `rewriteNavLinks`/logo-wordmark call sites (`role ===
- *  "nav"` / `role === "footer"`), not with any placements-side concept. */
-const CHROME_ROLES = new Set(["nav", "footer"]);
-
-function excludeChromeSections(pages: Record<string, PlacedSection[]>): Record<string, PlacedSection[]> {
-  const out: Record<string, PlacedSection[]> = {};
-  for (const [slug, sections] of Object.entries(pages)) {
-    out[slug] = sections.filter((section) => !CHROME_ROLES.has(section.role));
-  }
-  return out;
-}
-
-/** One page's own fill outcome — the per-page breakdown `verbatim-template-pipeline.ts` needs to
- *  attach a skipped/clamped note to the RIGHT page's `QAResult`, not just log a site-wide total
- *  (Phase 4, docs/PLACEMENTS_ORCHESTRATION_PLAN.md: "skipped-selector count surfaced"). */
-export interface CorpusPlacementsPageResult {
-  appliedText: number;
-  appliedImages: number;
-  skipped: string[];
-  clamped: ClampNote[];
-}
+/** Preserved name/shape for existing importers (`verbatim-template-pipeline.ts`) — the real
+ *  definition now lives in `from-corpus.ts` as `PlacementsFillPageResult`, shared with the replay
+ *  path (`reapplyPlacementsFill`) so both report the same breakdown. */
+export type CorpusPlacementsPageResult = PlacementsFillPageResult;
 
 export interface CorpusPlacementsFillResult {
   /** Every page from `htmlPages`, placements-filled where a page had a body section to fill —
@@ -71,16 +58,34 @@ export interface CorpusPlacementsFillResult {
   clamped: ClampNote[];
   /** Same three numbers, keyed by page slug — only pages this fill actually touched appear here. */
   byPage: Record<string, CorpusPlacementsPageResult>;
+  /** Every `ImagePlacement.id` this fill actually wrote, mapped to the final URL —
+   *  `verbatim-template-pipeline.ts` turns this into a `composed.photos` patch (via `from-corpus.ts`'s
+   *  `composePhotoKey`) so a later recompose keeps the SAME photo instead of reverting to
+   *  compose.ts's own generic stock pick for that slot. */
+  appliedImageUrls: Record<string, string>;
+  /** Everything needed to REPLAY this exact fill later with no new LLM call — persisted verbatim
+   *  onto `VerbatimSiteState.placementsFill` by the caller. See `from-corpus.ts`'s
+   *  `PersistedPlacementsFill` and `reapplyPlacementsFill`. */
+  brief: PlacementBrief;
+  locale: Locale;
+  llmValues: Record<string, string>;
+  illustrativeValues: Record<string, string>;
 }
 
 /**
  * Builds a `PlacementsFile` from `selected` (excluding chrome — see module doc comment), fills it
- * for `rawBrief`, and applies the result onto `htmlPages` (`composeSite`'s own output — this is
- * meant to run AFTER compose, replacing the LLM copy-polish step that would otherwise run next).
+ * for `rawBrief` with ONE fresh LLM pass, and applies the result onto `htmlPages` (`composeSite`'s
+ * own output — this is meant to run AFTER compose, replacing the LLM copy-polish step that would
+ * otherwise run next).
  *
  * A page with no body sections at all (only nav/hero/footer, say) or with no HTML in `htmlPages`
  * ships unchanged — this only ever adds real per-business copy on top of what compose already
  * produced, never removes a page.
+ *
+ * `businessData`, when given, resolves `data`-sourced placements (a real listing, an agent's real
+ * name/photo, a real customer testimonial) from the business's own supplied records instead of
+ * leaving them to `illustrativeFill`'s plausible example — see `business-data.ts`. Omitted, behavior
+ * is byte-identical to before this option existed.
  */
 export async function runCorpusPlacementsFill(
   selected: { pages: Record<string, PlacedSection[]> },
@@ -88,52 +93,32 @@ export async function runCorpusPlacementsFill(
   meta: CorpusPlacementsMeta,
   htmlPages: Record<string, string>,
   rawBrief: string,
-  onProgress?: (line: string) => void
+  onProgress?: (line: string) => void,
+  businessData?: BusinessDataFeed
 ): Promise<CorpusPlacementsFillResult> {
-  const file = await buildPlacementsFromSelection(
-    { pages: excludeChromeSections(selected.pages) },
-    store,
-    meta
-  );
+  const file = await buildPlacementsFromSelection({ pages: excludeChromeSections(selected.pages) }, store, meta);
   const fill = await fillPlacementsFile(file, rawBrief, { onProgress });
-  const illustrativeFill = async (placement: { id: string }) => fill.illustrativeValues[placement.id] ?? null;
 
-  const out: Record<string, string> = { ...htmlPages };
-  let appliedText = 0;
-  let appliedImages = 0;
-  const skipped: string[] = [];
-  const clamped: ClampNote[] = [];
-  const byPage: Record<string, CorpusPlacementsPageResult> = {};
+  // No `templateBusinessName` here — that option exists to swap ONE known fictional demo brand
+  // (a hand-mapped real-estate/* skin's own "Prestige Realty") out of fallback text. A corpus
+  // composition can draw its sections from several different source templates, each with its own
+  // demo brand, so there is no single name to pass; corpus-side brand-leak detection instead runs
+  // as its own generic post-fill check — see `brand-leak.ts`'s `collectTemplateBrandNames`.
+  const result = await applyPlacementsFillToPages(file, fill, htmlPages, {
+    ...(businessData ? { resolveData: businessDataResolver(businessData) } : {}),
+  });
 
-  for (const slug of file.pageOrder) {
-    const pageSet = file.pages[slug];
-    const html = htmlPages[slug];
-    if (!pageSet || pageSet.text.length + pageSet.images.length === 0 || !html) continue;
-
-    // No `templateBusinessName` here — that option exists to swap ONE known fictional demo brand
-    // (a hand-mapped real-estate/* skin's own "Prestige Realty") out of fallback text. A corpus
-    // composition can draw its sections from several different source templates, each with its own
-    // demo brand, so there is no single name to pass; a generic multi-brand detector for the
-    // corpus path is still an open item — Phase 3 (landed) only built the curated path's
-    // fixed-name checker (`brand-leak.ts`), which doesn't fit a composition with no single brand.
-    const result = await applyPlacements(html, pageSet, {
-      brief: fill.brief,
-      llmValues: fill.llmValues,
-      illustrativeFill,
-      placeholderPhone: fill.locale.phoneFormat,
-    });
-    out[slug] = result.html;
-    appliedText += result.appliedText;
-    appliedImages += result.appliedImages;
-    skipped.push(...result.skipped);
-    clamped.push(...result.clamped);
-    byPage[slug] = {
-      appliedText: result.appliedText,
-      appliedImages: result.appliedImages,
-      skipped: result.skipped,
-      clamped: result.clamped,
-    };
-  }
-
-  return { htmlPages: out, appliedText, appliedImages, skipped, clamped, byPage };
+  return {
+    htmlPages: result.htmlPages,
+    appliedText: result.appliedText,
+    appliedImages: result.appliedImages,
+    skipped: result.skipped,
+    clamped: result.clamped,
+    byPage: result.byPage,
+    appliedImageUrls: result.appliedImageUrls,
+    brief: fill.brief,
+    locale: fill.locale,
+    llmValues: fill.llmValues,
+    illustrativeValues: fill.illustrativeValues,
+  };
 }

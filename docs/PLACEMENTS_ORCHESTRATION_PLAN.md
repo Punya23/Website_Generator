@@ -3,6 +3,34 @@
 > **Audience:** an implementing engineer or coding LLM.  
 > **Goal:** wire the **placements fill engine** into production orchestration — LLM fills values only, never HTML — without collapsing the ~900-template corpus into 4 layouts.  
 > **Date:** 2026-09-11 (rev 6 — **all six phases done.** This plan is now a reference document, not a task list.)  
+> **rev 7 addendum (same day):** the three gaps this doc's own Phase 2B/2C/3 notes flagged as open —
+> edit/recompose parity, corpus-side brand-leak detection, and a real data-feed input — are now
+> closed. Per §0's own rule ("a new request in this area starts a NEW plan") this doc's phase
+> sections are left as the historical record; only the specific now-FALSE "still open" sentences
+> below are corrected in place, each pointing at where the real fix lives:
+> - **Edit/recompose parity** — `VerbatimSiteState.placementsFill` (`templates/revise.ts`) +
+>   `templates/placements/from-corpus.ts`'s `reapplyPlacementsFill`, replayed by
+>   `composeVerbatimSite` on every edit/swap/add/palette/logo recompose, zero new LLM calls. A
+>   manual text edit on a placements-filled node still wins over the replay — `fill.ts`'s
+>   `ApplyPlacementsOptions.manualOverrideKeys`. Covers both text AND the image case this doc never
+>   named directly (placements' own resolved photo now reaches `composed.photos` too — see
+>   `verbatim-template-pipeline.ts`'s `composePhotoKey` patch — so a recompose pins the SAME photo
+>   instead of re-rolling compose's own generic stock pick).
+> - **Corpus-side brand-leak detection** — `brand-leak.ts`'s `collectTemplateBrandNames`
+>   (per-template demo brand read straight off each source template's own already-ingested
+>   `businessName`-kind slot, no hand-typed list) + `checkBrandLeakAgainst`, wired into
+>   `verbatim-template-pipeline.ts`'s QA loop for every verbatim/corpus generation, placements-active
+>   or not.
+> - **Real data feed** — `templates/placements/business-data.ts`'s `businessDataResolver` +
+>   `GenerateSiteOptions.businessData` (`orchestrator.ts`), threaded to both the curated
+>   (`placements-pipeline.ts`) and corpus (`placements-corpus-fill.ts`) paths. Not an integration
+>   with any specific external MLS/CRM (none exists or is named in this codebase) — the generic
+>   plumbing for a caller who already has real listings/agents/testimonials to hand them to
+>   `fill.ts`'s existing `resolveData` hook instead of leaving `data` placements to
+>   `illustrativeFill`'s example. `demo-data.ts`'s fixture resolver stays demo-only, unchanged.
+>
+> Tests: `tests/placements-edit-parity.test.ts`, `tests/business-data.test.ts`, plus additions to
+> `tests/placements.test.ts` (`manualOverrideKeys`, `appliedImageUrls`).  
 > **Baseline:** `origin/master` @ `1ab1a3f` (Phase 4 merged) plus this session's Phase 5 (docs) commit.  
 > **Note:** branch `feat/robust-mix-match-pipeline` may still sit at `3005106` and **lack** every phase below. A resume off that branch needs a full rebase onto master tip, not a phase-by-phase catch-up.
 > **Collision note (rev 3, still relevant):** a separate session landed Phase 0 + Phase 2C (curated override) directly on `master` while this plan's own Phase 0 attempt (`src/templates/placements/run-fill.ts`) was mid-flight on a review branch. Compared both implementations line-for-line — same prompt, same schema, same safety rules — and kept master's (`fill-real-estate-template.ts` / `placements-pipeline.ts`): it was already wired through `orchestrator.ts` at ~10 call sites with its own tests. The review branch's `run-fill.ts` was discarded. Phase 2B (rev 4) then split `fillRealEstateTemplate` in place to get the reusable, I/O-decoupled fill both paths needed — see §7 Phase 2B.
@@ -254,7 +282,7 @@ Built as designed, with one correction made mid-implementation (see below). File
 
 **Correction found while implementing (not caught by the 2A spike):** the plan above only named `polishComposedCopy`'s recompose as the hazard. `verbatim-template-pipeline.ts` has a SECOND recompose path — section repair (`repairFlaggedSections`, triggered by QA issues or by `slotsSkipped > 0` in `composed`'s own provenance) — that goes through the exact same `composeSite({ overrides })` mechanism and would just as silently discard a placements fill. Worse, its `slotsSkipped` trigger reads `composed`'s provenance from BEFORE placements ran, so it would misfire on sections placements had already filled. Fixed by gating both polish AND section repair behind one `placementsFillActive` flag read once — QA still runs and still reports issues either way; only the auto-rewrite-and-recompose reaction to them is out of scope for this phase, matching the curated path's own documented "no vision-QA redo loop yet" gap.
 
-**Known gap, matches the curated path's own documented one:** the result is written straight into `composed.htmlPages`, never through `overrides` — so `VerbatimSiteState.overrides` stays empty for a placements-filled site, and a later edit/recompose session would rebuild from `compose.ts`'s own deterministic copy-slots pass with no placements copy. Not in this phase's scope.
+**Gap closed (rev 7 addendum, see top of doc):** the result is still written straight into `composed.htmlPages`, never through `overrides` itself — but `VerbatimSiteState.placementsFill` now carries what a recompose needs to REPLAY the same fill from scratch (`from-corpus.ts`'s `reapplyPlacementsFill`, called by `composeVerbatimSite`), so a later edit/swap/palette session no longer loses the placements copy the way it used to.
 
 **`templateBusinessName` deliberately NOT passed** to `applyPlacements` on the corpus path — that option exists to swap ONE known fictional demo brand (a curated skin's own "Prestige Realty") out of fallback text; a multi-template corpus composition has no single brand to name. Real per-section brand-leak detection stays Phase 3's job.
 
@@ -287,7 +315,7 @@ Built while Phase 2B was in flight elsewhere; nothing here touched `from-corpus.
 | `checkBrandLeak(html, ownBrandName)` — the 4 curated templates' own demo brand names | `brand-leak.ts` |
 | `resolveImageQueries` exported (was private) | `fill-real-estate-template.ts`, reused transitively by Phase 2B's `fillPlacementsFile` |
 
-**Not done, correctly out of scope:** corpus-side brand-leak detection — `checkBrandLeak`'s fixed 4-name list doesn't fit a composition drawing from hundreds of possible source templates, each with its own demo brand. Needs a different, generic mechanism; still open (see Phase 4 below).
+**Done (rev 7 addendum, see top of doc):** corpus-side brand-leak detection — `checkBrandLeak`'s fixed 4-name list never fit a composition drawing from hundreds of possible source templates, each with its own demo brand. `brand-leak.ts`'s `collectTemplateBrandNames` reads each composition's own source templates' `businessName`-slot originals straight off their already-ingested manifests instead — no hand-typed list — and `checkBrandLeakAgainst` runs it the same way `checkBrandLeak` runs the curated path's fixed list, wired into `verbatim-template-pipeline.ts`'s QA loop.
 
 **Done when:** ✅ 15 tests (`tests/placements-phase3.test.ts`), `tsc` clean.
 

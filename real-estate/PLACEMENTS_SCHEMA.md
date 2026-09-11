@@ -282,9 +282,17 @@ placeholder text.
 - Constraint math is a closed-form estimate from the stylesheet's own numbers (`measure.ts`), not a
   real layout pass — it will occasionally be conservative or generous by a few characters. It cannot
   make a page overflow the way skipping constraints entirely would.
-- No real listings/roster/testimonial data source exists in this codebase yet — `data`-sourced
-  placements are wired to accept one (`ApplyPlacementsOptions.resolveData`) but every example in this
-  repo falls back to the template's own demo content until a real feed is connected.
+- No integration with any specific external MLS/CRM/listings API exists in this codebase, or is
+  named by it — that stays genuinely out of scope. What used to also be true here — no way to hand
+  `data`-sourced placements REAL data at all, even when a caller has some — is fixed:
+  `src/templates/placements/business-data.ts`'s `businessDataResolver` takes a plain
+  `BusinessDataFeed` (listings/agents/testimonials) and resolves `fill.ts`'s `resolveData` hook from
+  it; `GenerateSiteOptions.businessData` (`orchestrator.ts`) threads it to both this curated path
+  (`placements-pipeline.ts`) and the corpus path (`placements-corpus-fill.ts`). Whoever calls
+  `generateSite` fetches the business's own real records however it already does that, shapes them
+  into this feed, and passes it in. A field the feed doesn't cover still falls through to
+  `illustrativeFill`'s plausible example, same as before — `demo-data.ts`'s fixture resolver remains
+  separate and demo-only (`DEMO_LISTINGS=1`), never a silent fallback for a real generation.
 - `footerLicense`'s composition assumes the exact `" · "` separator the four templates in this folder
   already use; a future template with different punctuation around its license number would need its
   own `compose` case.

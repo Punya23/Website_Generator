@@ -18,6 +18,9 @@ import type { GenerationRecord } from "../templates/generation-store.js";
 import type { VerbatimSiteState } from "../templates/revise.js";
 import type { PlacedSection } from "../templates/types.js";
 import type { MediaRegistry } from "../media/media-registry.js";
+import { composePhotoKey } from "../templates/placements/from-corpus.js";
+import { checkBrandLeakAgainst, collectTemplateBrandNames } from "../templates/placements/brand-leak.js";
+import type { BusinessDataFeed } from "../templates/placements/business-data.js";
 
 export interface VerbatimPipelineResult {
   htmlPages: Record<string, string>;
@@ -92,6 +95,11 @@ export async function runVerbatimTemplatePipeline(
      *  forced to consider a genuinely different anchor rather than re-deriving the same one from
      *  the same (brief, seed) pair. See `select.ts`'s `excludeAnchorTemplateIds`. */
     excludeAnchorTemplateIds?: string[];
+    /** The business's own real listings/agent-roster/testimonials, when the caller has them — see
+     *  `business-data.ts`. Only read when `usePlacementsCorpusFill()` is active; a `data`-sourced
+     *  placement resolves from this before falling to an illustrative example. Omitted, behavior is
+     *  byte-identical to before this option existed. */
+    businessData?: BusinessDataFeed;
   }
 ): Promise<VerbatimPipelineResult> {
   const selected = await timedStep("site", "template selection", () =>
@@ -197,28 +205,61 @@ export async function runVerbatimTemplatePipeline(
     // Phase 2B (docs/PLACEMENTS_ORCHESTRATION_PLAN.md) — placements fill replaces polish entirely
     // for this site; see placements-corpus-fill.ts's own doc comment for why the two must not both
     // run. No recompose here: the result is written straight into `composed.htmlPages`, so
-    // `state.overrides` stays empty (see that module's documented editor/revise gap) and
-    // `composed.photos` is untouched — nothing about the deterministic compose pass changes,
-    // only the text/photo VALUES placements' own applyPlacements pass overwrites.
+    // `state.overrides` stays empty — nothing about the deterministic compose pass's TEXT changes,
+    // only the copy VALUES placements' own applyPlacements pass overwrites. (`composed.photos`
+    // below is patched with placements' own image writes, though — see `photoPatch`.) Edit/recompose
+    // parity for both is `state.placementsFill` (revise.ts) + `reapplyPlacementsFill`
+    // (from-corpus.ts), not `state.overrides` — a placements-filled site never needs the LATTER
+    // populated to survive a recompose, unlike the polish branch below.
+    const placementsMeta = {
+      templateId: selected.anchorTemplateId ?? `corpus-${options.variationSeed}`,
+      // A record label for this composition, not a fictional demo brand — a multi-template
+      // corpus site has no single one to name (see placements-corpus-fill.ts's own comment on
+      // why `applyPlacements` gets no `templateBusinessName` here).
+      templateName: `Corpus composition (${selected.templateIds.length} template${selected.templateIds.length === 1 ? "" : "s"})`,
+      vertical: selected.taxonomy?.industry ?? "general",
+    };
     const placementsResult = await timedStep("site", "placements fill (corpus)", () =>
       runCorpusPlacementsFill(
         selected,
         templateStore(),
-        {
-          templateId: selected.anchorTemplateId ?? `corpus-${options.variationSeed}`,
-          // A record label for this composition, not a fictional demo brand — a multi-template
-          // corpus site has no single one to name (see placements-corpus-fill.ts's own comment on
-          // why `applyPlacements` gets no `templateBusinessName` here).
-          templateName: `Corpus composition (${selected.templateIds.length} template${selected.templateIds.length === 1 ? "" : "s"})`,
-          vertical: selected.taxonomy?.industry ?? "general",
-        },
+        placementsMeta,
         composed.htmlPages,
         ctx.businessBrief,
-        (line) => pipelineLog(`[pipeline] Placements fill (corpus) — ${line}`)
+        (line) => pipelineLog(`[pipeline] Placements fill (corpus) — ${line}`),
+        options.businessData
       )
     );
-    finalComposed = { ...composed, htmlPages: placementsResult.htmlPages };
+    // Placements' OWN image writes (an `llmQuery` photo resolved through the stock provider, or a
+    // real photo from `options.businessData`) never taught `composed.photos` about themselves —
+    // that dict is `compose.ts`'s own content-photo pass, computed BEFORE placements ran and never
+    // refreshed after. Left alone, `state.photos` (below) would pin the WRONG (pre-placements)
+    // photo for every future recompose, silently reverting to compose's own generic stock pick the
+    // moment the site is edited. `composePhotoKey` translates a placement id back to the exact same
+    // `<templateId>:<sectionId>#<index>` key compose's own pinning already understands.
+    const photoPatch: Record<string, string> = {};
+    for (const [placementId, url] of Object.entries(placementsResult.appliedImageUrls)) {
+      const key = composePhotoKey(placementId);
+      if (key) photoPatch[key] = url;
+    }
+    finalComposed = {
+      ...composed,
+      htmlPages: placementsResult.htmlPages,
+      photos: { ...composed.photos, ...photoPatch },
+    };
     placementsByPage = placementsResult.byPage;
+    // Persisted so `templates/revise.ts`'s `composeVerbatimSite` can replay this exact fill (no new
+    // LLM call) on every future edit/swap/palette recompose — see `from-corpus.ts`'s
+    // `PersistedPlacementsFill` and `reapplyPlacementsFill` for what closes the gap this used to
+    // leave open ("a later edit/recompose session would rebuild ... with no placements copy at all").
+    state.placementsFill = {
+      meta: placementsMeta,
+      brief: placementsResult.brief,
+      locale: placementsResult.locale,
+      llmValues: placementsResult.llmValues,
+      illustrativeValues: placementsResult.illustrativeValues,
+      ...(options.businessData ? { businessData: options.businessData } : {}),
+    };
     pipelineLog(
       `[pipeline] Placements fill (corpus): ${placementsResult.appliedText} text + ${placementsResult.appliedImages} image placement(s) applied` +
         `${placementsResult.skipped.length > 0 ? ` (${placementsResult.skipped.length} selector(s) skipped)` : ""}` +
@@ -265,6 +306,33 @@ export async function runVerbatimTemplatePipeline(
   // missing assets, which is the failure mode that actually matters here.
   let stageDir = await stageSite(finalComposed.htmlPages, finalComposed.files);
 
+  // Every source template's own demo brand name(s), computed once for the whole site (not once per
+  // page — the same handful of `templateIds` backs every page). Generalizes the curated real-estate
+  // path's fixed 4-name `checkBrandLeak` to an arbitrary corpus composition, which has no fixed
+  // brand list to hand-type — see `brand-leak.ts`'s own doc comment on why this was still open.
+  // Runs regardless of `placementsFillActive`: a brand leak is `compose.ts`'s own copy-slot pass
+  // missing a spot (a testimonial, an `alt` text, a paragraph outside any recognized slot), not
+  // something only placements mode can cause.
+  const templateBrandNames = await collectTemplateBrandNames(selected.templateIds, templateStore());
+
+  /** Appends a `BRAND_LEAK` issue (hard — flips `passed`, matching the curated path's own severity
+   *  for the identical check) when `html` still names a source template's own demo brand somewhere
+   *  `compose.ts`'s copy-slot pass never reached. Shared by the QA loop below and its post-repair
+   *  re-check, so both report the same thing rather than the second silently going without it. */
+  function withBrandLeakCheck(result: QAResult, html: string, slug: string): QAResult {
+    const brandLeaks = checkBrandLeakAgainst(html, templateBrandNames, ctx.expandedBrief.businessName);
+    if (brandLeaks.length === 0) return result;
+    const leakIssues: QAIssue[] = brandLeaks.map((leak) => {
+      pipelineLog(`[pipeline] WARNING: brand leak on ${slug} — "${leak.brand}" appears ${leak.count}x`);
+      return {
+        severity: "hard" as const,
+        code: "BRAND_LEAK",
+        message: `A source template's own demo brand "${leak.brand}" appears ${leak.count}x — outside any copy slot compose.ts recognized`,
+      };
+    });
+    return { ...result, passed: result.passed && !leakIssues.some((i) => i.severity === "hard"), issues: [...result.issues, ...leakIssues] };
+  }
+
   let qaResults: Record<string, QAResult> = {};
   let blockManifests: Record<string, BlockManifestEntry[]> = {};
   for (const [slug, html] of Object.entries(finalComposed.htmlPages)) {
@@ -272,6 +340,7 @@ export async function runVerbatimTemplatePipeline(
     qaResults[slug] = await timedStep(slug, "QA", () =>
       runCodeQA(html, slug, { pageUrl, businessName: ctx.expandedBrief.businessName })
     );
+    qaResults[slug] = withBrandLeakCheck(qaResults[slug]!, html, slug);
 
     // Phase 4: a page placements actually touched gets its own skipped/clamped note attached to
     // its OWN QAResult, not just a site-wide log line — soft, matching Phase 2A's "markup drift,
@@ -375,6 +444,7 @@ export async function runVerbatimTemplatePipeline(
       qaResults[slug] = await timedStep(slug, "QA (post-repair)", () =>
         runCodeQA(html, slug, { pageUrl, businessName: ctx.expandedBrief.businessName })
       );
+      qaResults[slug] = withBrandLeakCheck(qaResults[slug]!, html, slug);
       try {
         blockManifests[slug] = await extractTemplateSectionManifestFromUrl(pageUrl);
       } catch {

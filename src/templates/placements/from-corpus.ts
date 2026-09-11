@@ -27,6 +27,10 @@ import { sectionKey } from "../select.js";
 import { templateCachePath } from "../ingest/ingest-template.js";
 import type { TemplateStore } from "../store.js";
 import { genericProseConstraints, labelConstraints } from "./measure.js";
+import type { BusinessDataFeed } from "./business-data.js";
+import { businessDataResolver } from "./business-data.js";
+import { applyPlacements, type ClampNote, type DataResolver, type PlacementBrief } from "./fill.js";
+import type { Locale } from "./fill-real-estate-template.js";
 import {
   ImagePlacementSchema,
   PagePlacementsSchema,
@@ -269,4 +273,159 @@ export async function buildPlacementsFromSelection(
     pageOrder: Object.keys(selected.pages),
     pages,
   });
+}
+
+/** Sections `compose.ts` rebuilds unconditionally regardless of what a placement would write — a
+ *  nav/footer copy pass would be pure wasted selector misses (see the Phase 2A spike results in
+ *  `docs/PLACEMENTS_ORCHESTRATION_PLAN.md`). Keep in sync with `compose.ts`'s `rewriteNavLinks` /
+ *  logo-wordmark call sites (`role === "nav"` / `role === "footer"`), not with any placements-side
+ *  concept. Lives here (not in `orchestrator/placements-corpus-fill.ts`, the original home) so
+ *  `reapplyPlacementsFill` below — needed from `templates/revise.ts`, which must not import from
+ *  `orchestrator/` — can use the same one-source-of-truth exclusion a fresh fill uses. */
+export const CHROME_ROLES = new Set<SectionRole>(["nav", "footer"]);
+
+export function excludeChromeSections(pages: Record<string, PlacedSection[]>): Record<string, PlacedSection[]> {
+  const out: Record<string, PlacedSection[]> = {};
+  for (const [slug, sections] of Object.entries(pages)) {
+    out[slug] = sections.filter((section) => !CHROME_ROLES.has(section.role));
+  }
+  return out;
+}
+
+/** Everything needed to replay a completed placements fill with NO new LLM call — persisted on
+ *  `VerbatimSiteState.placementsFill` (`templates/revise.ts`) so an edit/swap/palette recompose
+ *  keeps a site's real business copy instead of reverting to `compose.ts`'s own generic copy-slot
+ *  text (the gap `placements-corpus-fill.ts`'s and `placements-pipeline.ts`'s own doc comments used
+ *  to flag as open). Plain data only — JSON-serializable, since `site-state-store.ts` round-trips
+ *  `VerbatimSiteState` through `JSON.stringify`/`JSON.parse` on every save/load; a live `resolveData`
+ *  callback could never survive that, which is why `businessData` (not a resolver) is what's kept,
+ *  rebuilt into a real resolver fresh on every replay. */
+export interface PersistedPlacementsFill {
+  meta: CorpusPlacementsMeta;
+  brief: PlacementBrief;
+  locale: Locale;
+  llmValues: Record<string, string>;
+  illustrativeValues: Record<string, string>;
+  businessData?: BusinessDataFeed;
+}
+
+/** One page's own fill outcome — lets a caller (`verbatim-template-pipeline.ts`) attach a
+ *  skipped/clamped note to the RIGHT page's `QAResult`, not just a site-wide total. */
+export interface PlacementsFillPageResult {
+  appliedText: number;
+  appliedImages: number;
+  skipped: string[];
+  clamped: ClampNote[];
+}
+
+export interface ApplyPlacementsFillResult {
+  htmlPages: Record<string, string>;
+  appliedText: number;
+  appliedImages: number;
+  skipped: string[];
+  clamped: ClampNote[];
+  /** Every `ImagePlacement.id` this pass actually wrote, mapped to the final URL — see
+   *  `composePhotoKey` for turning this into a `ComposeOptions.photos` patch. */
+  appliedImageUrls: Record<string, string>;
+  /** Same numbers as above, keyed by page slug — only pages this pass actually touched appear here. */
+  byPage: Record<string, PlacementsFillPageResult>;
+}
+
+/**
+ * The pure "write already-resolved values into already-built `file`" half of a placements fill —
+ * shared by `orchestrator/placements-corpus-fill.ts`'s `runCorpusPlacementsFill` (fresh fill, real
+ * LLM call happens before this) and `reapplyPlacementsFill` below (replay, no LLM call at all). A
+ * page with no body sections to fill, or missing from `htmlPages` entirely, ships unchanged.
+ */
+export async function applyPlacementsFillToPages(
+  file: PlacementsFile,
+  values: { brief: PlacementBrief; llmValues: Record<string, string>; illustrativeValues: Record<string, string>; locale: Locale },
+  htmlPages: Record<string, string>,
+  opts: { resolveData?: DataResolver; manualOverrideKeys?: Set<string> } = {}
+): Promise<ApplyPlacementsFillResult> {
+  const illustrativeFill = async (placement: { id: string }) => values.illustrativeValues[placement.id] ?? null;
+
+  const out: Record<string, string> = { ...htmlPages };
+  let appliedText = 0;
+  let appliedImages = 0;
+  const skipped: string[] = [];
+  const clamped: ClampNote[] = [];
+  const appliedImageUrls: Record<string, string> = {};
+  const byPage: Record<string, PlacementsFillPageResult> = {};
+
+  for (const slug of file.pageOrder) {
+    const pageSet = file.pages[slug];
+    const html = htmlPages[slug];
+    if (!pageSet || pageSet.text.length + pageSet.images.length === 0 || !html) continue;
+
+    const result = await applyPlacements(html, pageSet, {
+      brief: values.brief,
+      llmValues: values.llmValues,
+      illustrativeFill,
+      placeholderPhone: values.locale.phoneFormat,
+      ...(opts.resolveData ? { resolveData: opts.resolveData } : {}),
+      ...(opts.manualOverrideKeys ? { manualOverrideKeys: opts.manualOverrideKeys } : {}),
+    });
+    out[slug] = result.html;
+    appliedText += result.appliedText;
+    appliedImages += result.appliedImages;
+    skipped.push(...result.skipped);
+    clamped.push(...result.clamped);
+    Object.assign(appliedImageUrls, result.appliedImageUrls);
+    byPage[slug] = {
+      appliedText: result.appliedText,
+      appliedImages: result.appliedImages,
+      skipped: result.skipped,
+      clamped: result.clamped,
+    };
+  }
+
+  return { htmlPages: out, appliedText, appliedImages, skipped, clamped, appliedImageUrls, byPage };
+}
+
+/**
+ * Replays a previously-computed placements fill (`fill`, from `VerbatimSiteState.placementsFill`)
+ * onto freshly composed HTML — zero LLM calls, every value comes straight from `fill`. This is what
+ * `templates/revise.ts`'s `composeVerbatimSite` calls on every edit/swap/add/palette/logo recompose
+ * of a placements-filled site, so the real business copy a first generation paid for keeps shipping
+ * instead of being silently lost the moment the site is edited.
+ *
+ * `pages` is `state.pages` — re-deriving the `PlacementsFile` fresh from it (rather than persisting
+ * the file itself) means a swap/add/remove that changed WHICH sections are placed is reflected
+ * automatically: a removed section's placements simply drop out, a newly added section's are new ids
+ * `fill.llmValues` has no entry for (so it keeps its own template text, same safe default as any
+ * other unfilled placement — exactly how a fresh `addSection` behaves outside placements mode too).
+ *
+ * `manualOverrideKeys` — normally `state.overrides`'s own key set — stops this replay from reverting
+ * a manual text edit the SAME recompose already applied moments earlier (`composeSite`'s own
+ * `overrides` pass, via `anchorEditableText`, always runs first): see `fill.ts`'s
+ * `ApplyPlacementsOptions.manualOverrideKeys` for the mechanism.
+ */
+export async function reapplyPlacementsFill(
+  pages: Record<string, PlacedSection[]>,
+  store: TemplateStore,
+  fill: PersistedPlacementsFill,
+  htmlPages: Record<string, string>,
+  manualOverrideKeys?: Set<string>
+): Promise<ApplyPlacementsFillResult> {
+  const file = await buildPlacementsFromSelection({ pages: excludeChromeSections(pages) }, store, fill.meta);
+  return applyPlacementsFillToPages(file, fill, htmlPages, {
+    ...(fill.businessData ? { resolveData: businessDataResolver(fill.businessData) } : {}),
+    ...(manualOverrideKeys ? { manualOverrideKeys } : {}),
+  });
+}
+
+const PHOTO_ID_SUFFIX_RE = /\.photo\.(\d+)$/;
+
+/** The `ComposeOptions.photos` / `data-wg-photo` key (`<templateId>:<sectionId>#<index>`) the SAME
+ *  photo slot a corpus `ImagePlacement` addresses is pinned under during compose — both
+ *  `imagePlacementFromPhotoSlot` above and `compose.ts`'s own content-photo pass iterate the
+ *  identical `TemplateSection.photoSlots` array in the same order, so `index` lines up exactly, and
+ *  the placement id's own prefix (up to `.photo.`) is already `sectionKey`'s `<templateId>:<sectionId>`
+ *  — no separate lookup needed. `null` for an id with no `.photo.<n>` suffix (a hand-mapped
+ *  `real-estate/*` placement uses a wholly different id scheme and has no photo-pinning concept at
+ *  all) — never expected for a corpus-built `ImagePlacement.id`. */
+export function composePhotoKey(placementId: string): string | null {
+  const match = PHOTO_ID_SUFFIX_RE.exec(placementId);
+  return match ? `${placementId.slice(0, match.index)}#${match[1]}` : null;
 }

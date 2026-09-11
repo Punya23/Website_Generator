@@ -2,9 +2,9 @@
 
 > **Audience:** an implementing engineer or coding LLM.  
 > **Goal:** wire the **placements fill engine** into production orchestration — LLM fills values only, never HTML — without collapsing the ~900-template corpus into 4 layouts.  
-> **Date:** 2026-09-11 (rev 5 — Phase 3 (separate session) + Phase 4 both done; remaining scope is Phase 5 (docs) only)  
-> **Baseline:** `origin/master` @ `4c674f8` (Phase 2B merged) plus this session's Phase 4 commit.  
-> **Note:** branch `feat/robust-mix-match-pipeline` may still sit at `3005106` and **lack** everything through Phase 4 below. Implement / review against master tip — or rebase first.
+> **Date:** 2026-09-11 (rev 6 — **all six phases done.** This plan is now a reference document, not a task list.)  
+> **Baseline:** `origin/master` @ `1ab1a3f` (Phase 4 merged) plus this session's Phase 5 (docs) commit.  
+> **Note:** branch `feat/robust-mix-match-pipeline` may still sit at `3005106` and **lack** every phase below. A resume off that branch needs a full rebase onto master tip, not a phase-by-phase catch-up.
 > **Collision note (rev 3, still relevant):** a separate session landed Phase 0 + Phase 2C (curated override) directly on `master` while this plan's own Phase 0 attempt (`src/templates/placements/run-fill.ts`) was mid-flight on a review branch. Compared both implementations line-for-line — same prompt, same schema, same safety rules — and kept master's (`fill-real-estate-template.ts` / `placements-pipeline.ts`): it was already wired through `orchestrator.ts` at ~10 call sites with its own tests. The review branch's `run-fill.ts` was discarded. Phase 2B (rev 4) then split `fillRealEstateTemplate` in place to get the reusable, I/O-decoupled fill both paths needed — see §7 Phase 2B.
 
 ---
@@ -12,7 +12,7 @@
 ## 0. How to use this doc
 
 1. Read §1–§4 before writing code.
-2. Implement in **phase order** (§7). **Skip everything through Phase 4** — all done (see §7 for what shipped where). **Phase 5 (docs) is the only remaining work.**
+2. **Nothing left to implement.** Every phase in §7 is done — this doc now exists to explain the shipped architecture (§1–§6) and to record what shipped where and why (§7's own per-phase notes), not to direct further work. A new request in this area starts a NEW plan; don't resume phases here.
 3. Each open phase has: objective, files, steps, acceptance, done-when.
 4. Prefer **extracting** existing script logic into libraries over rewriting it.
 5. Fail closed on facts (phone/email/license/data): keep template / placeholder rather than invent.
@@ -318,12 +318,33 @@ Turned out to be less "add metrics to a working pipeline" and more "the curated 
 
 ---
 
-### Phase 5 — Docs
+### Phase 5 — Docs — **DONE this session**
 
-1. `SYSTEM.md`: placements fill stage on verbatim path; link `PLACEMENTS_SCHEMA.md` + this plan; remove contradictory “defaults.”
-2. `templates/README.md`: state mix is opt-in (`TEMPLATE_MIX_SECTIONS`); copy stage can be placements.
-3. Add `src/skins/README.md` stub or fix broken link.
-4. `generate-real-site.ts` is already documented as the CLI over `fillRealEstateTemplate` — no change needed here.
+1. ✅ `SYSTEM.md`: new "Copy stage: compose vs. placements" subsection (compose+polish vs.
+   `PIPELINE_PLACEMENTS_CORPUS=1`) and "Real-estate placements pipeline (curated, fourth branch)"
+   subsection, both linking `real-estate/PLACEMENTS_SCHEMA.md` and this plan; §19's flag table gained
+   a `PIPELINE_PLACEMENTS_CORPUS` entry (previously undocumented — only the curated `PIPELINE_PLACEMENTS`
+   had one). **Found and fixed a stale, unrelated fact while verifying**: §6's own taxonomy table
+   claimed "27 slugs" for the industry axis — the real count (`src/skins/taxonomy.ts`'s
+   `INDUSTRY_DEFS`) is **37**. Fixed in both `SYSTEM.md` and the new `src/skins/README.md` below
+   rather than propagating a re-guessed number into a second file.
+2. ✅ `templates/README.md`: the intro used to state cross-template mixing as unconditional current
+   behavior with no mention of the flag at all — now states `TEMPLATE_MIX_SECTIONS=0` (default,
+   anchor-only) vs `=1` explicitly, both in the intro and in step 8's own mechanics. Added a "Copy
+   stage" section covering the same compose-vs-placements split as `SYSTEM.md`.
+3. ✅ `src/skins/README.md` — did not exist at all (the broken link `templates/README.md` had been
+   pointing at). Written as a real architecture doc, not a stub, since `src/skins/` is a substantial,
+   undocumented subsystem (schema/catalog/taxonomy/picker/theme/tokens/render-html-site) that is
+   the actual default path whenever no template corpus is ingested. Every fact in it (skin count,
+   taxonomy axes, picker fallback ladder, field lists) verified against the real source, not
+   inferred from `SYSTEM.md`'s own (partly stale) description.
+4. ✅ `generate-real-site.ts` — confirmed still accurate, no change needed, as this doc predicted.
+
+**Not done — genuinely out of scope, not an oversight:** `SYSTEM.md`'s own table of contents (§7
+entry) says "Page-codegen pipeline (default quality)" while that section's own header two lines
+into its body says "(opt-in)" — a real, pre-existing internal contradiction, but about the
+page-codegen pipeline, not placements. Spotted while editing the adjacent §6; left alone rather
+than silently widening this phase's scope into an unrelated pipeline's docs.
 
 ---
 
@@ -459,3 +480,4 @@ npm run generate -- "Harbor Homes boutique residential brokerage in Alameda, CA"
 | 3 | **Collision resolved:** a separate session shipped Phase 0 (`fill-real-estate-template.ts`) + Phase 2C (`placements-pipeline.ts`, `PIPELINE_PLACEMENTS`) directly to master — compared against this doc's own `run-fill.ts` attempt and kept master's (already wired through orchestrator.ts, own tests); `run-fill.ts` discarded. **Phase 2A spike run for real** against the 910-template cache: 100% selector hit rate once nav/footer excluded, 5.25× vs 2.17× constraint-tightness gap quantified, people-photo guard gap found and spawned as `task_effb69a4`. Phase 2B (corpus trunk) is now the entire remaining scope of this plan; renamed its flag to `PIPELINE_PLACEMENTS_CORPUS` to avoid colliding with the already-shipped `PIPELINE_PLACEMENTS` |
 | 4 | **Phase 2B built and verified end to end** (`task_effb69a4` landed first, unblocking it). Split `fillRealEstateTemplate` into a reusable `fillPlacementsFile` + a disk-reading wrapper; new `placements-corpus-fill.ts` excludes chrome, fills, and applies onto `composeSite`'s output; `PIPELINE_PLACEMENTS_CORPUS` (default `0`) gates it in `verbatim-template-pipeline.ts`. **Found and fixed a second integration hazard the original plan missed:** section repair, not just `polishComposedCopy`, recomposes via `overrides` and would have silently discarded a placements fill the same way — both are now gated behind one flag read. Verified with 115 passing tests plus one real, no-mock, real-LLM end-to-end generation (real per-business copy shipped, 0 selectors skipped, $0.0068). Remaining scope is Phase 3 (media/brand-leak) onward |
 | 5 | **Phase 3 (separate session) confirmed done; Phase 4 built.** Phase 4's stated objective ("reuse verbatim QA") turned out to be false as written — the curated pipeline never staged real files at all, so `runCodeQA` ran with no `pageUrl` and `files` was never returned, meaning **every curated real-estate generation shipped with zero CSS/JS copied**, invisible until now. Fixed at the source (`collectTemplateAssets` + `stageSite` + `verbatimFiles` wiring), not papered over. New generic `MISSING_ASSET` QA check needed BOTH `response` and `requestfailed` listeners — a missing local `file://` asset never produces an HTTP response, `response`-only missed every case live. Turning on brand-leak checking for real (Phase 3 built it, nothing had ever called it in production) found a second real leak — an image `alt` attribute, which no placement type ever writes to — fixed in `fill.ts`. One pre-existing, unrelated bug found and deliberately left alone (street-address false-positive in `validateSectionsStructurally`, out of this phase's scope). 160 tests green, two real end-to-end generations (curated + corpus). Only Phase 5 (docs) remains |
+| 6 | **Phase 5 (docs) built — all six phases done, plan closed.** New "Copy stage: compose vs. placements" + "Real-estate placements pipeline" subsections in `SYSTEM.md`, both linking `PLACEMENTS_SCHEMA.md` and this plan; `templates/README.md`'s intro no longer states cross-template mixing as unconditional (now correctly `TEMPLATE_MIX_SECTIONS=0`/default/anchor-only vs `=1`). `src/skins/README.md` didn't exist at all — written as a real architecture doc (schema/catalog/taxonomy/picker/theme/render), not a stub, every fact checked against source. **Found a second stale fact while verifying, unprompted:** `SYSTEM.md`'s own industry-axis count ("27 slugs") was wrong — the real count is 37; fixed in both files rather than propagating a re-guessed number. One more pre-existing, out-of-scope doc bug spotted and left alone (a TOC/header mismatch on an unrelated pipeline). Docs-only diff, no code touched, no test/typecheck risk |

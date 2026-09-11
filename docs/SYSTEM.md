@@ -209,7 +209,7 @@ Selection is deterministic — no LLM call. `src/skins/taxonomy.ts` owns a two-a
 
 | Axis | Values |
 |------|--------|
-| Industry | 27 slugs (`health-clinic`, `cafe-bakery`, `legal`, `architecture`, …) each mapped to one of the four legacy `SkinCategory` buckets |
+| Industry | 37 slugs (`health-clinic`, `cafe-bakery`, `legal`, `architecture`, …) each mapped to one of the four legacy `SkinCategory` buckets |
 | Archetype | `portfolio`, `storefront`, `booking`, `long-form`, `saas` |
 
 `classifyTaxonomy(text)` scores exact-word keyword hits (strong 3 / medium 2 / weak 1), takes the top industry with declared order as tie-break, and derives the archetype from the copy or from the winning industry's default. Matching is deliberately exact-word rather than stem/prefix so that boilerplate in a brief cannot outvote the sentence describing the business.
@@ -267,6 +267,41 @@ required role fillable, and an opposite-origin section is never a candidate.
 Re-tag an already-ingested corpus in place with `npm run templates:backfill-taxonomy` (add
 `--force` to reclassify templates that already carry a classification). It reads the cached section
 fragments rather than re-extracting archives, and rebuilds the flat index when it finishes.
+
+### Copy stage: compose vs. placements
+
+The verbatim path above has two different mechanisms for turning a brief into a site's actual copy,
+selected by `PIPELINE_PLACEMENTS_CORPUS`:
+
+- **Default (`0`).** `compose.ts` deterministically substitutes brief copy into the recorded
+  copy-slots (see the ingest `Classify` stage above), then a compulsory LLM copy-polish pass
+  (`agents/copy-polish-agent.ts`) rewrites the composed HTML's text runs, recomposing with its edits
+  as `overrides` when it has any.
+- **`PIPELINE_PLACEMENTS_CORPUS=1`.** Replaces BOTH of those with the placements engine
+  (`src/templates/placements/`) instead — the same engine the curated real-estate pipeline below
+  uses. `buildPlacementsFromSelection` (`from-corpus.ts`) turns the selected composition into a
+  `PlacementsFile` with an explicit `fixed`/`brief`/`data`/`llm` source per field (nav/footer
+  excluded — chrome is compose-owned, see `templates/README.md`'s "Copy stage" section for why),
+  filled via one strict-JSON-schema LLM call per page and applied with `fill.ts`'s own
+  clamp/reject/phone-placeholder safety rules. Polish and section-repair are both skipped for a
+  site this runs on — see `docs/PLACEMENTS_ORCHESTRATION_PLAN.md` for why both, not just polish,
+  had to be gated behind the same flag. Off by default: no vision-QA redo loop or editor/revise
+  parity with the polish path yet.
+
+### Real-estate placements pipeline (curated, fourth branch)
+
+A brief that `classifyTaxonomy` resolves to `"real-estate"` can instead be routed to a wholly different,
+fourth generation branch — `PIPELINE_PLACEMENTS=1` (`src/orchestrator/placements-pipeline.ts`),
+which takes priority over verbatim/skin-fill when it fires. One of four hand-built, hand-mapped
+templates under `real-estate/*` (`real-estate-agency`/`luxury-real-estate`/`commercial-real-estate`/
+`property-management`, picked by keyword scoring) is filled by the same placements engine the
+corpus path above reuses (`fillPlacementsFile`, `src/templates/placements/fill-real-estate-
+template.ts`) — see [`real-estate/PLACEMENTS_SCHEMA.md`](../real-estate/PLACEMENTS_SCHEMA.md) for
+the per-template placement contract itself, and
+[`docs/PLACEMENTS_ORCHESTRATION_PLAN.md`](PLACEMENTS_ORCHESTRATION_PLAN.md) for the full research +
+phased build (both this branch and the corpus-path flag above). No vision-QA redo loop or
+generation-record parity with verbatim yet — see `placements-pipeline.ts`'s own doc comment.
+`PIPELINE_PLACEMENTS=0` forces it off even if something else would opt in.
 
 ### Ingested skins
 
@@ -717,6 +752,10 @@ See `.env.example` for the full list. Grouped essentials:
   `"real-estate"`; takes priority over verbatim/skin-fill when it fires. No vision-QA redo loop or
   generation-record parity with verbatim yet — see `src/orchestrator/placements-pipeline.ts`'s own
   doc comment. `PIPELINE_PLACEMENTS=0` forces it off even if something else would opt in.)
+- `PIPELINE_PLACEMENTS_CORPUS=1` (a DIFFERENT flag from `PIPELINE_PLACEMENTS` above — do not
+  conflate: that one picks a whole curated skin out of 4; this one only changes how the verbatim
+  CORPUS path fills copy, replacing `compose.ts`'s deterministic substitution + copy-polish with
+  the same placements engine. See "Copy stage: compose vs. placements" above. Default `0`.)
 - `TEMPLATE_PROBE_REMOTE_IMAGES=0` (skip the network dimension-probe for externally-hotlinked template images at ingest)
 
 ### Ingest

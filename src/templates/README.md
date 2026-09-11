@@ -1,9 +1,13 @@
 # Verbatim template pipeline
 
 Builds sites out of **real HTML templates kept as they are**. Markup and CSS come from the source
-template; the only visual transform is a colour remap onto a target palette. Sections for one page
-are drawn from **different** templates — hero from one, footer from another — so a generated site
-is a composition, not a copy of a single template.
+template; the only visual transform is a colour remap onto a target palette. One **anchor**
+template's identity (nav, footer, hero) is locked for the whole site so chrome never changes
+between pages. Every other section role can be filled from a **different**, fingerprint-compatible
+template — **opt-in**, off by default (`TEMPLATE_MIX_SECTIONS=0`): with it off, every section comes
+from the anchor itself; `TEMPLATE_MIX_SECTIONS=1` re-enables real cross-template mixing, scored
+against the anchor's own design fingerprint (container width, corner radius, spacing rhythm) so a
+borrowed section can't visibly clash. See step 8 below for the mechanics.
 
 This is deliberately the opposite of [`src/skins/`](../skins/README.md) and
 [`src/admin/`](../admin/README.md), which never vendor third-party HTML and re-render everything
@@ -66,10 +70,29 @@ tens of GB and never belongs in the repo.
    unrelated template outright and yields only when the corpus cannot build a page at all — logged
    as a warning and recorded on the generation. On top of that the site locks to one original
    light/dark origin, choosing only a theme that leaves every required role fillable. Within what
-   survives both gates, selection is deterministic and seeded, prefers templates this site has not
-   used yet, and remembers what a `consumerId` has already been given.
-9. **Compose** (`compose.ts`) — substitutes brief copy through the recorded slots, rebuilds the nav
-   for the site's real pages, wraps each section in `[data-tpl]`, and emits the file copy list.
+   survives both gates, one **anchor** template is picked (nav/hero/footer come from it, always).
+   Every other role: `TEMPLATE_MIX_SECTIONS=0` (default) fills from the anchor's own candidates
+   only; `=1` opens the pool to any other qualifying template whose `ingest/design-fingerprint.ts`
+   fingerprint clears `TEMPLATE_MIX_COMPATIBILITY_THRESHOLD` against the anchor's — a candidate
+   below that bar isn't ranked lower, it isn't a candidate. Selection within whatever pool survives
+   is deterministic and seeded, prefers templates this site has not used yet, and remembers what a
+   `consumerId` has already been given.
+9. **Compose** (`compose.ts`) — substitutes brief copy through the recorded slots (deterministic,
+   no LLM call — see "Copy stage" below for the alternative), rebuilds the nav for the site's real
+   pages, restyles a mixed-in section's CSS toward the anchor's own fingerprint
+   (`ingest/restyle-css.ts`) when mixing produced one, wraps each section in `[data-tpl]`, and emits
+   the file copy list.
+
+## Copy stage
+
+Step 9's own `compose.ts` substitution is deterministic — brief-driven text into a fixed set of
+recorded slots — followed by a compulsory LLM copy-polish pass over the composed HTML
+(`copy-polish-agent.ts`). `PIPELINE_PLACEMENTS_CORPUS=1` replaces BOTH of those with the placements
+engine instead: `src/templates/placements/` fills the same corpus composition through an
+`editable`/`fixed`/`data`/`llm` contract per field rather than free-form polish, applied via a
+strict JSON-schema LLM call. Off by default — see
+[`docs/PLACEMENTS_ORCHESTRATION_PLAN.md`](../../docs/PLACEMENTS_ORCHESTRATION_PLAN.md) for why, and
+`src/orchestrator/placements-corpus-fill.ts` for the wiring.
 
 ## What is deliberately not kept as-is
 

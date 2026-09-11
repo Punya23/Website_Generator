@@ -11,6 +11,9 @@ import { composeSite, pageFileName, type ComposedSite, type FileCopy } from "../
 import { selectSiteSections } from "../templates/select.js";
 import { polishComposedCopy } from "../agents/copy-polish-agent.js";
 import { repairFlaggedSections } from "../agents/section-repair-agent.js";
+import { runCorpusPlacementsFill } from "./placements-corpus-fill.js";
+import { usePlacementsCorpusFill } from "../llm/pipeline-speed.js";
+import { templateStore } from "../templates/store.js";
 import type { GenerationRecord } from "../templates/generation-store.js";
 import type { VerbatimSiteState } from "../templates/revise.js";
 import type { PlacedSection } from "../templates/types.js";
@@ -173,39 +176,79 @@ export async function runVerbatimTemplatePipeline(
     );
   }
 
-  // Compulsory LLM copy-polish pass: the deterministic compose above never calls an LLM at all
-  // (see `compose.ts`'s own module comment) — this is the LLM copy step, and its accepted output
-  // is what actually ships (recomposed below), not an optional enhancement that can be silently
-  // dropped. See `copy-polish-agent.ts` for the strict/degrade semantics.
-  const polish = await timedStep("site", "copy polish", () =>
-    polishComposedCopy(ctx.expandedBrief, composed.htmlPages)
-  );
-  state.overrides = polish.overrides;
-
-  let finalComposed =
-    Object.keys(polish.overrides).length > 0
-      ? await timedStep("site", "recompose (polish)", () =>
-          composeSite({
-            brief: ctx.expandedBrief,
-            rawBrief: ctx.businessBrief,
-            pages: selected.pages,
-            registry,
-            logoSrc: ctx.logoSrc,
-            ...(selected.anchorTemplateId ? { anchorTemplateId: selected.anchorTemplateId } : {}),
-            overrides: polish.overrides,
-            // Pin the images the first pass already resolved — a recompose must change only the
-            // text an override targets, never re-roll imagery (stock lookups are seeded and would
-            // return the same URL anyway, but a user's own uploaded photo is taken from the
-            // registry once and must not be silently replaced by stock on a second pass).
-            photos: composed.photos,
-            ...(options.editable ? { editable: true } : {}),
-          })
-        )
-      : composed;
-  if (polish.skipped) {
-    pipelineLog(`[pipeline] Copy polish skipped — no LLM provider configured`);
+  // Compulsory LLM copy step: the deterministic compose above never calls an LLM at all (see
+  // `compose.ts`'s own module comment) — one of the two paths below is what actually writes real
+  // per-business marketing copy, not an optional enhancement that can be silently dropped.
+  //
+  // Read once and reused below to gate section repair too, not just this branch: repair's own
+  // recompose (further down) rebuilds `htmlPages` from `selected.pages` + `overrides`, with no
+  // idea placements already wrote real copy into nodes that recompose has no override for — the
+  // exact same hazard `polishComposedCopy`'s recompose has, on the same mechanism. Placements fill
+  // stays this generation's one and only copy pass; QA below still runs and reports issues either
+  // way, only the auto-rewrite-and-recompose reaction to them is out of scope for this phase.
+  const placementsFillActive = usePlacementsCorpusFill();
+  let finalComposed: ComposedSite;
+  if (placementsFillActive) {
+    // Phase 2B (docs/PLACEMENTS_ORCHESTRATION_PLAN.md) — placements fill replaces polish entirely
+    // for this site; see placements-corpus-fill.ts's own doc comment for why the two must not both
+    // run. No recompose here: the result is written straight into `composed.htmlPages`, so
+    // `state.overrides` stays empty (see that module's documented editor/revise gap) and
+    // `composed.photos` is untouched — nothing about the deterministic compose pass changes,
+    // only the text/photo VALUES placements' own applyPlacements pass overwrites.
+    const placementsResult = await timedStep("site", "placements fill (corpus)", () =>
+      runCorpusPlacementsFill(
+        selected,
+        templateStore(),
+        {
+          templateId: selected.anchorTemplateId ?? `corpus-${options.variationSeed}`,
+          // A record label for this composition, not a fictional demo brand — a multi-template
+          // corpus site has no single one to name (see placements-corpus-fill.ts's own comment on
+          // why `applyPlacements` gets no `templateBusinessName` here).
+          templateName: `Corpus composition (${selected.templateIds.length} template${selected.templateIds.length === 1 ? "" : "s"})`,
+          vertical: selected.taxonomy?.industry ?? "general",
+        },
+        composed.htmlPages,
+        ctx.businessBrief,
+        (line) => pipelineLog(`[pipeline] Placements fill (corpus) — ${line}`)
+      )
+    );
+    finalComposed = { ...composed, htmlPages: placementsResult.htmlPages };
+    pipelineLog(
+      `[pipeline] Placements fill (corpus): ${placementsResult.appliedText} text + ${placementsResult.appliedImages} image placement(s) applied` +
+        `${placementsResult.skipped.length > 0 ? ` (${placementsResult.skipped.length} selector(s) skipped)` : ""}` +
+        `${placementsResult.clamped.length > 0 ? ` — ${placementsResult.clamped.length} value(s) clamped` : ""}`
+    );
   } else {
-    pipelineLog(`[pipeline] Copy polish: ${finalComposed.stats.editsApplied} text run(s) rewritten by the LLM`);
+    const polish = await timedStep("site", "copy polish", () =>
+      polishComposedCopy(ctx.expandedBrief, composed.htmlPages)
+    );
+    state.overrides = polish.overrides;
+
+    finalComposed =
+      Object.keys(polish.overrides).length > 0
+        ? await timedStep("site", "recompose (polish)", () =>
+            composeSite({
+              brief: ctx.expandedBrief,
+              rawBrief: ctx.businessBrief,
+              pages: selected.pages,
+              registry,
+              logoSrc: ctx.logoSrc,
+              ...(selected.anchorTemplateId ? { anchorTemplateId: selected.anchorTemplateId } : {}),
+              overrides: polish.overrides,
+              // Pin the images the first pass already resolved — a recompose must change only the
+              // text an override targets, never re-roll imagery (stock lookups are seeded and
+              // would return the same URL anyway, but a user's own uploaded photo is taken from
+              // the registry once and must not be silently replaced by stock on a second pass).
+              photos: composed.photos,
+              ...(options.editable ? { editable: true } : {}),
+            })
+          )
+        : composed;
+    if (polish.skipped) {
+      pipelineLog(`[pipeline] Copy polish skipped — no LLM provider configured`);
+    } else {
+      pipelineLog(`[pipeline] Copy polish: ${finalComposed.stats.editsApplied} text run(s) rewritten by the LLM`);
+    }
   }
 
   // Pin what this render resolved so any later edit reproduces the same imagery.
@@ -244,23 +287,29 @@ export async function runVerbatimTemplatePipeline(
   // re-run QA indefinitely.
   const repairOverrides: Record<string, string> = {};
   let sectionsAttempted = 0;
-  for (const slug of Object.keys(finalComposed.htmlPages)) {
-    const qaIssues = qaResults[slug]?.issues.filter((i) => i.sectionId) ?? [];
-    const skippedSlotIssues: QAIssue[] = (finalComposed.provenance[slug] ?? [])
-      .filter((section) => section.slotsSkipped > 0)
-      .map((section) => ({
-        severity: "hard" as const,
-        code: "SLOT_SKIPPED",
-        message: `${section.slotsSkipped} copy slot(s) in section ${section.sectionId} left as the template's own text — the brief had nothing to say for them`,
-        sectionId: section.sectionId,
-      }));
-    const flaggable = [...qaIssues, ...skippedSlotIssues];
-    if (flaggable.length === 0) continue;
-    const repair = await timedStep(slug, "section repair", () =>
-      repairFlaggedSections(ctx.expandedBrief, slug, finalComposed.htmlPages[slug] ?? "", flaggable)
-    );
-    sectionsAttempted += repair.attempted;
-    Object.assign(repairOverrides, repair.overrides);
+  // Skipped entirely when placements fill is active — see the comment above `placementsFillActive`.
+  // `finalComposed.provenance` here is still `composed`'s own, computed BEFORE placements
+  // overwrote anything, so its `slotsSkipped` counts would misreport sections placements already
+  // filled as needing repair, and repair's recompose would discard the placements fill regardless.
+  if (!placementsFillActive) {
+    for (const slug of Object.keys(finalComposed.htmlPages)) {
+      const qaIssues = qaResults[slug]?.issues.filter((i) => i.sectionId) ?? [];
+      const skippedSlotIssues: QAIssue[] = (finalComposed.provenance[slug] ?? [])
+        .filter((section) => section.slotsSkipped > 0)
+        .map((section) => ({
+          severity: "hard" as const,
+          code: "SLOT_SKIPPED",
+          message: `${section.slotsSkipped} copy slot(s) in section ${section.sectionId} left as the template's own text — the brief had nothing to say for them`,
+          sectionId: section.sectionId,
+        }));
+      const flaggable = [...qaIssues, ...skippedSlotIssues];
+      if (flaggable.length === 0) continue;
+      const repair = await timedStep(slug, "section repair", () =>
+        repairFlaggedSections(ctx.expandedBrief, slug, finalComposed.htmlPages[slug] ?? "", flaggable)
+      );
+      sectionsAttempted += repair.attempted;
+      Object.assign(repairOverrides, repair.overrides);
+    }
   }
 
   if (Object.keys(repairOverrides).length > 0) {
@@ -276,13 +325,13 @@ export async function runVerbatimTemplatePipeline(
         registry,
         logoSrc: ctx.logoSrc,
         ...(selected.anchorTemplateId ? { anchorTemplateId: selected.anchorTemplateId } : {}),
-        overrides: { ...polish.overrides, ...repairOverrides },
+        overrides: { ...state.overrides, ...repairOverrides },
         photos: finalComposed.photos,
         ...(options.editable ? { editable: true } : {}),
       })
     );
     finalComposed = repaired;
-    state.overrides = { ...polish.overrides, ...repairOverrides };
+    state.overrides = { ...state.overrides, ...repairOverrides };
     state.photos = repaired.photos;
 
     stageDir = await stageSite(finalComposed.htmlPages, finalComposed.files);

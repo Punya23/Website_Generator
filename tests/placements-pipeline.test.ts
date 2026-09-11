@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { pickRealEstateTemplate, REAL_ESTATE_TEMPLATE_IDS } from "../src/orchestrator/placements-pipeline.js";
-import { usePlacementsPipeline } from "../src/llm/pipeline-speed.js";
+import { usePlacementsPipeline, usePlacementsCorpusFill } from "../src/llm/pipeline-speed.js";
 
 describe("pickRealEstateTemplate", () => {
   it("picks the generalist agency template when nothing signals a sub-vertical", () => {
@@ -56,5 +56,36 @@ describe("usePlacementsPipeline", () => {
   it("PIPELINE_PLACEMENTS=0 stays off even if something else would opt in", () => {
     process.env.PIPELINE_PLACEMENTS = "0";
     expect(usePlacementsPipeline()).toBe(false);
+  });
+});
+
+describe("usePlacementsCorpusFill", () => {
+  const ORIGINAL = process.env.PIPELINE_PLACEMENTS_CORPUS;
+  beforeEach(() => {
+    delete process.env.PIPELINE_PLACEMENTS_CORPUS;
+  });
+  afterEach(() => {
+    if (ORIGINAL === undefined) delete process.env.PIPELINE_PLACEMENTS_CORPUS;
+    else process.env.PIPELINE_PLACEMENTS_CORPUS = ORIGINAL;
+  });
+
+  it("defaults off", () => {
+    expect(usePlacementsCorpusFill()).toBe(false);
+  });
+
+  it("PIPELINE_PLACEMENTS_CORPUS=1 opts in", () => {
+    process.env.PIPELINE_PLACEMENTS_CORPUS = "1";
+    expect(usePlacementsCorpusFill()).toBe(true);
+  });
+
+  it("PIPELINE_PLACEMENTS_CORPUS=0 stays off even if something else would opt in", () => {
+    process.env.PIPELINE_PLACEMENTS_CORPUS = "0";
+    expect(usePlacementsCorpusFill()).toBe(false);
+  });
+
+  it("is a distinct flag from PIPELINE_PLACEMENTS — the curated path opting in does not opt this in", () => {
+    process.env.PIPELINE_PLACEMENTS = "1";
+    expect(usePlacementsCorpusFill()).toBe(false);
+    delete process.env.PIPELINE_PLACEMENTS;
   });
 });

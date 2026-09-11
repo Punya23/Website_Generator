@@ -221,7 +221,13 @@ export function recolorCss(css: string, palette: RecolorPalette): RecolorResult 
         palette.accentMaxLightness * 100,
         Math.max(palette.accentMinLightness * 100, hsl.l)
       );
-      return withAlpha(colord({ h: hsl.h, s: Math.min(hsl.s, 85), l: clampedL }).toHex());
+      // A palette with its own `accentColor` (the live, user-chosen brand color) forces every
+      // accent onto that hue/saturation — the source's own brand hue only wins for the built-in
+      // presets, which have no `accentColor` and fall through to preserving it untouched.
+      const forced = palette.accentColor ? colord(palette.accentColor).toHsl() : null;
+      const h = forced?.h ?? hsl.h;
+      const s = Math.min(forced?.s ?? hsl.s, 85);
+      return withAlpha(colord({ h, s, l: clampedL }).toHex());
     }
 
     if (role === "background") {

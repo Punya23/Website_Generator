@@ -31,6 +31,12 @@ function manifestFor(
       { kind: "sectionHeading" as const, selector: "h2", originalText: "Original heading" },
       { kind: "primaryCta" as const, selector: "a", originalText: "Click here" },
     ],
+    // Nav is the only role `writeTemplate` below renders a `.nav-photo` element into — a content
+    // photo distinct from the nav's logo `<img>` (which another test's asset-copy assertion already
+    // owns), so `applyPhotoSlots` has something of its own to resolve and tag `data-wg-photo` onto.
+    ...(role === "nav"
+      ? { photoSlots: [{ selector: ".nav-photo", width: 200, height: 60, kind: "img" as const }] }
+      : {}),
     sourceOrder: 0,
   });
   return {
@@ -111,7 +117,10 @@ async function writeTemplate(manifest: TemplateManifest): Promise<void> {
     // a real ingested template, where composition scopes the asset copy list to what the site's
     // actual composed markup (or CSS) cites, not everything the template ever registered.
     const img =
-      section.role === "nav" ? `<img src="_tpl-assets/${manifest.templateId}/img/logo.png" alt="logo">` : "";
+      section.role === "nav"
+        ? `<img src="_tpl-assets/${manifest.templateId}/img/logo.png" alt="logo">` +
+          `<img class="nav-photo" src="_tpl-assets/${manifest.templateId}/img/logo.png" alt="content">`
+        : "";
     await fs.writeFile(
       path.join(dir, section.htmlCachePath),
       `<section class="${section.role}">${img}<h2>Original heading</h2><p>Lorem ipsum dolor sit amet.</p>` +
@@ -444,6 +453,95 @@ describe("verbatim selection + composition", () => {
     // Adding the layer twice must not double it (the preview is re-persisted on every edit).
     const once = withEditLayer(clean.htmlPages.home!);
     expect(withEditLayer(once)).toBe(once);
+  });
+
+  it("recolors a section's stylesheet live when a non-default palette is requested", async () => {
+    const { TemplateStore } = await import("../src/templates/store.js");
+    const { selectSiteSections } = await import("../src/templates/select.js");
+    const { composeSite } = await import("../src/templates/compose.js");
+    const store = new TemplateStore(storePath);
+    await store.rebuild();
+
+    const brief = expandBriefFromInput("Acme Bakery — sourdough in Leeds.");
+    const selected = await selectSiteSections({ variationSeed: 41, store, pages: ["home"] });
+
+    // Default palette: the fixture's raw `color:#fff` ships untouched — no recolor pass runs on
+    // the common path.
+    const plain = await composeSite({ brief, rawBrief: "Acme Bakery", pages: selected.pages, store });
+    const plainCss = await fs.readFile(
+      plain.files.find((file) => /tpl_\w+?\.\w+\.css$/.test(file.to))!.from,
+      "utf8"
+    );
+    expect(plainCss).toContain("#fff");
+
+    // A different palette reruns `recolorCss` live: the white text color remaps onto Ocean's own
+    // text-on-dark, proving the transform actually ran rather than just tagging the shell.
+    const recolored = await composeSite({
+      brief,
+      rawBrief: "Acme Bakery",
+      pages: selected.pages,
+      store,
+      paletteId: "ocean",
+    });
+    const recoloredCss = await fs.readFile(
+      recolored.files.find((file) => /tpl_\w+?\.\w+\.css$/.test(file.to))!.from,
+      "utf8"
+    );
+    expect(recoloredCss.toLowerCase()).not.toContain("#fff");
+    expect(recoloredCss.toLowerCase()).toContain("eef4fc");
+  });
+
+  it("tags a resolved photo with its wg-photo key and lets a revision replace it", async () => {
+    const { TemplateStore } = await import("../src/templates/store.js");
+    const { selectSiteSections } = await import("../src/templates/select.js");
+    const { applyVerbatimRevisions } = await import("../src/templates/revise.js");
+    const store = new TemplateStore(storePath);
+    await store.rebuild();
+
+    const brief = expandBriefFromInput("Acme Bakery — sourdough in Leeds.");
+    const selected = await selectSiteSections({ variationSeed: 43, store, pages: ["home"] });
+    const nav = selected.pages.home!.find((section) => section.role === "nav")!;
+    const photoKey = `${nav.templateId}:${nav.sectionId}#0`;
+
+    const result = await applyVerbatimRevisions(
+      { brief, rawBrief: "Acme Bakery", pages: selected.pages },
+      [{ kind: "photo", target: photoKey, value: "https://example.test/replacement.jpg" }],
+      { store, page: "home" }
+    );
+    expect(result.rejected).toHaveLength(0);
+    expect(result.state.photos![photoKey]).toBe("https://example.test/replacement.jpg");
+    expect(result.site.htmlPages.home).toContain("https://example.test/replacement.jpg");
+    expect(result.site.htmlPages.home).toContain(`data-wg-photo="${photoKey}"`);
+  });
+
+  it("saves a logo revision and carries the palette choice through a recompose", async () => {
+    const { TemplateStore } = await import("../src/templates/store.js");
+    const { selectSiteSections } = await import("../src/templates/select.js");
+    const { applyVerbatimRevisions, composeVerbatimSite } = await import("../src/templates/revise.js");
+    const store = new TemplateStore(storePath);
+    await store.rebuild();
+
+    const brief = expandBriefFromInput("Acme Bakery — sourdough in Leeds.");
+    const selected = await selectSiteSections({ variationSeed: 47, store, pages: ["home"] });
+
+    const result = await applyVerbatimRevisions(
+      { brief, rawBrief: "Acme Bakery", pages: selected.pages },
+      [
+        { kind: "logo", value: "/media/edit-1/logo.png" },
+        { kind: "palette", value: "custom:#22aa66" },
+      ],
+      { store, page: "home" }
+    );
+    expect(result.rejected).toHaveLength(0);
+    expect(result.state.logoSrc).toBe("/media/edit-1/logo.png");
+    expect(result.state.paletteId).toBe("custom:#22aa66");
+
+    // A later recompose (e.g. a text edit) must carry the same choices forward, not drift back to
+    // env defaults — same guarantee `paletteId`/`logoSrc` already give text overrides. This fixture
+    // has no logo copy-slot to render `logoSrc` into, so the round-trip is checked on the state that
+    // feeds every recompose (`composeVerbatimSite` threads both straight through — see revise.ts).
+    const recomposed = await composeVerbatimSite(result.state, store);
+    expect(recomposed.htmlPages.home).toContain("<!doctype html>");
   });
 
   it("adds a section of a requested role, preferring a template the page has not used", async () => {

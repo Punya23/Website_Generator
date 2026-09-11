@@ -73,6 +73,12 @@ export async function writeDecodedUploads(
 ): Promise<UserMediaLibrary> {
   await fs.mkdir(destDir, { recursive: true });
   const library = new UserMediaLibrary();
+  // `publicSrc` must resolve against the static mount at `/media` -> `output/_user-media` (see
+  // `playground-server.ts`), which serves every session's subfolder, not one flat directory — a
+  // bare `/media/<filename>` collided across sessions/uploads (two logos both named `logo.png`
+  // resolved to the same URL) and, before that mount existed at all, 404'd outright. The session
+  // folder name is `destDir`'s own basename, so this needs nothing new threaded through.
+  const publicPrefix = `/media/${path.basename(destDir)}`;
 
   if (logo?.data) {
     const ext = safeExt(logo.name, logo.mime);
@@ -83,7 +89,7 @@ export async function writeDecodedUploads(
       kind: "logo",
       filename,
       absolutePath,
-      publicSrc: `/media/${filename}`,
+      publicSrc: `${publicPrefix}/${filename}`,
       mime: logo.mime || EXT_MIME[ext] || "image/jpeg",
     };
   }
@@ -99,7 +105,7 @@ export async function writeDecodedUploads(
       kind: "photo",
       filename,
       absolutePath,
-      publicSrc: `/media/${filename}`,
+      publicSrc: `${publicPrefix}/${filename}`,
       mime: photo.mime || EXT_MIME[ext] || "image/jpeg",
     });
   }
@@ -114,6 +120,7 @@ export async function loadUserMediaFromDisk(options: {
 }): Promise<UserMediaLibrary> {
   await fs.mkdir(options.destDir, { recursive: true });
   const library = new UserMediaLibrary();
+  const publicPrefix = `/media/${path.basename(options.destDir)}`;
 
   if (options.logoPath) {
     const src = path.resolve(options.logoPath);
@@ -125,7 +132,7 @@ export async function loadUserMediaFromDisk(options: {
       kind: "logo",
       filename,
       absolutePath,
-      publicSrc: `/media/${filename}`,
+      publicSrc: `${publicPrefix}/${filename}`,
       mime: EXT_MIME[ext] || "image/png",
     };
   }
@@ -146,7 +153,7 @@ export async function loadUserMediaFromDisk(options: {
         kind: "photo",
         filename,
         absolutePath,
-        publicSrc: `/media/${filename}`,
+        publicSrc: `${publicPrefix}/${filename}`,
         mime: EXT_MIME[ext] || "image/jpeg",
       });
     }

@@ -201,6 +201,11 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
     app.use(express.json({ limit: "256kb" }));
     mountAdmin(app);
     app.use(express.static(PUBLIC_DIR));
+    // Every user-uploaded logo/photo (initial upload and in-preview replacements alike) lands under
+    // `output/_user-media/<sessionId>/...` (`emptyMediaSessionDir`) and is referenced in composed
+    // HTML by the matching `/media/<sessionId>/<filename>` URL (`writeDecodedUploads`'s `publicSrc`)
+    // — without this mount that URL 404'd and an uploaded image never actually rendered.
+    app.use("/media", express.static(path.resolve("output", "_user-media")));
     mountPreviewRoutes(app);
 
     app.post("/api/media", express.json({ limit: "12mb" }), async (req, res) => {
@@ -222,6 +227,33 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
         });
       } catch (err) {
         res.status(400).json({ error: err instanceof Error ? err.message : "Could not save images" });
+      }
+    });
+
+    /**
+     * Upload a single replacement image from the in-preview editing layer — a content photo (any
+     * `data-wg-photo` element) or the site logo. Returns a `/media/...` URL the caller then saves
+     * via `/api/edit`'s `photo`/`logo` revisions, same two-step shape text edits already use
+     * (patch the DOM, persist in the background) except the upload itself can't be optimistic.
+     */
+    app.post("/api/edit/media", express.json({ limit: "12mb" }), async (req, res) => {
+      try {
+        const upload = req.body?.file as DecodedUpload | undefined;
+        const isLogo = req.body?.kind === "logo";
+        if (!upload?.data) {
+          res.status(400).json({ error: "Upload a file" });
+          return;
+        }
+        const dir = emptyMediaSessionDir(`edit-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`);
+        const library = await writeDecodedUploads(dir, isLogo ? upload : undefined, isLogo ? [] : [upload]);
+        const asset = isLogo ? library.logo : library.photos[0];
+        if (!asset) {
+          res.status(400).json({ error: "Could not save image" });
+          return;
+        }
+        res.json({ url: asset.publicSrc });
+      } catch (err) {
+        res.status(400).json({ error: err instanceof Error ? err.message : "Upload failed" });
       }
     });
 

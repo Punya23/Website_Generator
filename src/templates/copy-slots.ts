@@ -605,7 +605,12 @@ export interface PhotoSubstitutionResult {
 export async function applyPhotoSlots(
   html: string,
   photoSlots: PhotoSlot[],
-  resolve: PhotoResolver
+  resolve: PhotoResolver,
+  /** `<templateId>:<sectionId>` — when given, stamps every resolved photo element with
+   *  `data-wg-photo="<keyPrefix>#<index>"`, matching `ComposeOptions.photos`'s own key shape, so the
+   *  in-preview editing layer can find the element a given photo key addresses and offer to
+   *  replace it. Omitted for callers with no editing layer (e.g. the legacy react/skin pipeline). */
+  keyPrefix?: string
 ): Promise<PhotoSubstitutionResult> {
   if (photoSlots.length === 0) return { html, applied: 0, skipped: 0, changes: [] };
   const $ = cheerio.load(html, null, false);
@@ -629,6 +634,7 @@ export async function applyPhotoSlots(
       skipped += 1;
       continue;
     }
+    if (keyPrefix) el.attr("data-wg-photo", `${keyPrefix}#${index}`);
     if (slot.kind === "background") {
       const style = el.attr("style") ?? "";
       const before = style.match(/background-image\s*:\s*url\(([^)]*)\)/i)?.[1] ?? "(none)";

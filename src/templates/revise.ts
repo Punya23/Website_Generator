@@ -57,7 +57,15 @@ export type VerbatimRevision =
   | { kind: "moveSection"; target: SectionTarget; direction: "up" | "down" }
   /** Add a section of `role` to `page`, directly after `after` when given (otherwise before the
    *  footer, which is where a new band almost always belongs). */
-  | { kind: "addSection"; page: string; role: SectionRole; after?: SectionTarget; seed?: number | string };
+  | { kind: "addSection"; page: string; role: SectionRole; after?: SectionTarget; seed?: number | string }
+  /** Replace one resolved photo. `target` is the `<templateId>:<sectionId>#<ordinal>` key
+   *  `ComposeOptions.photos`/`data-wg-photo` already use — same address, just a new URL. */
+  | { kind: "photo"; target: string; value: string }
+  /** Replace the business's own logo everywhere it's placed. */
+  | { kind: "logo"; value: string }
+  /** Recolor the whole site: a built-in palette id (`src/templates/palette.ts`) or `custom:#rrggbb`
+   *  for a user-chosen brand color. */
+  | { kind: "palette"; value: string };
 
 export interface ReviseResult {
   state: VerbatimSiteState;
@@ -142,6 +150,24 @@ export async function applyVerbatimRevisions(
       }
       next.overrides![revision.target] = revision.value;
       applied.push(`text ${revision.target}`);
+      continue;
+    }
+
+    if (revision.kind === "photo") {
+      next.photos = { ...(next.photos ?? {}), [revision.target]: revision.value };
+      applied.push(`photo ${revision.target}`);
+      continue;
+    }
+
+    if (revision.kind === "logo") {
+      next.logoSrc = revision.value;
+      applied.push("logo");
+      continue;
+    }
+
+    if (revision.kind === "palette") {
+      next.paletteId = revision.value;
+      applied.push(`palette ${revision.value}`);
       continue;
     }
 

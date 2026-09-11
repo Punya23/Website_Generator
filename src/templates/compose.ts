@@ -21,6 +21,7 @@ import {
 import { templateCachePath } from "./ingest/ingest-template.js";
 import { collectMarkupTokens, emptyTokens, shakeCss, type MarkupTokens } from "./ingest/shake-css.js";
 import { restyleCss } from "./ingest/restyle-css.js";
+import { recolorCss } from "./ingest/recolor-css.js";
 import { getPalette } from "./palette.js";
 import { templateCssShakeEnabled, templatePaletteId } from "./config.js";
 import { templateStore, type TemplateStore } from "./store.js";
@@ -174,6 +175,8 @@ const EDIT_LAYER = `<style id="wg-edit-style">
   .wg-edit-on [data-wg-edit]{outline:1px dashed rgba(99,102,241,.55);outline-offset:2px;cursor:text}
   .wg-edit-on [data-wg-edit]:hover{outline:2px solid #6366f1;background:rgba(99,102,241,.08)}
   .wg-edit-on [data-wg-edit][contenteditable="true"]{outline:2px solid #6366f1;background:rgba(99,102,241,.14)}
+  .wg-edit-on [data-wg-photo]{outline:1px dashed rgba(16,185,129,.55);outline-offset:-2px;cursor:pointer}
+  .wg-edit-on [data-wg-photo]:hover{outline:2px solid #10b981}
   .wg-edit-on [data-section]{position:relative}
   .wg-edit-on [data-section]:hover{outline:2px dashed rgba(16,185,129,.6);outline-offset:-2px}
   #wg-bar{position:fixed;left:16px;bottom:16px;z-index:2147483000;display:flex;gap:8px;align-items:center;
@@ -182,6 +185,13 @@ const EDIT_LAYER = `<style id="wg-edit-style">
   #wg-bar button{font:inherit;border:0;border-radius:999px;padding:6px 12px;cursor:pointer;background:#6366f1;color:#fff}
   #wg-bar button[aria-pressed="true"]{background:#10b981}
   #wg-bar span{opacity:.75;min-width:74px}
+  #wg-palette{position:fixed;left:16px;bottom:64px;z-index:2147483000;display:none;gap:6px;align-items:center;
+    font:500 12px/1 system-ui,sans-serif;background:#111;color:#fff;padding:8px;border-radius:14px;
+    box-shadow:0 6px 24px rgba(0,0,0,.35)}
+  #wg-palette.wg-open{display:flex}
+  #wg-palette button{width:26px;height:26px;border-radius:999px;border:2px solid rgba(255,255,255,.25);cursor:pointer;padding:0}
+  #wg-palette input[type="color"]{width:26px;height:26px;border:2px solid rgba(255,255,255,.25);border-radius:999px;
+    padding:0;background:none;cursor:pointer}
   .wg-tools{position:absolute;top:6px;right:6px;z-index:2147482000;display:none;gap:4px;
     font:500 12px/1 system-ui,sans-serif}
   .wg-edit-on [data-section]:hover > .wg-tools{display:flex}
@@ -191,8 +201,20 @@ const EDIT_LAYER = `<style id="wg-edit-style">
 </style>
 <div id="wg-bar" hidden>
   <button type="button" id="wg-toggle" aria-pressed="false">Edit</button>
+  <button type="button" id="wg-logo" title="Replace the logo" hidden>Logo</button>
+  <button type="button" id="wg-colors" title="Recolor the site" hidden>Colors</button>
   <span id="wg-status">Preview</span>
 </div>
+<div id="wg-palette">
+  <button type="button" data-palette="all-black" title="Midnight" style="background:#6366f1"></button>
+  <button type="button" data-palette="ocean" title="Ocean" style="background:#2f6fed"></button>
+  <button type="button" data-palette="forest" title="Forest" style="background:#22a35e"></button>
+  <button type="button" data-palette="sunset" title="Sunset" style="background:#ef7d3a"></button>
+  <button type="button" data-palette="royal" title="Royal" style="background:#8b5cf6"></button>
+  <button type="button" data-palette="slate" title="Slate" style="background:#64748b"></button>
+  <input type="color" id="wg-custom-color" title="Custom brand color" value="#6366f1" />
+</div>
+<input type="file" id="wg-file" accept="image/*" hidden />
 <script>
 (function () {
   var ADDABLE_ROLES = ["hero","features","story","gallery","pricing","faq","cta","contact","stats"];
@@ -232,6 +254,97 @@ const EDIT_LAYER = `<style id="wg-edit-style">
     } catch (err) {
       say("Offline");
       return false;
+    }
+  }
+
+  function readAsUpload(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onerror = function () { reject(reader.error); };
+      reader.onload = function () {
+        // "data:image/png;base64,AAAA..." — only the part after the comma is real payload.
+        var base64 = String(reader.result || "").split(",")[1] || "";
+        resolve({ name: file.name, mime: file.type || "image/jpeg", data: base64 });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // One replacement image (a content photo or the logo): upload it, then point the target at the
+  // resulting URL through the same revision path everything else saves through.
+  async function replaceImage(file, target) {
+    say("Uploading…");
+    try {
+      var upload = await readAsUpload(file);
+      var res = await fetch("/api/edit/media", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: target === "__logo__" ? "logo" : "photo", file: upload }),
+      });
+      var data = await res.json();
+      if (!res.ok || data.error || !data.url) {
+        say(data.error || "Upload failed");
+        return;
+      }
+      await send(
+        [target === "__logo__" ? { kind: "logo", value: data.url } : { kind: "photo", target: target, value: data.url }],
+        { reload: true }
+      );
+    } catch (err) {
+      say("Offline");
+    }
+  }
+
+  // File picker shared by every image-replace trigger (per-photo click, the Logo button) — one
+  // hidden input, whichever target requested it last wins.
+  var fileInput = document.getElementById("wg-file");
+  var pendingImageTarget = null;
+  if (fileInput) {
+    fileInput.addEventListener("change", function () {
+      var file = fileInput.files && fileInput.files[0];
+      fileInput.value = "";
+      if (file && pendingImageTarget) replaceImage(file, pendingImageTarget);
+      pendingImageTarget = null;
+    });
+  }
+
+  // Photo/logo replacement: click a photo in edit mode, or the Logo button, opens the same picker.
+  document.addEventListener("click", function (event) {
+    if (!on) return;
+    var el = event.target && event.target.closest ? event.target.closest("[data-wg-photo]") : null;
+    if (!el || !fileInput) return;
+    event.preventDefault();
+    pendingImageTarget = el.getAttribute("data-wg-photo");
+    fileInput.click();
+  }, true);
+
+  var logoBtn = document.getElementById("wg-logo");
+  if (logoBtn) {
+    logoBtn.addEventListener("click", function () {
+      if (!fileInput) return;
+      pendingImageTarget = "__logo__";
+      fileInput.click();
+    });
+  }
+
+  // Site-wide recolor: a handful of built-in palettes, plus a native color picker for a custom
+  // brand hue — see src/templates/palette.ts (custom:#rrggbb is parsed there).
+  var colorsBtn = document.getElementById("wg-colors");
+  var paletteBar = document.getElementById("wg-palette");
+  if (colorsBtn && paletteBar) {
+    colorsBtn.addEventListener("click", function () {
+      paletteBar.classList.toggle("wg-open");
+    });
+    paletteBar.querySelectorAll("[data-palette]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        send([{ kind: "palette", value: btn.getAttribute("data-palette") }], { reload: true });
+      });
+    });
+    var customColor = document.getElementById("wg-custom-color");
+    if (customColor) {
+      customColor.addEventListener("change", function () {
+        send([{ kind: "palette", value: "custom:" + customColor.value }], { reload: true });
+      });
     }
   }
 
@@ -329,6 +442,9 @@ const EDIT_LAYER = `<style id="wg-edit-style">
     toggle.setAttribute("aria-pressed", String(on));
     toggle.textContent = on ? "Done" : "Edit";
     say(on ? "Click any text" : "Preview");
+    if (logoBtn) logoBtn.hidden = !on;
+    if (colorsBtn) colorsBtn.hidden = !on;
+    if (!on && paletteBar) paletteBar.classList.remove("wg-open");
     if (on) mountTools();
   });
 })();
@@ -526,6 +642,14 @@ export async function composeSite(options: ComposeOptions): Promise<ComposedSite
     if (!manifest.designFingerprint || !anchorFingerprint) return null;
     return { source: manifest.designFingerprint, target: anchorFingerprint };
   };
+  // Ingest already baked every cached stylesheet onto `templatePaletteId()`'s palette once — a site
+  // that asks for a DIFFERENT palette (the color picker in the preview) reruns the same pure
+  // `recolorCss` pass live, on top of that already-recolored CSS, targeting the requested palette
+  // instead. Re-running it is safe: role inference reads current pixel colors, not history, so a
+  // second pass onto a new ramp is exactly as correct as one pass would have been at ingest time.
+  // Skipped on the common path (no override requested) so nothing pays for a redundant identical pass.
+  const liveRecolor = Boolean(options.paletteId) && options.paletteId !== templatePaletteId();
+  const palette = liveRecolor ? getPalette(paletteId) : null;
   const cssBundleFor = async (
     templateId: string,
     cssCachePath: string,
@@ -533,6 +657,7 @@ export async function composeSite(options: ComposeOptions): Promise<ComposedSite
     restyle: { source: DesignFingerprint; target: DesignFingerprint } | null
   ): Promise<{ file: FileCopy; refs: Set<string> } | null> => {
     const fullPath = path.join(templateCachePath(templateId), cssCachePath);
+    const transformed = Boolean(restyle) || liveRecolor;
     const signature = createHash("sha256")
       .update(
         [
@@ -541,6 +666,7 @@ export async function composeSite(options: ComposeOptions): Promise<ComposedSite
           [...tokens.tags].sort().join(" "),
           [...tokens.attrs].sort().join(" "),
           restyle ? `restyle:${restyle.target.radiusScale}:${restyle.target.containerMaxWidthPx}` : "",
+          liveRecolor ? `palette:${paletteId}` : "",
         ].join("\n")
       )
       .digest("hex")
@@ -556,14 +682,16 @@ export async function composeSite(options: ComposeOptions): Promise<ComposedSite
       return null;
     }
     if (restyle) css = restyleCss(css, restyle.source, restyle.target).css;
+    if (palette) css = recolorCss(css, palette).css;
 
     let entry: { file: FileCopy; refs: Set<string> };
     if (!templateCssShakeEnabled()) {
-      // A restyled sheet is generation-specific (it targets THIS site's anchor), so it can no longer
-      // be shipped from the template's own cache path and shared across every site that ever borrows
-      // this template — write it out under the same per-signature cache the shaken branch below uses.
-      if (restyle) {
-        const cacheFile = path.join(templateCachePath(templateId), "restyled", `${signature}.css`);
+      // A restyled/recolored sheet is generation-specific (it targets THIS site's anchor or THIS
+      // site's chosen palette), so it can no longer be shipped from the template's own cache path
+      // and shared across every site that ever borrows this template — write it out under the same
+      // per-signature cache the shaken branch below uses.
+      if (transformed) {
+        const cacheFile = path.join(templateCachePath(templateId), "edited", `${signature}.css`);
         try {
           await fs.mkdir(path.dirname(cacheFile), { recursive: true });
           await fs.writeFile(cacheFile, css, "utf8");
@@ -574,7 +702,7 @@ export async function composeSite(options: ComposeOptions): Promise<ComposedSite
           cssBundles.set(key, entry);
           return entry;
         } catch {
-          // Unwritable cache: fall through and ship the (already restyled, in-memory) full sheet
+          // Unwritable cache: fall through and ship the (already transformed, in-memory) full sheet
           // from the original path — wrong, but only cosmetically, and never for the common case.
         }
       }
@@ -714,7 +842,7 @@ export async function composeSite(options: ComposeOptions): Promise<ComposedSite
           : await stockImageUrl(query, cacheKey, industry, width, height);
         resolvedPhotos[photoKey] = url;
         return url;
-      });
+      }, `${section.templateId}:${section.sectionId}`);
       photosApplied += withPhotos.applied;
       photosSkipped += withPhotos.skipped;
 

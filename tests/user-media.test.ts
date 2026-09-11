@@ -32,10 +32,15 @@ describe("user media", () => {
         { name: "team.png", mime: "image/png", data: TINY_PNG },
       ]
     );
-    expect(library.logo?.publicSrc).toBe("/media/logo.png");
-    expect(library.photos.map((p) => p.publicSrc)).toEqual(["/media/photo-01.jpg", "/media/photo-02.png"]);
-    expect(library.takePhoto()?.publicSrc).toBe("/media/photo-01.jpg");
-    expect(library.takePhoto()?.publicSrc).toBe("/media/photo-02.png");
+    // publicSrc is namespaced by the destination folder's own name — it must resolve against the
+    // real static mount (`/media` -> `output/_user-media`, see `playground-server.ts`), which
+    // serves one subfolder per upload session, not one flat directory. A bare `/media/logo.png`
+    // collided across uploads (two sessions' logos both resolving to the same URL) before this.
+    const prefix = `/media/${path.basename(dest)}`;
+    expect(library.logo?.publicSrc).toBe(`${prefix}/logo.png`);
+    expect(library.photos.map((p) => p.publicSrc)).toEqual([`${prefix}/photo-01.jpg`, `${prefix}/photo-02.png`]);
+    expect(library.takePhoto()?.publicSrc).toBe(`${prefix}/photo-01.jpg`);
+    expect(library.takePhoto()?.publicSrc).toBe(`${prefix}/photo-02.png`);
     expect(library.takePhoto()).toBeUndefined();
   });
 

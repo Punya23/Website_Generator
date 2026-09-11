@@ -221,11 +221,17 @@ export const RecolorPaletteSchema = z.object({
   textOnLight: z.string(),
   mutedOnDark: z.string(),
   mutedOnLight: z.string(),
-  /** Accent hue is preserved from the source; this only bounds how far lightness/saturation clamp. */
+  /** Accent hue is preserved from the source (unless `accentColor` overrides it below); this only
+   *  bounds how far lightness/saturation clamp. */
   accentMinLightness: z.number().min(0).max(1),
   accentMaxLightness: z.number().min(0).max(1),
   borderOnDark: z.string(),
   borderOnLight: z.string(),
+  /** When set, every accent color a source template carries is forced onto THIS hue/saturation
+   *  (lightness still clamped by `accentMin/MaxLightness`) instead of keeping its own — what makes a
+   *  user-chosen brand color actually show up site-wide rather than just bounding the source's own
+   *  accent. Unset for the built-in presets, which stay true to each template's own brand hue. */
+  accentColor: z.string().optional(),
 });
 export type RecolorPalette = z.infer<typeof RecolorPaletteSchema>;
 

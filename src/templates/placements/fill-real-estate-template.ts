@@ -347,17 +347,37 @@ export interface RealEstateFillResult {
   costUsd: number;
 }
 
+export interface PlacementsFillValues {
+  brief: PlacementBrief;
+  locale: Locale;
+  /** Finished copy (and resolved photo URLs) keyed by placement id, across every page. */
+  llmValues: Record<string, string>;
+  /** Illustrative example values for `data`/`brief` placements with no real input, keyed the same
+   *  way — kept separate from `llmValues` because `fill.ts` takes them through a different door
+   *  (`illustrativeFill`). */
+  illustrativeValues: Record<string, string>;
+}
+
 /**
- * Fills every page of one real-estate template (`templateDir` — one of `real-estate/*`) for one
- * real business, entirely in memory. A page whose LLM call fails keeps the template's own original
- * copy for that page rather than failing the whole run — same resilience the rest of this
- * pipeline's per-page/per-section calls already rely on; `onProgress` (if given) is told about it.
+ * The vertical-agnostic half of `fillRealEstateTemplate`: given an already-parsed `PlacementsFile`
+ * — loaded from `real-estate/*`'s `placements.json` below, or built in memory by `from-corpus.ts`'s
+ * `buildPlacementsFromSelection` for a corpus composition (`src/orchestrator/placements-corpus-
+ * fill.ts`) — resolves the brief once and fills every editable placement across every page. Does no
+ * file I/O and knows nothing about a `templateDir`; both callers apply the result through `fill.ts`
+ * themselves, since only they know where their own HTML lives (on disk for the curated path, in
+ * `composeSite`'s in-memory `htmlPages` for the corpus path). Kept in this file rather than a new
+ * one so the prompt/schema/locale/people-role rules stay defined exactly once.
+ *
+ * A page whose LLM call fails keeps that page's placements unfilled (so the caller's own
+ * `applyPlacements` leaves the template's own copy there) rather than failing the whole run — same
+ * resilience the rest of this pipeline's per-page/per-section calls already rely on; `onProgress`
+ * (if given) is told about it.
  */
-export async function fillRealEstateTemplate(
-  templateDir: string,
+export async function fillPlacementsFile(
+  file: PlacementsFile,
   rawBrief: string,
   opts: { onProgress?: (line: string) => void } = {}
-): Promise<RealEstateFillResult> {
+): Promise<PlacementsFillValues> {
   if (!llm.isAvailable) {
     throw new Error("No LLM configured — set OPENROUTER_API_KEY (or another provider key) in .env");
   }
@@ -367,12 +387,12 @@ export async function fillRealEstateTemplate(
   const locale = resolveLocale(rawBrief);
   log(`business="${brief.businessName}"`);
 
-  const raw = JSON.parse(await fs.readFile(path.join(templateDir, "placements.json"), "utf8"));
-  const file = PlacementsFileSchema.parse(raw);
   const view = buildLlmView(file);
 
   const llmValues: Record<string, string> = {};
   const illustrativeValues: Record<string, string> = {};
+  // "chrome" is the curated path's own pseudo-page (nav/footer, merged into every real page below)
+  // — a corpus `PlacementsFile` has no such key, so this is a harmless no-op skip for that caller.
   for (const pageKey of ["chrome", ...file.pageOrder]) {
     const pageSet = file.pages[pageKey];
     if (!pageSet) continue;
@@ -386,6 +406,23 @@ export async function fillRealEstateTemplate(
     }
   }
 
+  return { brief, locale, llmValues, illustrativeValues };
+}
+
+/**
+ * Fills every page of one real-estate template (`templateDir` — one of `real-estate/*`) for one
+ * real business, entirely in memory. The disk-reading, chrome-merging wrapper around
+ * `fillPlacementsFile` above — see that function for the actual fill.
+ */
+export async function fillRealEstateTemplate(
+  templateDir: string,
+  rawBrief: string,
+  opts: { onProgress?: (line: string) => void } = {}
+): Promise<RealEstateFillResult> {
+  const raw = JSON.parse(await fs.readFile(path.join(templateDir, "placements.json"), "utf8"));
+  const file = PlacementsFileSchema.parse(raw);
+
+  const { brief, locale, llmValues, illustrativeValues } = await fillPlacementsFile(file, rawBrief, opts);
   const illustrativeFill = async (placement: { id: string }) => illustrativeValues[placement.id] ?? null;
 
   const pages: Record<string, FilledPage> = {};

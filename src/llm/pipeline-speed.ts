@@ -145,6 +145,25 @@ export function usePlacementsPipeline(): boolean {
   return false;
 }
 
+/**
+ * Corpus-path placements fill (Phase 2B of `docs/PLACEMENTS_ORCHESTRATION_PLAN.md`) — the same
+ * placements engine `usePlacementsPipeline` above gates for the curated `real-estate/*` path,
+ * applied instead to a `select.ts`-composed corpus site (`src/orchestrator/placements-corpus-
+ * fill.ts`). A DIFFERENT flag from `PIPELINE_PLACEMENTS` on purpose: that one picks a whole
+ * template out of 4; this one only changes how `runVerbatimTemplatePipeline` fills copy on
+ * whatever corpus composition `select.ts` already produced, and the two are not mutually
+ * exclusive in principle (a corpus brief that isn't real-estate can use this without ever
+ * touching the curated path, and vice versa). Off by default until Phase 2B's own acceptance
+ * criteria are green — the 2A spike proved the ENGINE integrates cleanly (100% selector hit rate
+ * once nav/footer are excluded), it did not itself prove the `polishComposedCopy` replacement is
+ * safe end-to-end on a real generation.
+ */
+export function usePlacementsCorpusFill(): boolean {
+  if (process.env.PIPELINE_PLACEMENTS_CORPUS === "0") return false;
+  if (process.env.PIPELINE_PLACEMENTS_CORPUS === "1") return true;
+  return false;
+}
+
 export function visionQaEnabled(): boolean {
   if (process.env.SKIP_VISION === "1") return false;
   return true;

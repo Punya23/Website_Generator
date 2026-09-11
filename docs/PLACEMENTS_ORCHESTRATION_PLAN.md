@@ -2,17 +2,17 @@
 
 > **Audience:** an implementing engineer or coding LLM.  
 > **Goal:** wire the **placements fill engine** into production orchestration — LLM fills values only, never HTML — without collapsing the ~900-template corpus into 4 layouts.  
-> **Date:** 2026-09-11 (rev 3 — Phase 0 + curated override landed on master, under different names than rev‑2 planned)  
-> **Baseline:** `origin/master` @ `776380c` (merge of `92bbe90` "Wire real-estate placements into the orchestrator as a fourth pipeline branch").  
-> **Note:** branch `feat/robust-mix-match-pipeline` may still sit at `3005106` and **lack** everything through Phase 2C below. Implement / review against master tip (or rebase first).
-> **Collision note:** a separate session landed Phase 0 + Phase 2C (curated override) directly on `master` while this plan's own Phase 0 attempt (`src/templates/placements/run-fill.ts`) was mid-flight on a review branch. Compared both implementations line-for-line — same prompt, same schema, same safety rules — and kept master's (`fill-real-estate-template.ts` / `placements-pipeline.ts`): it was already wired through `orchestrator.ts` at ~10 call sites with its own tests, and rebuilding that wiring on the review branch's API today would have been pure risk for a payoff (I/O-decoupled fill, useful for Phase 2B's in-memory `PlacementsFile`) that isn't needed until Phase 2B actually lands. The review branch's `run-fill.ts` was discarded. Refactor `fill-real-estate-template.ts` to take a `PlacementsFile` + HTML in/out (instead of reading a `templateDir` off disk) **when Phase 2B needs it**, not before.
+> **Date:** 2026-09-11 (rev 4 — Phase 2B built and verified end to end; remaining scope is Phase 3 onward)  
+> **Baseline:** branch `claude/placements-orchestration-review-0d747d` — `origin/master` @ `82706ef` plus this session's Phase 2B commit (not yet merged).  
+> **Note:** branch `feat/robust-mix-match-pipeline` may still sit at `3005106` and **lack** everything through Phase 2B below. Implement / review against this branch or master tip (whichever is later) — or rebase first.
+> **Collision note (rev 3, still relevant):** a separate session landed Phase 0 + Phase 2C (curated override) directly on `master` while this plan's own Phase 0 attempt (`src/templates/placements/run-fill.ts`) was mid-flight on a review branch. Compared both implementations line-for-line — same prompt, same schema, same safety rules — and kept master's (`fill-real-estate-template.ts` / `placements-pipeline.ts`): it was already wired through `orchestrator.ts` at ~10 call sites with its own tests. The review branch's `run-fill.ts` was discarded. Phase 2B (rev 4) then split `fillRealEstateTemplate` in place to get the reusable, I/O-decoupled fill both paths needed — see §7 Phase 2B.
 
 ---
 
 ## 0. How to use this doc
 
 1. Read §1–§4 before writing code.
-2. Implement in **phase order** (§7). **Skip Phase 1** (schema-complete fills) **and Phase 0 + 2C** (fill extraction + curated override) — all already shipped on master. **Phase 2B (corpus trunk) is the actual open work.**
+2. Implement in **phase order** (§7). **Skip Phase 1, 0, 2A, 2B, and 2C** — all done (see §2 and §7 for what shipped where). **Phase 3 onward is the actual open work.**
 3. Each open phase has: objective, files, steps, acceptance, done-when.
 4. Prefer **extracting** existing script logic into libraries over rewriting it.
 5. Fail closed on facts (phone/email/license/data): keep template / placeholder rather than invent.
@@ -239,22 +239,32 @@ Checklist if verifying a branch:
 
 **Done when:** ✅ selector hit rate measured and root-caused (100% body-only); constraint delta quantified (5.25× vs 2.17×); people-photo gap found, quantified, and a fix spawned.
 
-#### 2B — Wire fill stage into verbatim pipeline (the actual open work)
+#### 2B — Wire fill stage into verbatim pipeline — **DONE this session**
 
-1. After `selectSiteSections`, call `buildPlacementsFromSelection(selected, store, meta)` — **excluding `nav`/`footer` placed sections** (2A's finding: chrome is compose-owned; passing them through just re-introduces the 14% miss rate for no reason, since compose rebuilds both regardless of what placements would have written).
-2. Build a small fill helper for the corpus path — reuse `resolveBriefContext` / `pageFillValidator` / `pageFillJsonSchema` / `resolveImageQueries`'s logic (currently private to `fill-real-estate-template.ts`; either export them or, if this diverges enough, a second small module — do not re-derive the prompt or schema from scratch) to get `llmValues` (+ illustrative) for the corpus `PlacementsFile`.
-3. Apply placements onto the **composed page** (2A confirmed Option B works at 100% once chrome is excluded — no fragment-timing complexity needed).
-4. **Replace `polishComposedCopy` + its `overrides` recompose** when placements fill is on for this site — do not run polish after placements apply; it recomposes and would revert them. This is the integration hazard 2A flagged and did not itself measure (that would need a second spike through `verbatim-template-pipeline.ts`'s actual polish step) — treat as a required design step for 2B, verify with a real end-to-end run before shipping.
-5. **Do not ship before `task_effb69a4` (people-section photo guard) lands** — 2A found `from-corpus.ts` has no photo-side equivalent of its text-side people lock; running this on real corpus templates today would let a headshot in a testimonials section get replaced by a stock search result.
-6. Keep: taxonomy gates, anchor policy, recolor, asset copy, nav rebuild (now explicitly the ONLY thing that touches chrome copy).
-7. Flag: `PIPELINE_PLACEMENTS_CORPUS` (distinct from the already-shipped `PIPELINE_PLACEMENTS`, which is the curated 4-skin path — do not reuse or overload that name) — default `0` until this phase's acceptance criteria are green.
+Built as designed, with one correction made mid-implementation (see below). Files:
 
-**Acceptance:**
+| File | What |
+|------|------|
+| `src/templates/placements/fill-real-estate-template.ts` | Split `fillRealEstateTemplate` into a new exported `fillPlacementsFile(file, rawBrief, opts)` — the vertical-agnostic brief-resolve + per-page LLM fill, no file I/O — and `fillRealEstateTemplate` itself, now a thin disk-reading wrapper around it. One prompt/schema/locale implementation, two callers. |
+| `src/orchestrator/placements-corpus-fill.ts` (new) | `runCorpusPlacementsFill(selected, store, meta, htmlPages, rawBrief, onProgress)` — excludes `nav`/`footer` sections before calling `buildPlacementsFromSelection` (2A's finding), calls `fillPlacementsFile`, then `applyPlacements` per page against `composed.htmlPages`. Returns the filled `htmlPages` plus applied/skipped/clamped counts. |
+| `src/llm/pipeline-speed.ts` | `usePlacementsCorpusFill()` reads `PIPELINE_PLACEMENTS_CORPUS` — default `0`, distinct from `PIPELINE_PLACEMENTS` |
+| `src/orchestrator/verbatim-template-pipeline.ts` | Branches on `usePlacementsCorpusFill()` in place of the unconditional `polishComposedCopy` call. When on: run `runCorpusPlacementsFill`, write its `htmlPages` straight into `finalComposed` — no recompose. **Also skips section repair for this generation** (see correction below), not just polish. |
+| `tests/placements-corpus-fill.test.ts` (new) | 3 tests against the real pinned corpus template (mocked LLM): nav/footer never appear in `skipped`, a real per-business value lands in composed HTML, a page with no body sections ships byte-identical |
+| `tests/placements-pipeline.test.ts` | Added `usePlacementsCorpusFill` flag tests, including "opting into `PIPELINE_PLACEMENTS` does not opt into this" |
 
-- RE or non-RE brief with ingested corpus → log `[pipeline] placements fill (corpus)`
-- Variety: two RE briefs can still land different corpus anchors (not forced into 4 folders)
-- `tests/placements-corpus-bridge.test.ts` extended, or a new pipeline test, with mocks
-- Brand-leak: demo template author contact still neutralized
+**Correction found while implementing (not caught by the 2A spike):** the plan above only named `polishComposedCopy`'s recompose as the hazard. `verbatim-template-pipeline.ts` has a SECOND recompose path — section repair (`repairFlaggedSections`, triggered by QA issues or by `slotsSkipped > 0` in `composed`'s own provenance) — that goes through the exact same `composeSite({ overrides })` mechanism and would just as silently discard a placements fill. Worse, its `slotsSkipped` trigger reads `composed`'s provenance from BEFORE placements ran, so it would misfire on sections placements had already filled. Fixed by gating both polish AND section repair behind one `placementsFillActive` flag read once — QA still runs and still reports issues either way; only the auto-rewrite-and-recompose reaction to them is out of scope for this phase, matching the curated path's own documented "no vision-QA redo loop yet" gap.
+
+**Known gap, matches the curated path's own documented one:** the result is written straight into `composed.htmlPages`, never through `overrides` — so `VerbatimSiteState.overrides` stays empty for a placements-filled site, and a later edit/recompose session would rebuild from `compose.ts`'s own deterministic copy-slots pass with no placements copy. Not in this phase's scope.
+
+**`templateBusinessName` deliberately NOT passed** to `applyPlacements` on the corpus path — that option exists to swap ONE known fictional demo brand (a curated skin's own "Prestige Realty") out of fallback text; a multi-template corpus composition has no single brand to name. Real per-section brand-leak detection stays Phase 3's job.
+
+**Verified:**
+
+- `tsc --noEmit` clean
+- `tests/placements.test.ts`, `-corpus-bridge`, `-pipeline`, `-corpus-fill`, `orchestration-revamp`, `verbatim-compose`, `copy-polish-agent`, `section-repair-agent`, `pipeline-speed` — 115/115 green
+- **Real end-to-end run** (`PIPELINE_PLACEMENTS_CORPUS=1`, real OpenRouter call, real 910-template corpus, no mocks): brief "Harbor Homes is a boutique residential brokerage in Alameda, CA…" → log line `[pipeline] Placements fill (corpus): 25 text + 12 image placement(s) applied` (0 skipped on the shipped attempt) → real, specific, non-boilerplate copy in the output ("Boutique residential guidance for first-time home buyers and downsizers in Alameda, CA. We limit our client roster to provide undivided personal attention and local island expertise.") — not a template's generic prose, not a dummy value. Cost: $0.0068. The pipeline's own pre-existing final-vision-gate redo loop ran on top of this without incident, proving the new branch composes cleanly with existing machinery it doesn't otherwise touch.
+
+**Done when:** ✅ all of the above.
 - `task_effb69a4`'s photo guard landed and covered by its own test
 
 #### 2C — Curated override — **DONE on master, different shape than planned**
@@ -301,7 +311,7 @@ Shipped as `src/orchestrator/placements-pipeline.ts` (`runPlacementsPipeline`) +
 | Flag | Default | Meaning |
 |------|---------|---------|
 | `PIPELINE_PLACEMENTS` | `0` (**shipped**, `92bbe90`) | Curated 4-skin override — `usePlacementsPipeline()` in `pipeline-speed.ts`. Already the trunk decision this doc argued for: opt-in, not default |
-| `PIPELINE_PLACEMENTS_CORPUS` | `0` (**not yet built** — Phase 2B) | When verbatim runs, use placements engine for copy on the corpus path. **Distinct flag from `PIPELINE_PLACEMENTS` above — do not conflate.** Stay off until 2B's acceptance criteria are green |
+| `PIPELINE_PLACEMENTS_CORPUS` | `0` (**shipped, this session**) | When verbatim runs, use placements engine for copy on the corpus path — `usePlacementsCorpusFill()` in `pipeline-speed.ts`. **Distinct flag from `PIPELINE_PLACEMENTS` above — do not conflate.** Verified end to end with a real run; stays off by default because vision-QA redo / editor-recompose parity with the curated path are still open, same reasoning `PIPELINE_PLACEMENTS` itself shipped with |
 | `TEMPLATE_MIX_SECTIONS` | `0` | Unchanged — select.ts policy |
 | `PIPELINE_VERBATIM_TEMPLATES` | existing | Unchanged |
 
@@ -351,9 +361,9 @@ Rules:
 | Curated override flag off | RE brief does **not** force `real-estate-agency` folder | ✅ `tests/placements-pipeline.test.ts` |
 | Curated override flag on | Loads hand placements.json | ✅ `tests/placements-pipeline.test.ts` |
 | **People-section photo guard** | Photo in team/testimonials never `llmQuery` | 🔧 `task_effb69a4`, in progress |
-| Corpus fill helper unit with mock LLM | Schema-complete path invoked once | ⬜ Phase 2B |
-| Verbatim+placements integration (mock) | select → from-corpus (chrome excluded) → apply on composed page; ≥95% hit | ⬜ Phase 2B — 2A's 100% body-only result is the target, not yet wired end-to-end |
-| polishComposedCopy replaced, not stacked | Corpus placements fill + polish don't both run on the same site | ⬜ Phase 2B |
+| Corpus fill helper unit with mock LLM | Schema-complete path invoked once | ✅ `tests/placements-corpus-fill.test.ts` |
+| Verbatim+placements integration (mock) | select → from-corpus (chrome excluded) → apply on composed page; ≥95% hit | ✅ `tests/placements-corpus-fill.test.ts` (mocked) + a real end-to-end run (0 selectors skipped on the shipped attempt) |
+| polishComposedCopy AND section repair replaced, not stacked | Corpus placements fill is the only copy/recompose pass on a placements-filled site | ✅ both gated behind one `placementsFillActive` read in `verbatim-template-pipeline.ts` — section repair was a second hazard found while implementing, not named in the original plan |
 | Brand leak | Curated demo brand stripped when brief name set | ✅ exists for curated path (`fill.ts`'s `templateBusinessName` swap); needs a corpus-path equivalent in 2B |
 
 ---
@@ -375,8 +385,8 @@ Rules:
 2. ~~PR2 — Phase 2A: corpus selector spike~~ — **done this session** (`scripts/spike-corpus-placements.ts`)
 3. ~~PR3 — Phase 2C: curated override opt-in~~ — **done** (`92bbe90`, as `placements-pipeline.ts` + `PIPELINE_PLACEMENTS`)
 4. **PR4 — people-photo guard:** `task_effb69a4` — blocks PR5
-5. **PR5 — Phase 2B:** corpus-path placements fill behind `PIPELINE_PLACEMENTS_CORPUS`, chrome excluded, `polishComposedCopy` replaced
-6. **PR6 — Phase 3–5:** media fixtures, QA metrics, docs
+5. ~~PR5 — Phase 2B: corpus-path placements fill~~ — **done this session** (`PIPELINE_PLACEMENTS_CORPUS`, chrome excluded, polish + section repair both replaced, verified end to end)
+6. **PR6 — Phase 3–5:** media fixtures, per-section brand-leak detection for the corpus path, QA metrics, docs
 
 ---
 
@@ -425,3 +435,4 @@ npm run generate -- "Harbor Homes boutique residential brokerage in Alameda, CA"
 | 1 | Initial plan — 4-skin trunk, rebuild Phase 1, fractional coverage |
 | 2 | Re-baseline on master; Phase 1 = done; **from-corpus = trunk**; curated RE = override; drop coverage fork; don’t re-litigate mix; under-fill policy explicit |
 | 3 | **Collision resolved:** a separate session shipped Phase 0 (`fill-real-estate-template.ts`) + Phase 2C (`placements-pipeline.ts`, `PIPELINE_PLACEMENTS`) directly to master — compared against this doc's own `run-fill.ts` attempt and kept master's (already wired through orchestrator.ts, own tests); `run-fill.ts` discarded. **Phase 2A spike run for real** against the 910-template cache: 100% selector hit rate once nav/footer excluded, 5.25× vs 2.17× constraint-tightness gap quantified, people-photo guard gap found and spawned as `task_effb69a4`. Phase 2B (corpus trunk) is now the entire remaining scope of this plan; renamed its flag to `PIPELINE_PLACEMENTS_CORPUS` to avoid colliding with the already-shipped `PIPELINE_PLACEMENTS` |
+| 4 | **Phase 2B built and verified end to end** (`task_effb69a4` landed first, unblocking it). Split `fillRealEstateTemplate` into a reusable `fillPlacementsFile` + a disk-reading wrapper; new `placements-corpus-fill.ts` excludes chrome, fills, and applies onto `composeSite`'s output; `PIPELINE_PLACEMENTS_CORPUS` (default `0`) gates it in `verbatim-template-pipeline.ts`. **Found and fixed a second integration hazard the original plan missed:** section repair, not just `polishComposedCopy`, recomposes via `overrides` and would have silently discarded a placements fill the same way — both are now gated behind one flag read. Verified with 115 passing tests plus one real, no-mock, real-LLM end-to-end generation (real per-business copy shipped, 0 selectors skipped, $0.0068). Remaining scope is Phase 3 (media/brand-leak) onward |

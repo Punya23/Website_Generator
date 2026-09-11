@@ -137,10 +137,24 @@ function currentPhotoSrc($: cheerio.CheerioAPI, photo: PhotoSlot): string {
 }
 
 /**
- * One auto-discovered `PhotoSlot` -> one `ImagePlacement`. Always `llmQuery` (never `data`): unlike
- * a real-estate listing photo, a generic corpus content photo has no "real specific fact" behind it
- * to wait for — mirrors `verbatim-media-agent.ts`'s existing per-slot query-curation pattern for
- * this same corpus, just producing a placement for it instead of resolving it inline.
+ * One auto-discovered `PhotoSlot` -> one `ImagePlacement`. Normally `llmQuery` (never `data`):
+ * unlike a real-estate listing photo, a generic corpus content photo has no "real specific fact"
+ * behind it to wait for — mirrors `verbatim-media-agent.ts`'s existing per-slot query-curation
+ * pattern for this same corpus, just producing a placement for it instead of resolving it inline.
+ *
+ * The exception is a photo inside a `PEOPLE_SECTION_ROLES` section, which gets `data` — the same
+ * "no fabricated people" line `textPlacementFromSlot` draws for that section's copy. A headshot in
+ * a team grid or a face beside a testimonial quote IS a real specific fact about a real person, so
+ * a stock-photo search result is the one substitution that must not happen here: it would put an
+ * invented stranger's face on the site under a name the copy layer has already refused to invent.
+ *
+ * `data` rather than `fixed` because for IMAGES the two ship identically when nothing real exists —
+ * `fill.ts` leaves the template's own demo photo in place either way, since the image `data` branch
+ * has no `illustrativeFill` fallback (a null `resolveData` just skips the write) — and `data`
+ * additionally lets a business that DOES supply real staff photos have them resolved. That last
+ * part is exactly why the text side of this policy uses `fixed` instead: text `data` DOES fall
+ * through to `illustrativeFill`, which may write a plausible invented testimonial, so people copy
+ * needs the stricter never-substituted source while people photos do not.
  */
 export function imagePlacementFromPhotoSlot(
   photo: PhotoSlot,
@@ -151,6 +165,7 @@ export function imagePlacementFromPhotoSlot(
   subjectHint: string
 ): ImagePlacement {
   const key = sectionKey({ templateId: section.templateId, sectionId: section.id });
+  const peopleLocked = PEOPLE_SECTION_ROLES.has(section.role);
   return ImagePlacementSchema.parse({
     id: `${key}.photo.${index}`,
     kind: "image",
@@ -159,14 +174,19 @@ export function imagePlacementFromPhotoSlot(
     domKind: photo.kind,
     section: key,
     role: `${section.role}Photo`,
-    fillSource: "llmQuery",
+    fillSource: peopleLocked ? "data" : "llmQuery",
     original,
     constraints: {
       aspectRatio: reduceRatio(photo.width, photo.height),
       minWidthPx: Math.max(480, photo.width),
       minHeightPx: Math.max(480, photo.height),
     },
-    subject: `a photo representative of this business's ${section.role} section (${subjectHint})`,
+    subject: peopleLocked
+      ? `a real photo of this business's own ${section.role === "team" ? "team member" : "customer"} — supplied by the business, never a stock-photo search`
+      : `a photo representative of this business's ${section.role} section (${subjectHint})`,
+    ...(peopleLocked
+      ? { notes: `Locked: a real person's photo in a "${section.role}" section — resolvable only from the business's own feed, never a stock-photo query.` }
+      : {}),
   });
 }
 

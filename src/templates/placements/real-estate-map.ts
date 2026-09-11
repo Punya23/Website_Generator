@@ -343,7 +343,7 @@ function indexPage(): PageDescriptorSet {
     { id: "home.featured.viewAll", selector: "main > section:nth-of-type(2) .section__header--split a", role: "sectionLinkCta", fillSource: "llm", text: label(3) },
   ];
   const images: ImageDescriptor[] = [
-    { id: "home.hero.background", selector: ".hero", domKind: "background", role: "heroBackground", fillSource: "data", aspectRatio: "16:9", minWidthPx: 1600, minHeightPx: 900, subject: "wide establishing shot of the business's own market/neighborhood, dusk or golden-hour" },
+    { id: "home.hero.background", selector: ".hero", domKind: "background", role: "heroBackground", fillSource: "llmQuery", aspectRatio: "16:9", minWidthPx: 1600, minHeightPx: 900, subject: "wide establishing shot of the business's own market/neighborhood, dusk or golden-hour" },
   ];
   for (let n = 1; n <= 6; n++) {
     const card = propertyCard("home.featured", n);
@@ -381,8 +381,8 @@ function aboutPage(): PageDescriptorSet {
     ...sectionHeader("about.values", "main > section:nth-of-type(3)", { subtitle: false }),
   ];
   const images: ImageDescriptor[] = [
-    { id: "about.banner.background", selector: ".page-banner", domKind: "background", role: "pageBannerBackground", fillSource: "data", aspectRatio: "16:9", minWidthPx: 1600, minHeightPx: 900, subject: "the business's storefront, office, or team at work" },
-    { id: "about.story.photo", selector: ".detail-layout img", domKind: "img", role: "aboutPhoto", fillSource: "data", aspectRatio: "4:3", minWidthPx: 800, minHeightPx: 600, subject: "the business's own office, storefront, or founder" },
+    { id: "about.banner.background", selector: ".page-banner", domKind: "background", role: "pageBannerBackground", fillSource: "llmQuery", aspectRatio: "16:9", minWidthPx: 1600, minHeightPx: 900, subject: "the business's storefront, office, or team at work" },
+    { id: "about.story.photo", selector: ".detail-layout img", domKind: "img", role: "aboutPhoto", fillSource: "llmQuery", aspectRatio: "4:3", minWidthPx: 800, minHeightPx: 600, subject: "the business's own office, storefront, or founder" },
   ];
   for (let n = 1; n <= 4; n++) text.push(...serviceCard("about.values", n, { columns: 4, link: false }));
   for (let n = 1; n <= 4; n++) text.push(...statItem("about.stats", n));
@@ -408,7 +408,7 @@ function servicesPage(): PageDescriptorSet {
     ...sectionHeader("services.offers", "main > section:nth-of-type(2)", { subtitle: false }),
   ];
   const images: ImageDescriptor[] = [
-    { id: "services.banner.background", selector: ".page-banner", domKind: "background", role: "pageBannerBackground", fillSource: "data", aspectRatio: "16:9", minWidthPx: 1600, minHeightPx: 900, subject: "the business's services being delivered" },
+    { id: "services.banner.background", selector: ".page-banner", domKind: "background", role: "pageBannerBackground", fillSource: "llmQuery", aspectRatio: "16:9", minWidthPx: 1600, minHeightPx: 900, subject: "the business's services being delivered" },
   ];
   for (let n = 1; n <= 6; n++) text.push(...serviceCard("services.offers", n, { columns: 3, link: true }));
   text.push(...sectionHeader("services.process", "main > section:nth-of-type(3)", { subtitle: false }));
@@ -429,7 +429,7 @@ function listingsPage(): PageDescriptorSet {
     { id: "listings.banner.title", selector: ".page-banner__title", role: "pageBannerTitle", fillSource: "llm", text: prose("pageBannerTitle", 760, 2) },
   ];
   const images: ImageDescriptor[] = [
-    { id: "listings.banner.background", selector: ".page-banner", domKind: "background", role: "pageBannerBackground", fillSource: "data", aspectRatio: "16:9", minWidthPx: 1600, minHeightPx: 900, subject: "an aerial or streetscape view representative of the business's market" },
+    { id: "listings.banner.background", selector: ".page-banner", domKind: "background", role: "pageBannerBackground", fillSource: "llmQuery", aspectRatio: "16:9", minWidthPx: 1600, minHeightPx: 900, subject: "an aerial or streetscape view representative of the business's market" },
   ];
   // Filter bar, sort control, results count and pagination are live UI state, not business
   // content — intentionally out of scope (see PLACEMENTS_SCHEMA.md, "What's intentionally left out").
@@ -519,7 +519,7 @@ function agentsPage(): PageDescriptorSet {
     ...sectionHeader("agents.team", "main > section:nth-of-type(2)", { subtitle: true }),
   ];
   const images: ImageDescriptor[] = [
-    { id: "agents.banner.background", selector: ".page-banner", domKind: "background", role: "pageBannerBackground", fillSource: "data", aspectRatio: "16:9", minWidthPx: 1600, minHeightPx: 900, subject: "the team together, or the office" },
+    { id: "agents.banner.background", selector: ".page-banner", domKind: "background", role: "pageBannerBackground", fillSource: "llmQuery", aspectRatio: "16:9", minWidthPx: 1600, minHeightPx: 900, subject: "the team together, or the office" },
   ];
   for (let n = 1; n <= 6; n++) {
     const a = agentCard("agents.roster", n, { socials: true });

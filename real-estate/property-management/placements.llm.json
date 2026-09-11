@@ -335,9 +335,12 @@
             "background": {
               "id": "home.hero.background",
               "type": "image",
-              "editable": false,
+              "editable": true,
               "current": "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1600&q=70",
-              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              "aspectRatio": "16:9",
+              "minWidthPx": 1600,
+              "minHeightPx": 900,
+              "subject": "wide establishing shot of the business's own market/neighborhood, dusk or golden-hour"
             }
           },
           "instances": [
@@ -1196,9 +1199,12 @@
             "background": {
               "id": "about.banner.background",
               "type": "image",
-              "editable": false,
+              "editable": true,
               "current": "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&w=1600&q=70",
-              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              "aspectRatio": "16:9",
+              "minWidthPx": 1600,
+              "minHeightPx": 900,
+              "subject": "the business's storefront, office, or team at work"
             }
           }
         },
@@ -1223,9 +1229,12 @@
             "photo": {
               "id": "about.story.photo",
               "type": "image",
-              "editable": false,
+              "editable": true,
               "current": "https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?auto=format&fit=crop&w=800&q=70",
-              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              "aspectRatio": "4:3",
+              "minWidthPx": 800,
+              "minHeightPx": 600,
+              "subject": "the business's own office, storefront, or founder"
             }
           },
           "instances": [
@@ -1622,9 +1631,12 @@
             "background": {
               "id": "services.banner.background",
               "type": "image",
-              "editable": false,
+              "editable": true,
               "current": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1600&q=70",
-              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              "aspectRatio": "16:9",
+              "minWidthPx": 1600,
+              "minHeightPx": 900,
+              "subject": "the business's services being delivered"
             }
           }
         },
@@ -2075,9 +2087,12 @@
             "background": {
               "id": "listings.banner.background",
               "type": "image",
-              "editable": false,
+              "editable": true,
               "current": "https://images.unsplash.com/photo-1560184897-ae75f418493e?auto=format&fit=crop&w=1600&q=70",
-              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              "aspectRatio": "16:9",
+              "minWidthPx": 1600,
+              "minHeightPx": 900,
+              "subject": "an aerial or streetscape view representative of the business's market"
             }
           }
         },
@@ -3173,9 +3188,12 @@
             "background": {
               "id": "agents.banner.background",
               "type": "image",
-              "editable": false,
+              "editable": true,
               "current": "https://images.unsplash.com/photo-1571939228382-b2f2b585ce15?auto=format&fit=crop&w=1600&q=70",
-              "reason": "a specific real fact (price, address, identity, a genuine testimonial) — comes from the business's own data, never invented"
+              "aspectRatio": "16:9",
+              "minWidthPx": 1600,
+              "minHeightPx": 900,
+              "subject": "the team together, or the office"
             }
           }
         },

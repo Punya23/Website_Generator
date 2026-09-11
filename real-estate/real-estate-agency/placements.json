@@ -3,7 +3,7 @@
   "vertical": "real-estate",
   "templateId": "real-estate-agency",
   "templateName": "Prestige Realty",
-  "generatedAt": "2026-09-09T10:49:31.587Z",
+  "generatedAt": "2026-09-10T18:39:25.558Z",
   "pageOrder": [
     "index.html",
     "about.html",
@@ -2338,7 +2338,7 @@
           "domKind": "background",
           "section": "hero",
           "role": "heroBackground",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=70",
           "constraints": {
             "aspectRatio": "16:9",
@@ -3277,7 +3277,7 @@
           "domKind": "background",
           "section": "banner",
           "role": "pageBannerBackground",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1600&q=70",
           "constraints": {
             "aspectRatio": "16:9",
@@ -3294,7 +3294,7 @@
           "domKind": "img",
           "section": "story",
           "role": "aboutPhoto",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1524230572899-a752b3835840?auto=format&fit=crop&w=800&q=70",
           "constraints": {
             "aspectRatio": "4:3",
@@ -4251,7 +4251,7 @@
           "domKind": "background",
           "section": "banner",
           "role": "pageBannerBackground",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=70",
           "constraints": {
             "aspectRatio": "16:9",
@@ -5483,7 +5483,7 @@
           "domKind": "background",
           "section": "banner",
           "role": "pageBannerBackground",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1600&q=70",
           "constraints": {
             "aspectRatio": "16:9",
@@ -7276,7 +7276,7 @@
           "domKind": "background",
           "section": "banner",
           "role": "pageBannerBackground",
-          "fillSource": "data",
+          "fillSource": "llmQuery",
           "original": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1600&q=70",
           "constraints": {
             "aspectRatio": "16:9",

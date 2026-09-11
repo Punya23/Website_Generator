@@ -46,8 +46,9 @@ describe("react pipeline paths", () => {
 
   it("HTML output uses skins page-to-page instead of the legacy section-builder pipeline", () => {
     const orch = readFileSync(join(root, "src/orchestrator/orchestrator.ts"), "utf8");
-    // Skin fill is now the fallback behind the verbatim-template path, not the outright default.
-    expect(orch).toContain("const skinFill = !verbatim && useSkinFillPipeline()");
+    // Skin fill is now the fallback behind the verbatim-template (and, when opted into for a
+    // real-estate brief, placements) paths, not the outright default.
+    expect(orch).toContain("const skinFill = !placements && !verbatim && useSkinFillPipeline()");
     expect(orch).not.toContain("outputMode === \"react\" && useSkinFillPipeline()");
     expect(orch).toContain("runSkinHtmlPipeline");
     const theme = readFileSync(join(root, "src/skins/theme.ts"), "utf8");

@@ -152,16 +152,26 @@ function clampToConstraints(raw: string, constraints: TextConstraints, id: strin
   return trimmed;
 }
 
-/** The one substitution allowed on a `data` placement with nothing real to resolve to: replace a
- *  literal mention of the TEMPLATE's own fictional brand with this site's real one, changing
- *  nothing else about the fallback text. `null` when there is nothing to swap (no
- *  `templateBusinessName`/`brief.businessName` configured, or the original doesn't name it) — the
- *  caller's existing "nothing resolved, keep the original" behavior applies unchanged. */
-function swapTemplateBrandName(original: string, options: ApplyPlacementsOptions): string | null {
+/** Replaces a literal mention of the TEMPLATE's own fictional brand with this site's real one,
+ *  changing nothing else about the surrounding text. `null` when there is nothing to swap (no
+ *  `templateBusinessName`/`brief.businessName` configured, or `text` doesn't name it). Two callers:
+ *  `swapTemplateBrandName` below (a `data` placement with nothing real to resolve to — the caller's
+ *  existing "nothing resolved, keep the original" behavior applies unchanged when this returns
+ *  `null`) and the image loop's own `alt`-text sweep, which runs regardless of `fillSource` — an
+ *  image's `alt` is never a placement `fill.ts` writes to at all (only `src`/`background-image`
+ *  are), so a hand-authored `alt="<Template's Own Brand> office"` would otherwise ship completely
+ *  untouched on every generation. Found live via `checkBrandLeak` once Phase 4
+ *  (docs/PLACEMENTS_ORCHESTRATION_PLAN.md) actually wired it into the curated pipeline's QA — not
+ *  a hypothetical gap. */
+function substituteBrandName(text: string, options: ApplyPlacementsOptions): string | null {
   const from = options.templateBusinessName;
   const to = options.brief.businessName;
-  if (!from || !to || !original.includes(from)) return null;
-  return original.split(from).join(to);
+  if (!from || !to || !text.includes(from)) return null;
+  return text.split(from).join(to);
+}
+
+function swapTemplateBrandName(original: string, options: ApplyPlacementsOptions): string | null {
+  return substituteBrandName(original, options);
 }
 
 /** `© <year> <businessName>. All rights reserved.` / `Call <phone>` / the leading text of the
@@ -292,6 +302,20 @@ export async function applyPlacements(html: string, page: PagePlacements, option
   }
 
   for (const image of page.images) {
+    // Independent of `fillSource` and of whatever happens to `src` below: an `alt` attribute is
+    // never itself a placement (no `TextPlacement`/`ImagePlacement` ever targets it), so this is
+    // the only place a leaked template brand in `alt` text gets caught, on EVERY image — including
+    // a `fixed` one whose photo never changes but whose hand-authored alt text still might name
+    // the wrong company. See `substituteBrandName`'s own doc comment for how this was found.
+    const el = $(image.selector).first();
+    if (el.length > 0) {
+      const alt = el.attr("alt");
+      if (alt) {
+        const swappedAlt = substituteBrandName(alt, options);
+        if (swappedAlt !== null) el.attr("alt", swappedAlt);
+      }
+    }
+
     if (image.fillSource === "fixed") continue;
     const url =
       image.fillSource === "data"

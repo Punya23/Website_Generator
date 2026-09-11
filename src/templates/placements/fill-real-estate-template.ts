@@ -337,6 +337,12 @@ export interface FilledPage {
   appliedText: number;
   appliedImages: number;
   clamped: { id: string; reason: string }[];
+  /** Placement ids whose selector no longer resolved against this page's HTML — markup drift
+   *  since `placements.json` was generated, not "nothing to fill" (`applyPlacements`'s own
+   *  `FillResult.skipped`, previously discarded here). Phase 4
+   *  (docs/PLACEMENTS_ORCHESTRATION_PLAN.md): surfaced so the curated path reports this the same
+   *  way the corpus path's `runCorpusPlacementsFill` already does. */
+  skipped: string[];
 }
 
 export interface RealEstateFillResult {
@@ -461,6 +467,7 @@ export async function fillRealEstateTemplate(
       appliedText: result.appliedText,
       appliedImages: result.appliedImages,
       clamped: result.clamped,
+      skipped: result.skipped,
     };
   }
 

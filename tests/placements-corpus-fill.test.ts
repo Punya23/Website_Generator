@@ -132,4 +132,34 @@ describe("runCorpusPlacementsFill", () => {
     expect(result.htmlPages.about).toBe("<html><body>unchanged</body></html>");
     expect(result.appliedText).toBe(0);
   });
+
+  // Phase 4 (docs/PLACEMENTS_ORCHESTRATION_PLAN.md, "post-fill QA": "skipped-selector count
+  // surfaced") — `verbatim-template-pipeline.ts` attaches a page's own skipped/clamped note to
+  // that page's own QAResult, which needs the PER-PAGE breakdown, not just the flattened totals.
+  it("breaks totals down per page in `byPage`, keyed only by pages it actually touched", async () => {
+    const result = await runCorpusPlacementsFill(
+      selected,
+      templateStore(),
+      { templateId: manifest.templateId, templateName: "Test composition", vertical: "general" },
+      htmlPages,
+      RAW_BRIEF
+    );
+    expect(Object.keys(result.byPage)).toEqual(["home"]);
+    expect(result.byPage.home!.appliedText).toBe(result.appliedText);
+    expect(result.byPage.home!.appliedImages).toBe(result.appliedImages);
+    expect(result.byPage.home!.skipped).toEqual(result.skipped);
+    expect(result.byPage.home!.clamped).toEqual(result.clamped);
+  });
+
+  it("a page with nothing to fill has no entry in `byPage` at all", async () => {
+    const noBodyPages = { pages: { about: [] as PlacedSection[] } };
+    const result = await runCorpusPlacementsFill(
+      noBodyPages,
+      templateStore(),
+      { templateId: manifest.templateId, templateName: "Test composition", vertical: "general" },
+      { about: "<html><body>unchanged</body></html>" },
+      RAW_BRIEF
+    );
+    expect(result.byPage.about).toBeUndefined();
+  });
 });

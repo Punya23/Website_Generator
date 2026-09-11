@@ -210,6 +210,35 @@ async function runCodeQAInner(
     const browser = await getBrowser();
     const page = await browser.newPage();
     await page.setViewportSize({ width: 1280, height: 800 });
+
+    // Network-level check, only meaningful in `pageUrl` mode (a real navigation, not
+    // `setContent`'s about:blank) — catches what `BROKEN_IMAGE` below cannot: a missing
+    // stylesheet (the page renders, just unstyled — nothing about that looks like a DOM error) and
+    // a CSS `background-image` that fails to load (no `<img>` element exists for it at all, so the
+    // `naturalWidth` check never sees it). Listened for BEFORE `goto` — attaching after the
+    // navigation starts would miss requests that already resolved.
+    //
+    // Two events, not one: `pageUrl` is always a `file://` URL here (`stageSite` writes to a real
+    // temp dir), and a missing LOCAL file over `file://` never produces an HTTP response at all —
+    // confirmed live, `response`-only missed every case below — it fails the request outright
+    // (`net::ERR_FILE_NOT_FOUND`) as a `requestfailed` event. `response` stays too, for whichever
+    // asset genuinely round-trips through a server (a real `http(s)://` CDN font/asset reference
+    // this page happens to keep) rather than this project's own local ones.
+    const failedAssets: { url: string; status: number | string; resourceType: string }[] = [];
+    if (options.pageUrl) {
+      const isTrackedType = (type: string) => type === "stylesheet" || type === "image";
+      page.on("requestfailed", (request) => {
+        if (!isTrackedType(request.resourceType())) return;
+        failedAssets.push({ url: request.url(), status: request.failure()?.errorText ?? "failed", resourceType: request.resourceType() });
+      });
+      page.on("response", (response) => {
+        const status = response.status();
+        if (status < 400) return;
+        if (!isTrackedType(response.request().resourceType())) return;
+        failedAssets.push({ url: response.url(), status, resourceType: response.request().resourceType() });
+      });
+    }
+
     if (options.pageUrl) {
       await page.goto(options.pageUrl, { waitUntil: "domcontentloaded", timeout: 15_000 });
     } else {
@@ -498,6 +527,23 @@ async function runCodeQAInner(
         message: `Image in block ${id} has no src at all (never resolved)`,
         targetId: id,
         suggestion: "Photo/media resolution silently failed for this slot — investigate the resolver, don't just clear src again",
+      });
+    }
+
+    // De-duped by URL: a repeated `background-image` (the same missing photo used behind several
+    // sections) would otherwise flood this with identical issues.
+    const seenFailedAsset = new Set<string>();
+    for (const asset of failedAssets) {
+      if (seenFailedAsset.has(asset.url)) continue;
+      seenFailedAsset.add(asset.url);
+      issues.push({
+        severity: "hard",
+        code: "MISSING_ASSET",
+        message: `${asset.resourceType === "stylesheet" ? "Stylesheet" : "Image"} failed to load (${asset.status}): ${asset.url}`,
+        suggestion:
+          asset.resourceType === "stylesheet"
+            ? "A missing stylesheet ships an unstyled page with no other visible symptom — check the output writer actually copied this file"
+            : "Likely a CSS background-image, not an <img> element (BROKEN_IMAGE only sees the latter) — check the resolver that set this URL",
       });
     }
 

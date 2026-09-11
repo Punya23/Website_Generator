@@ -411,4 +411,43 @@ describe("applyPlacements: images", () => {
     expect(result.html).toContain("https://example.com/original.jpg");
     expect(result.appliedImages).toBe(0);
   });
+
+  // Phase 4 (docs/PLACEMENTS_ORCHESTRATION_PLAN.md, "post-fill QA") — found live via
+  // `checkBrandLeak` once it was actually wired into the curated pipeline's QA: an image's `alt`
+  // is never itself a placement, so the template's own hand-authored alt text shipped completely
+  // untouched on every generation regardless of what happened to `src`.
+  it("swaps the TEMPLATE's own brand out of an image's alt text, independent of src resolution", async () => {
+    const html = `<img id="i1" src="https://example.com/office.jpg" alt="Prestige Realty office">`;
+    const p = page([], [imagePlacement({})]);
+    const result = await applyPlacements(html, p, {
+      brief: { businessName: "Harbor Homes" },
+      templateBusinessName: "Prestige Realty",
+      resolveData: async () => "https://cdn.example.com/new.jpg",
+    });
+    expect(result.html).toContain('alt="Harbor Homes office"');
+    expect(result.html).not.toContain("Prestige Realty");
+  });
+
+  it("swaps a leaked brand in alt text even on a FIXED image whose src never changes", async () => {
+    const html = `<img id="i1" src="https://example.com/agent.jpg" alt="Jennifer Lawson, Prestige Realty agent">`;
+    const p = page([], [imagePlacement({ fillSource: "fixed" })]);
+    const result = await applyPlacements(html, p, {
+      brief: { businessName: "Harbor Homes" },
+      templateBusinessName: "Prestige Realty",
+    });
+    expect(result.html).toContain('alt="Jennifer Lawson, Harbor Homes agent"');
+    expect(result.html).toContain("https://example.com/agent.jpg"); // src untouched
+    expect(result.appliedImages).toBe(0); // the swap isn't counted as a "fill" of the image itself
+  });
+
+  it("does nothing to alt text that doesn't name the template's own brand", async () => {
+    const html = `<img id="i1" src="https://example.com/office.jpg" alt="Our downtown office">`;
+    const p = page([], [imagePlacement({})]);
+    const result = await applyPlacements(html, p, {
+      brief: { businessName: "Harbor Homes" },
+      templateBusinessName: "Prestige Realty",
+      resolveData: async () => "https://cdn.example.com/new.jpg",
+    });
+    expect(result.html).toContain('alt="Our downtown office"');
+  });
 });

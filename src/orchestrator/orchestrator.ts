@@ -584,6 +584,12 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
     htmlPages = placementsResult.htmlPages;
     qaResults = placementsResult.qaResults;
     placementsTemplateId = placementsResult.templateId;
+    // Phase 4 (docs/PLACEMENTS_ORCHESTRATION_PLAN.md): this template's own assets/css, assets/js —
+    // `verbatimFiles` is `writeSiteOutput`'s generic "extra files to copy" list, not verbatim-
+    // pipeline-specific despite the name; reused rather than adding a second field this branch is
+    // the only caller of. Before this, curated real-estate sites shipped with NO stylesheet copied
+    // at all — invisible because `runPlacementsPipeline`'s own QA never staged real files to catch it.
+    verbatimFiles = placementsResult.files;
     pageResults = Object.keys(htmlPages).map((slug) => ({
       spec: {
         slug,

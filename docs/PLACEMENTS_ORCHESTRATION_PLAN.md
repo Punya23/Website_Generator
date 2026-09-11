@@ -2,9 +2,9 @@
 
 > **Audience:** an implementing engineer or coding LLM.  
 > **Goal:** wire the **placements fill engine** into production orchestration — LLM fills values only, never HTML — without collapsing the ~900-template corpus into 4 layouts.  
-> **Date:** 2026-09-11 (rev 4 — Phase 2B built and verified end to end; remaining scope is Phase 3 onward)  
-> **Baseline:** branch `claude/placements-orchestration-review-0d747d` — `origin/master` @ `82706ef` plus this session's Phase 2B commit (not yet merged).  
-> **Note:** branch `feat/robust-mix-match-pipeline` may still sit at `3005106` and **lack** everything through Phase 2B below. Implement / review against this branch or master tip (whichever is later) — or rebase first.
+> **Date:** 2026-09-11 (rev 5 — Phase 3 (separate session) + Phase 4 both done; remaining scope is Phase 5 (docs) only)  
+> **Baseline:** `origin/master` @ `4c674f8` (Phase 2B merged) plus this session's Phase 4 commit.  
+> **Note:** branch `feat/robust-mix-match-pipeline` may still sit at `3005106` and **lack** everything through Phase 4 below. Implement / review against master tip — or rebase first.
 > **Collision note (rev 3, still relevant):** a separate session landed Phase 0 + Phase 2C (curated override) directly on `master` while this plan's own Phase 0 attempt (`src/templates/placements/run-fill.ts`) was mid-flight on a review branch. Compared both implementations line-for-line — same prompt, same schema, same safety rules — and kept master's (`fill-real-estate-template.ts` / `placements-pipeline.ts`): it was already wired through `orchestrator.ts` at ~10 call sites with its own tests. The review branch's `run-fill.ts` was discarded. Phase 2B (rev 4) then split `fillRealEstateTemplate` in place to get the reusable, I/O-decoupled fill both paths needed — see §7 Phase 2B.
 
 ---
@@ -12,7 +12,7 @@
 ## 0. How to use this doc
 
 1. Read §1–§4 before writing code.
-2. Implement in **phase order** (§7). **Skip Phase 1, 0, 2A, 2B, and 2C** — all done (see §2 and §7 for what shipped where). **Phase 3 onward is the actual open work.**
+2. Implement in **phase order** (§7). **Skip everything through Phase 4** — all done (see §7 for what shipped where). **Phase 5 (docs) is the only remaining work.**
 3. Each open phase has: objective, files, steps, acceptance, done-when.
 4. Prefer **extracting** existing script logic into libraries over rewriting it.
 5. Fail closed on facts (phone/email/license/data): keep template / placeholder rather than invent.
@@ -275,25 +275,46 @@ Shipped as `src/orchestrator/placements-pipeline.ts` (`runPlacementsPipeline`) +
 
 ---
 
-### Phase 3 — Media hardening + resolveData fixtures
+### Phase 3 — Media hardening + resolveData fixtures — **DONE** (`a896dbb`/`8c9717a`, separate session)
 
-**Objective:** Corpus + curated paths share media resolution; demos can inject listing fixtures.
+Built while Phase 2B was in flight elsewhere; nothing here touched `from-corpus.ts`/`compose.ts`/`verbatim-template-pipeline.ts`, so no conflict.
 
-**Steps:**
+| Step | Where |
+|------|-------|
+| `resolveData` hook threaded into `fillRealEstateTemplate` | `fill-real-estate-template.ts` |
+| `demoListingsResolver(locale)` — 6 US + 6 India fixture listings, cycled via modulo | `demo-data.ts` + `fixtures/demo-listings.json` |
+| `DEMO_LISTINGS=1` opt-in on the CLI | `scripts/generate-real-site.ts` |
+| `checkBrandLeak(html, ownBrandName)` — the 4 curated templates' own demo brand names | `brand-leak.ts` |
+| `resolveImageQueries` exported (was private) | `fill-real-estate-template.ts`, reused transitively by Phase 2B's `fillPlacementsFile` |
 
-1. Ensure corpus `llm`/`photo` slots that should be queries use the same `resolveImageQueries` path (from-corpus photo policy).
-2. `fixtures/demo-listings.json` + `resolveData` for curated RE demos.
-3. Brand-leak QA helper: fail if output contains other curated demo brands when brief name differs (`Prestige Realty`, etc.).
+**Not done, correctly out of scope:** corpus-side brand-leak detection — `checkBrandLeak`'s fixed 4-name list doesn't fit a composition drawing from hundreds of possible source templates, each with its own demo brand. Needs a different, generic mechanism; still open (see Phase 4 below).
 
-**Done when:** one mocked integration test covers query→URL on corpus placements.
+**Done when:** ✅ 15 tests (`tests/placements-phase3.test.ts`), `tsc` clean.
 
 ---
 
-### Phase 4 — Post-fill QA
+### Phase 4 — Post-fill QA — **DONE this session**
 
-**Objective:** Reuse verbatim QA (`stageSite`, `runCodeQA`, `[data-tpl]` checks). Add brand-leak + “placements skipped selectors” metrics to pipeline log.
+**Objective (as stated):** Reuse verbatim QA (`stageSite`, `runCodeQA`, `[data-tpl]` checks). Add brand-leak + "placements skipped selectors" metrics to pipeline log.
 
-**Done when:** hard QA on missing CSS assets; skipped-selector count surfaced.
+Turned out to be less "add metrics to a working pipeline" and more "the curated pipeline's QA was never really checking anything" — the objective's own premise (reuse verbatim QA) was false until this session: `placements-pipeline.ts` called `runCodeQA(page.html, slug)` with **no `pageUrl`**, so it ran against `page.setContent()`'s `about:blank` — the exact case `CodeQAOptions.pageUrl`'s own doc comment warns produces meaningless asset checks. Worse, `PlacementsPipelineResult` never returned a `files` list at all, so `orchestrator.ts`'s `placements` branch left `verbatimFiles` (the generic "extra files to copy" list every output writer reads) at its default `[]`. **Every curated real-estate generation shipped to `output/` with zero CSS/JS copied — a completely unstyled site — invisible because nothing ever staged real files to catch it.** Confirmed live: before this session's fix, a real end-to-end `PIPELINE_PLACEMENTS=1` generation's `output/<slug>/` had no `assets/` directory at all; after, `assets/css/style.css` and `assets/js/main.js` are there with fresh timestamps and the page's own `<link>` correctly resolves.
+
+| Change | File |
+|---|---|
+| New `MISSING_ASSET` check — a stylesheet or CSS `background-image` that fails to load, listened for via BOTH `response` (real 4xx) and `requestfailed` (a missing **local** `file://` path never produces an HTTP response at all — the whole reason `stageSite`'s pages need this over `setContent`) | `qa/code-qa.ts` |
+| `collectTemplateAssets(templateDir)` — recursive walk, excludes `.html`/`.json`; staged via the same `stageSite` verbatim already exports; `runCodeQA` now gets a real `pageUrl` | `orchestrator/placements-pipeline.ts` |
+| `files` returned from `runPlacementsPipeline`, wired into `orchestrator.ts`'s `verbatimFiles` (reused — it's a generic "extra files" list, not verbatim-specific) — **the actual fix** | `orchestrator/orchestrator.ts` |
+| `checkBrandLeak` now called per page in the curated pipeline (Phase 3 built it; nothing had ever invoked it in production, only the CLI) — pushed as a `BRAND_LEAK` hard `QAIssue`, `passed` recomputed | `orchestrator/placements-pipeline.ts` |
+| `FilledPage.skipped` — `applyPlacements`'s own `skipped` was silently discarded before; now returned and surfaced as a soft `PLACEMENTS_SELECTOR_SKIPPED` issue | `fill-real-estate-template.ts` |
+| Corpus path: `CorpusPlacementsFillResult.byPage` — per-page skipped/clamped breakdown, attached to that page's own `QAResult` as soft `PLACEMENTS_SELECTOR_SKIPPED`/`PLACEMENTS_VALUE_CLAMPED` issues (previously only a flat, site-wide log line) | `placements-corpus-fill.ts`, `verbatim-template-pipeline.ts` |
+
+**A second real bug found via the first new check, not hypothetical:** turning on brand-leak checking for real found "Prestige Realty" leaking through `about.html`'s hero image `alt="Prestige Realty office"` on every single curated generation. Root cause: an image's `alt` attribute is never itself a placement — `fill.ts` only ever writes `src`/`background-image` for an image, so a hand-authored `alt` mentioning the template's own demo brand shipped untouched regardless of `fillSource`, even on a `fixed` image whose photo never changes. Fixed by extracting `swapTemplateBrandName`'s swap logic into `substituteBrandName` and running it over every image's `alt` in the fill loop, independent of `fillSource` — 3 new tests in `placements.test.ts` cover it directly (including the `fixed`-image case).
+
+**Deliberately not done — a real, separate, pre-existing bug found but out of scope:** a live end-to-end run surfaced `TEMPLATE_FILLER_LEAK`/`streetAddress` false-positives on a REAL, correctly-supplied street address (e.g. "1419 Park Street, Suite B, Alameda, CA 94501" flagged as leaked filler). This is `validateSectionsStructurally`'s existing street-address heuristic in `code-qa.ts`, runs unconditionally before any Playwright staging, entirely unrelated to this phase's `pageUrl`/asset/brand-leak work — not introduced or touched here. Flagged, not fixed: touching a shared, widely-tested QA subsystem's address heuristic is its own scoped piece of work.
+
+**Verified:** `tsc --noEmit` clean; 160 tests green across every placements/QA-adjacent suite (`code-qa-missing-asset.test.ts` new, 5 tests; `placements-pipeline-phase4.test.ts` new, 6 tests; `placements-corpus-fill.test.ts` +2; `placements.test.ts` +3); two real end-to-end generations with real LLM calls — curated (`PIPELINE_PLACEMENTS=1`) confirming `assets/css/style.css` now ships, and the corpus path (unaffected by this phase's changes, still green from Phase 2B).
+
+**Done when:** ✅ all of the above.
 
 ---
 
@@ -386,7 +407,8 @@ Rules:
 3. ~~PR3 — Phase 2C: curated override opt-in~~ — **done** (`92bbe90`, as `placements-pipeline.ts` + `PIPELINE_PLACEMENTS`)
 4. **PR4 — people-photo guard:** `task_effb69a4` — blocks PR5
 5. ~~PR5 — Phase 2B: corpus-path placements fill~~ — **done this session** (`PIPELINE_PLACEMENTS_CORPUS`, chrome excluded, polish + section repair both replaced, verified end to end)
-6. **PR6 — Phase 3–5:** media fixtures, per-section brand-leak detection for the corpus path, QA metrics, docs
+6. ~~PR6 — Phase 3–4~~ — **done** (Phase 3: media fixtures, curated brand-leak helper; Phase 4: real asset-copy fix, MISSING_ASSET QA, corpus skipped-selector surfacing, image alt brand-leak fix). Corpus-side brand-leak detection still open (see Phase 3/4 sections above)
+7. **PR7 — Phase 5:** docs only — `SYSTEM.md`, `templates/README.md`, `src/skins/README.md`
 
 ---
 
@@ -436,3 +458,4 @@ npm run generate -- "Harbor Homes boutique residential brokerage in Alameda, CA"
 | 2 | Re-baseline on master; Phase 1 = done; **from-corpus = trunk**; curated RE = override; drop coverage fork; don’t re-litigate mix; under-fill policy explicit |
 | 3 | **Collision resolved:** a separate session shipped Phase 0 (`fill-real-estate-template.ts`) + Phase 2C (`placements-pipeline.ts`, `PIPELINE_PLACEMENTS`) directly to master — compared against this doc's own `run-fill.ts` attempt and kept master's (already wired through orchestrator.ts, own tests); `run-fill.ts` discarded. **Phase 2A spike run for real** against the 910-template cache: 100% selector hit rate once nav/footer excluded, 5.25× vs 2.17× constraint-tightness gap quantified, people-photo guard gap found and spawned as `task_effb69a4`. Phase 2B (corpus trunk) is now the entire remaining scope of this plan; renamed its flag to `PIPELINE_PLACEMENTS_CORPUS` to avoid colliding with the already-shipped `PIPELINE_PLACEMENTS` |
 | 4 | **Phase 2B built and verified end to end** (`task_effb69a4` landed first, unblocking it). Split `fillRealEstateTemplate` into a reusable `fillPlacementsFile` + a disk-reading wrapper; new `placements-corpus-fill.ts` excludes chrome, fills, and applies onto `composeSite`'s output; `PIPELINE_PLACEMENTS_CORPUS` (default `0`) gates it in `verbatim-template-pipeline.ts`. **Found and fixed a second integration hazard the original plan missed:** section repair, not just `polishComposedCopy`, recomposes via `overrides` and would have silently discarded a placements fill the same way — both are now gated behind one flag read. Verified with 115 passing tests plus one real, no-mock, real-LLM end-to-end generation (real per-business copy shipped, 0 selectors skipped, $0.0068). Remaining scope is Phase 3 (media/brand-leak) onward |
+| 5 | **Phase 3 (separate session) confirmed done; Phase 4 built.** Phase 4's stated objective ("reuse verbatim QA") turned out to be false as written — the curated pipeline never staged real files at all, so `runCodeQA` ran with no `pageUrl` and `files` was never returned, meaning **every curated real-estate generation shipped with zero CSS/JS copied**, invisible until now. Fixed at the source (`collectTemplateAssets` + `stageSite` + `verbatimFiles` wiring), not papered over. New generic `MISSING_ASSET` QA check needed BOTH `response` and `requestfailed` listeners — a missing local `file://` asset never produces an HTTP response, `response`-only missed every case live. Turning on brand-leak checking for real (Phase 3 built it, nothing had ever called it in production) found a second real leak — an image `alt` attribute, which no placement type ever writes to — fixed in `fill.ts`. One pre-existing, unrelated bug found and deliberately left alone (street-address false-positive in `validateSectionsStructurally`, out of this phase's scope). 160 tests green, two real end-to-end generations (curated + corpus). Only Phase 5 (docs) remains |

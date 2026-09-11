@@ -11,7 +11,7 @@ import { composeSite, pageFileName, type ComposedSite, type FileCopy } from "../
 import { selectSiteSections } from "../templates/select.js";
 import { polishComposedCopy } from "../agents/copy-polish-agent.js";
 import { repairFlaggedSections } from "../agents/section-repair-agent.js";
-import { runCorpusPlacementsFill } from "./placements-corpus-fill.js";
+import { runCorpusPlacementsFill, type CorpusPlacementsPageResult } from "./placements-corpus-fill.js";
 import { usePlacementsCorpusFill } from "../llm/pipeline-speed.js";
 import { templateStore } from "../templates/store.js";
 import type { GenerationRecord } from "../templates/generation-store.js";
@@ -187,6 +187,11 @@ export async function runVerbatimTemplatePipeline(
   // stays this generation's one and only copy pass; QA below still runs and reports issues either
   // way, only the auto-rewrite-and-recompose reaction to them is out of scope for this phase.
   const placementsFillActive = usePlacementsCorpusFill();
+  // Set inside the branch below, read by the QA loop further down (Phase 4,
+  // docs/PLACEMENTS_ORCHESTRATION_PLAN.md: "skipped-selector count surfaced") — kept outside the
+  // `if` so the one shared QA loop can attach a page's own skipped/clamped note to its own
+  // `QAResult` without duplicating that loop per branch.
+  let placementsByPage: Record<string, CorpusPlacementsPageResult> | undefined;
   let finalComposed: ComposedSite;
   if (placementsFillActive) {
     // Phase 2B (docs/PLACEMENTS_ORCHESTRATION_PLAN.md) — placements fill replaces polish entirely
@@ -213,6 +218,7 @@ export async function runVerbatimTemplatePipeline(
       )
     );
     finalComposed = { ...composed, htmlPages: placementsResult.htmlPages };
+    placementsByPage = placementsResult.byPage;
     pipelineLog(
       `[pipeline] Placements fill (corpus): ${placementsResult.appliedText} text + ${placementsResult.appliedImages} image placement(s) applied` +
         `${placementsResult.skipped.length > 0 ? ` (${placementsResult.skipped.length} selector(s) skipped)` : ""}` +
@@ -266,6 +272,33 @@ export async function runVerbatimTemplatePipeline(
     qaResults[slug] = await timedStep(slug, "QA", () =>
       runCodeQA(html, slug, { pageUrl, businessName: ctx.expandedBrief.businessName })
     );
+
+    // Phase 4: a page placements actually touched gets its own skipped/clamped note attached to
+    // its OWN QAResult, not just a site-wide log line — soft, matching Phase 2A's "markup drift,
+    // not missing" framing, so it doesn't flip `passed` the way a real QA regression would.
+    const pageResult = placementsByPage?.[slug];
+    if (pageResult && (pageResult.skipped.length > 0 || pageResult.clamped.length > 0)) {
+      const notes: QAIssue[] = [];
+      if (pageResult.skipped.length > 0) {
+        notes.push({
+          severity: "soft",
+          code: "PLACEMENTS_SELECTOR_SKIPPED",
+          message: `${pageResult.skipped.length} placement selector(s) no longer resolved: ${pageResult.skipped.slice(0, 5).join(", ")}${pageResult.skipped.length > 5 ? ", …" : ""}`,
+        });
+      }
+      if (pageResult.clamped.length > 0) {
+        notes.push({
+          severity: "soft",
+          code: "PLACEMENTS_VALUE_CLAMPED",
+          message: `${pageResult.clamped.length} placement value(s) truncated or rejected: ${pageResult.clamped
+            .slice(0, 3)
+            .map((c) => c.id)
+            .join(", ")}${pageResult.clamped.length > 3 ? ", …" : ""}`,
+        });
+      }
+      qaResults[slug] = { ...qaResults[slug]!, issues: [...qaResults[slug]!.issues, ...notes] };
+    }
+
     try {
       blockManifests[slug] = await extractTemplateSectionManifestFromUrl(pageUrl);
     } catch {

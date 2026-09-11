@@ -47,6 +47,16 @@ function excludeChromeSections(pages: Record<string, PlacedSection[]>): Record<s
   return out;
 }
 
+/** One page's own fill outcome — the per-page breakdown `verbatim-template-pipeline.ts` needs to
+ *  attach a skipped/clamped note to the RIGHT page's `QAResult`, not just log a site-wide total
+ *  (Phase 4, docs/PLACEMENTS_ORCHESTRATION_PLAN.md: "skipped-selector count surfaced"). */
+export interface CorpusPlacementsPageResult {
+  appliedText: number;
+  appliedImages: number;
+  skipped: string[];
+  clamped: ClampNote[];
+}
+
 export interface CorpusPlacementsFillResult {
   /** Every page from `htmlPages`, placements-filled where a page had a body section to fill —
    *  unioned with `pageOrder` this way so an anchor's `[data-tpl]`-tagged chrome, drawn from
@@ -59,6 +69,8 @@ export interface CorpusPlacementsFillResult {
    *  worth investigating, not expected. */
   skipped: string[];
   clamped: ClampNote[];
+  /** Same three numbers, keyed by page slug — only pages this fill actually touched appear here. */
+  byPage: Record<string, CorpusPlacementsPageResult>;
 }
 
 /**
@@ -91,6 +103,7 @@ export async function runCorpusPlacementsFill(
   let appliedImages = 0;
   const skipped: string[] = [];
   const clamped: ClampNote[] = [];
+  const byPage: Record<string, CorpusPlacementsPageResult> = {};
 
   for (const slug of file.pageOrder) {
     const pageSet = file.pages[slug];
@@ -100,8 +113,9 @@ export async function runCorpusPlacementsFill(
     // No `templateBusinessName` here — that option exists to swap ONE known fictional demo brand
     // (a hand-mapped real-estate/* skin's own "Prestige Realty") out of fallback text. A corpus
     // composition can draw its sections from several different source templates, each with its own
-    // demo brand, so there is no single name to pass; per-section brand-leak detection is Phase 3's
-    // documented follow-up (`docs/PLACEMENTS_ORCHESTRATION_PLAN.md` §7 Phase 3), not this phase's.
+    // demo brand, so there is no single name to pass; a generic multi-brand detector for the
+    // corpus path is still an open item — Phase 3 (landed) only built the curated path's
+    // fixed-name checker (`brand-leak.ts`), which doesn't fit a composition with no single brand.
     const result = await applyPlacements(html, pageSet, {
       brief: fill.brief,
       llmValues: fill.llmValues,
@@ -113,7 +127,13 @@ export async function runCorpusPlacementsFill(
     appliedImages += result.appliedImages;
     skipped.push(...result.skipped);
     clamped.push(...result.clamped);
+    byPage[slug] = {
+      appliedText: result.appliedText,
+      appliedImages: result.appliedImages,
+      skipped: result.skipped,
+      clamped: result.clamped,
+    };
   }
 
-  return { htmlPages: out, appliedText, appliedImages, skipped, clamped };
+  return { htmlPages: out, appliedText, appliedImages, skipped, clamped, byPage };
 }

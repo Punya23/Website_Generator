@@ -42,7 +42,7 @@ import { chatJsonWithRetry } from "../../llm/json-agent.js";
 import { expandBrief, expandBriefFromInput, briefToContext } from "../../agents/expand-brief-agent.js";
 import { STREET_ADDRESS_RE } from "../filler-patterns.js";
 import { PlacementsFileSchema, type BriefField, type PagePlacements, type PlacementsFile } from "./schema.js";
-import type { PlacementBrief } from "./fill.js";
+import type { DataResolver, PlacementBrief } from "./fill.js";
 import { applyPlacements } from "./fill.js";
 import {
   applyFlatLlmResponse,
@@ -270,7 +270,11 @@ function buildUserPrompt(
  * hero photo doesn't change every time the page is regenerated) while still varying per slot (the
  * hero background and the about-page photo don't collide on the same image).
  */
-async function resolveImageQueries(
+// Exported for Phase 2B's corpus fill helper to reuse (docs/PLACEMENTS_ORCHESTRATION_PLAN.md §5.2)
+// instead of re-deriving it: nothing here is real-estate-specific — it only reads `FlatPromptField`s
+// whose `type` is "image" and a `PlacementBrief` for the seed, both already generic to any
+// `PlacementsFile`, corpus-built or hand-mapped.
+export async function resolveImageQueries(
   copyValues: Record<string, string>,
   copyFields: Record<string, FlatPromptField>,
   brief: PlacementBrief
@@ -352,11 +356,18 @@ export interface RealEstateFillResult {
  * real business, entirely in memory. A page whose LLM call fails keeps the template's own original
  * copy for that page rather than failing the whole run — same resilience the rest of this
  * pipeline's per-page/per-section calls already rely on; `onProgress` (if given) is told about it.
+ *
+ * `opts.resolveData` is `fill.ts`'s own `resolveData` hook, passed straight through to
+ * `applyPlacements` — this function has never had a way to supply one before now, so every `data`
+ * placement with no real value has always fallen straight to `illustrativeFill` (Phase 3,
+ * docs/PLACEMENTS_ORCHESTRATION_PLAN.md: "demos can inject listing fixtures"). Omitted, behavior is
+ * byte-identical to before this option existed. See `demo-data.ts`'s `demoListingsResolver` for the
+ * one resolver this pipeline ships.
  */
 export async function fillRealEstateTemplate(
   templateDir: string,
   rawBrief: string,
-  opts: { onProgress?: (line: string) => void } = {}
+  opts: { onProgress?: (line: string) => void; resolveData?: DataResolver } = {}
 ): Promise<RealEstateFillResult> {
   if (!llm.isAvailable) {
     throw new Error("No LLM configured — set OPENROUTER_API_KEY (or another provider key) in .env");
@@ -405,6 +416,7 @@ export async function fillRealEstateTemplate(
       brief,
       llmValues,
       illustrativeFill,
+      resolveData: opts.resolveData,
       templateBusinessName: file.templateName,
       placeholderPhone: locale.phoneFormat,
     });

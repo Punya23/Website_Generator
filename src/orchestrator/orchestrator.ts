@@ -100,6 +100,10 @@ export interface GenerateSiteOptions {
    *  resolves from this before falling to an illustrative example. Omitted, behavior is
    *  byte-identical to before this option existed. */
   businessData?: BusinessDataFeed;
+  /** Curated real-estate path only (`placements`): a subset of the template's page slugs to
+   *  generate — see `templates/placements/page-selection.ts`'s `REAL_ESTATE_PAGE_SLUGS`. Omitted,
+   *  every page generates, same as before this option existed. */
+  selectedPages?: string[];
 }
 
 export interface PagePipelineResult {
@@ -587,7 +591,12 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   const enableVision = options.enableVisionPolish !== false;
 
   if (placements) {
-    const placementsResult = await runPlacementsPipeline(ctx, options.businessBrief, options.businessData);
+    const placementsResult = await runPlacementsPipeline(
+      ctx,
+      options.businessBrief,
+      options.businessData,
+      options.selectedPages
+    );
     htmlPages = placementsResult.htmlPages;
     qaResults = placementsResult.qaResults;
     placementsTemplateId = placementsResult.templateId;

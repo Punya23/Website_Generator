@@ -216,6 +216,47 @@ keeps the template's own original copy, which is always a safe, complete page. S
 synthesized adversarial "model reply" standing in for a real OpenRouter call), and
 `tests/placements.test.ts` for the automated version.
 
+## Generating fewer than all 8 pages
+
+A business with no active listings doesn't need `listings.html`/`property-detail.html`; one with no
+named staff doesn't need `agents.html`/`agent-detail.html`. `src/templates/placements/page-
+selection.ts`'s `resolvePageSelection`/`filterPlacementsFileToPages` — wired into
+`fillRealEstateTemplate`'s `opts.selectedPages` — let a caller pass a subset of this template's page
+slugs (`"home"`, `"about"`, `"services"`, `"listings"`, `"property-detail"`, `"agents"`,
+`"agent-detail"`, `"contact"`; `"home"` is always kept regardless of what's asked for):
+
+```ts
+const filled = await fillRealEstateTemplate(templateDir, rawBrief, {
+  selectedPages: ["home", "about", "services", "contact"], // no listings/agents on this site
+});
+// filled.pages only has index.html/about.html/services.html/contact.html — nothing else was
+// filled, and no LLM call was ever made for the pages left out.
+```
+
+Two things happen, not just one: an excluded page's own fields never reach the LLM at all
+(`filterPlacementsFileToPages` narrows `pageOrder` before `fillPlacementsFile` runs — pure cost
+savings, no wasted tokens on content that would just be thrown away), and every KEPT page has every
+link to an excluded page removed, not left to 404. Verified structurally identical across
+`real-estate-agency`/`luxury-real-estate`/`commercial-real-estate` (byte-identical markup, only
+visible labels differ) — a template cross-links pages well beyond nav/footer: `index.html`'s hero,
+CTA banner, and 6 featured-property cards all point at `listings.html`/`property-detail.html`;
+`about.html`'s 3 team cards point at `agent-detail.html`; every listings/agents card links its own
+detail page; both detail pages carry a breadcrumb and a "related" grid. `page-selection.ts`'s
+`pruneDanglingPageLinks` runs on every kept page's FINAL html (after `applyPlacements`, so it can
+never interfere with a fill) and removes each one by matching the literal `href` — the enclosing
+`<li>` for a nav/footer menu item, the whole element for a button-styled CTA (`btn`/`btn--*`, or a
+BEM `__link`/`__cta` suffix like `service-card__link`), a plain unwrap-to-text for everything else
+(a property/agent card's title link, a breadcrumb crumb — reads perfectly well as non-clickable
+text). A footer column left with no real links after that (every "Property Types" item pointed at
+the one excluded `listings.html`) is removed whole, heading included.
+
+`src/orchestrator/placements-pipeline.ts`'s `runPlacementsPipeline` and
+`GenerateSiteOptions.selectedPages` (`orchestrator.ts`) thread this the same way as
+`businessData`/`resolveData` — omitted entirely, every page generates and nothing is pruned, byte-
+identical to before this existed. `scripts/generate-real-site.ts` exposes it as a CLI flag:
+`--pages=home,about,services,contact`. A caller-supplied slug that isn't one of the 8 real pages
+(`unknownSlugs` on the result of `resolvePageSelection`) is surfaced, never silently ignored.
+
 ## Everything under the hood (`placements.json`, `fill.ts`) — why each choice
 
 You don't need this section to use the pipeline; it's here for anyone extending it.

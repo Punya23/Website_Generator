@@ -97,3 +97,32 @@ describe("runPlacementsPipeline — Phase 4 asset + QA wiring", () => {
     expect(home).toContain("Harbor Homes");
   }, 30_000);
 });
+
+// page-selection.ts, end to end: a business with no active listings can skip listings/property-
+// detail entirely — real LLM cost never spent on them, and every page that's KEPT has every link to
+// an excluded one removed (see tests/page-selection.test.ts for the DOM-surgery unit tests this
+// exercises against the real template).
+describe("runPlacementsPipeline — selectedPages", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("generates only the requested pages, plus home even when it wasn't requested", async () => {
+    const result = await runPlacementsPipeline(fakeCtx(), RAW_BRIEF, undefined, ["about", "contact"]);
+    expect(Object.keys(result.htmlPages).sort()).toEqual(["about", "contact", "home"]);
+  }, 30_000);
+
+  it("leaves no link to an excluded page anywhere in any kept page's HTML", async () => {
+    const result = await runPlacementsPipeline(fakeCtx(), RAW_BRIEF, undefined, [
+      "home",
+      "about",
+      "services",
+      "contact",
+    ]);
+    for (const [slug, html] of Object.entries(result.htmlPages)) {
+      expect(html, `page ${slug} still links an excluded page`).not.toMatch(
+        /href="(listings|property-detail|agents|agent-detail)\.html"/
+      );
+    }
+  }, 30_000);
+});

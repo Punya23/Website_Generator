@@ -30,6 +30,7 @@ import type { QAIssue, QAResult, SiteContext } from "../types.js";
 import { fillRealEstateTemplate } from "../templates/placements/fill-real-estate-template.js";
 import { checkBrandLeak } from "../templates/placements/brand-leak.js";
 import { businessDataResolver, type BusinessDataFeed } from "../templates/placements/business-data.js";
+import { slugForPageFile } from "../templates/placements/page-selection.js";
 import { runCodeQA } from "../qa/code-qa.js";
 import { pipelineLog } from "../util/pipeline-log.js";
 import { timedStep } from "../util/timed.js";
@@ -75,13 +76,6 @@ export function pickRealEstateTemplate(brief: string): RealEstateTemplateId {
   return best;
 }
 
-/** `"index.html"` -> `"home"`, `"about.html"` -> `"about"` — the same slug convention
- *  `compose.ts`'s `pageFileName` uses in the other direction, so `htmlPages`/`qaResults` keys line
- *  up with what `ctx.pages`, publish, and the admin UI already expect from every other pipeline. */
-function slugForPageFile(pageFile: string): string {
-  return pageFile === "index.html" ? "home" : pageFile.replace(/\.html$/, "");
-}
-
 /**
  * Every file under `templateDir` a page might reference at output time — everything except the
  * pages themselves and the placements sidecar files, which `fillRealEstateTemplate`/this pipeline
@@ -122,7 +116,14 @@ export async function runPlacementsPipeline(
   /** The business's own real listings/agent-roster/testimonials, when the caller has them — see
    *  `business-data.ts`. Omitted, behavior is byte-identical to before this option existed (every
    *  `data` placement falls to `illustrativeFill`'s plausible example, same as today). */
-  businessData?: BusinessDataFeed
+  businessData?: BusinessDataFeed,
+  /** A subset of this template's 8 page slugs (`"home"`, `"about"`, `"services"`, `"listings"`,
+   *  `"property-detail"`, `"agents"`, `"agent-detail"`, `"contact"`) — a business with no active
+   *  listings, say, can skip `"listings"`/`"property-detail"` entirely. See
+   *  `templates/placements/page-selection.ts` for how an excluded page's fields never reach the LLM
+   *  and every remaining page has its links to it removed, not just left to 404. Omitted, every page
+   *  generates — byte-identical to before this option existed. */
+  selectedPages?: string[]
 ): Promise<PlacementsPipelineResult> {
   const templateId = pickRealEstateTemplate(businessBrief);
   const templateDir = path.resolve(process.cwd(), "real-estate", templateId);
@@ -132,6 +133,7 @@ export async function runPlacementsPipeline(
     fillRealEstateTemplate(templateDir, businessBrief, {
       onProgress: (line) => pipelineLog(`[pipeline] placements: ${line}`),
       ...(businessData ? { resolveData: businessDataResolver(businessData) } : {}),
+      ...(selectedPages ? { selectedPages } : {}),
     })
   );
 

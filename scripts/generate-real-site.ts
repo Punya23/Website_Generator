@@ -4,12 +4,19 @@
  * and writing `<page>.generated.html` files for manual inspection. The same fill function backs
  * the real generation path — see `src/orchestrator/placements-pipeline.ts`.
  *
- *   npx tsx scripts/generate-real-site.ts [templateId] ["<raw business brief>"]
+ *   npx tsx scripts/generate-real-site.ts [templateId] ["<raw business brief>"] [--pages=home,about,contact]
  *
  * `templateId` is one of the four folders under `real-estate/` (default: real-estate-agency). The
  * brief is free text, same shape this project's own `expandBrief` already accepts elsewhere in the
  * pipeline — a line or two is enough ("Golden Gate Realty, a family-run agency in San Francisco
  * specializing in first-time buyers..."). Omit it to run the built-in demo business.
+ *
+ *   --pages=home,about,contact
+ *
+ * Generates only that subset of the template's 8 pages (slugs: home/about/services/listings/
+ * property-detail/agents/agent-detail/contact — `home` is always included) — see
+ * `src/templates/placements/page-selection.ts` for the field-skipping and dangling-link-pruning this
+ * does under the hood. Omitted, every page generates, same as before this flag existed.
  *
  *   DEMO_LISTINGS=1 npx tsx scripts/generate-real-site.ts ...
  *
@@ -32,9 +39,14 @@ import { fillRealEstateTemplate, resolveLocale } from "../src/templates/placemen
 import { demoListingsResolver } from "../src/templates/placements/demo-data.js";
 import { checkBrandLeak } from "../src/templates/placements/brand-leak.js";
 
-const templateId = process.argv[2] ?? "real-estate-agency";
+// `--pages=` can appear anywhere; strip it out first so it never shifts the positional args below.
+const pagesArg = process.argv.find((arg) => arg.startsWith("--pages="));
+const selectedPages = pagesArg?.slice("--pages=".length).split(",").map((s) => s.trim()).filter(Boolean);
+const positional = process.argv.slice(2).filter((arg) => !arg.startsWith("--pages="));
+
+const templateId = positional[0] ?? "real-estate-agency";
 const templateDir = path.resolve(process.cwd(), "real-estate", templateId);
-const rawBrief = process.argv[3]?.trim();
+const rawBrief = positional[1]?.trim();
 
 const DEMO_BRIEF = `Bay Breeze Realty is a boutique residential brokerage covering Alameda, Oakland, and the East Bay
 waterfront communities. Founded by two former teachers who got tired of watching first-time buyers
@@ -54,6 +66,7 @@ async function main(): Promise<void> {
   const result = await fillRealEstateTemplate(templateDir, effectiveRawBrief, {
     onProgress: (line) => console.log(`[real-fill] ${line}`),
     resolveData: useDemoListings ? demoListingsResolver(resolveLocale(effectiveRawBrief)) : undefined,
+    ...(selectedPages && selectedPages.length > 0 ? { selectedPages } : {}),
   });
   if (useDemoListings) console.log(`[real-fill] DEMO_LISTINGS=1 — listing fields from fixtures/demo-listings.json`);
   console.log(

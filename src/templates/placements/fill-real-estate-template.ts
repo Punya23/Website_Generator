@@ -53,6 +53,7 @@ import {
   type LlmTemplateView,
 } from "./llm-view.js";
 import { stockImageUrl } from "../../media/stock-images.js";
+import { filterPlacementsFileToPages, pruneDanglingPageLinks, resolvePageSelection } from "./page-selection.js";
 
 /** Explicit user decision, overriding this script's original stricter default: a fictional
  *  customer/agent NAME and a fictional testimonial QUOTE are standard demo-site content (the
@@ -429,14 +430,34 @@ export async function fillPlacementsFile(
  * this is given (Phase 3, docs/PLACEMENTS_ORCHESTRATION_PLAN.md: "demos can inject listing
  * fixtures"). Omitted, behavior is byte-identical to before this option existed. See
  * `demo-data.ts`'s `demoListingsResolver` for the one resolver this pipeline ships.
+ *
+ * `opts.selectedPages`, when given, generates only that subset of the template's 8 pages (slugs —
+ * `"home"`, `"about"`, `"services"`, `"listings"`, `"property-detail"`, `"agents"`, `"agent-detail"`,
+ * `"contact"`; `"home"` is always kept regardless). An excluded page's fields never reach the LLM at
+ * all (`page-selection.ts`'s `filterPlacementsFileToPages` narrows `pageOrder` before
+ * `fillPlacementsFile` runs), and every kept page has every link to an excluded one removed —
+ * `page-selection.ts`'s own doc comment has the full inventory of where those links live (nav,
+ * footer, and — the part a naive "just skip the page" fix would miss — featured-listing/team cards,
+ * breadcrumbs, and CTA buttons on OTHER pages that were never going away). Omitted entirely,
+ * behavior is byte-identical to before this option existed: every page generates, nothing is pruned.
  */
 export async function fillRealEstateTemplate(
   templateDir: string,
   rawBrief: string,
-  opts: { onProgress?: (line: string) => void; resolveData?: DataResolver } = {}
+  opts: { onProgress?: (line: string) => void; resolveData?: DataResolver; selectedPages?: string[] } = {}
 ): Promise<RealEstateFillResult> {
   const raw = JSON.parse(await fs.readFile(path.join(templateDir, "placements.json"), "utf8"));
-  const file = PlacementsFileSchema.parse(raw);
+  const parsedFile = PlacementsFileSchema.parse(raw);
+
+  const log = opts.onProgress ?? (() => {});
+  const selection = opts.selectedPages ? resolvePageSelection(parsedFile.pageOrder, opts.selectedPages) : undefined;
+  if (selection?.unknownSlugs.length) {
+    log(`WARNING: ignoring unknown page slug(s): ${selection.unknownSlugs.join(", ")}`);
+  }
+  const file = selection ? filterPlacementsFileToPages(parsedFile, selection) : parsedFile;
+  if (selection) {
+    log(`generating ${file.pageOrder.length}/${parsedFile.pageOrder.length} page(s): ${file.pageOrder.join(", ")}`);
+  }
 
   const { brief, locale, llmValues, illustrativeValues } = await fillPlacementsFile(file, rawBrief, opts);
   const illustrativeFill = async (placement: { id: string }) => illustrativeValues[placement.id] ?? null;
@@ -462,8 +483,9 @@ export async function fillRealEstateTemplate(
       templateBusinessName: file.templateName,
       placeholderPhone: locale.phoneFormat,
     });
+    const prunedHtml = selection ? pruneDanglingPageLinks(result.html, selection.excludedFiles) : result.html;
     pages[pageFile] = {
-      html: result.html,
+      html: prunedHtml,
       appliedText: result.appliedText,
       appliedImages: result.appliedImages,
       clamped: result.clamped,

@@ -59,8 +59,22 @@ describe("businessDataResolver: listings", () => {
     const resolve = businessDataResolver(feed);
     const price = await resolve(textPlacement({ id: "home.card.0.price", role: "propertyPrice" }));
     const beds = await resolve(textPlacement({ id: "home.card.0.beds", role: "propertyMeta" }));
+    const baths = await resolve(textPlacement({ id: "home.card.0.baths", role: "propertyMeta" }));
+    const sqft = await resolve(textPlacement({ id: "home.card.0.sqft", role: "propertyMeta" }));
     expect(price).toBe("$725,000");
-    expect(beds).toBe("3");
+    // "3" -> "3 Beds": a bare number is too short to clear the real template's own minChars check
+    // (measured against an original like "5 Beds") and would silently fall back to demo content —
+    // found live, not hypothetical. See business-data.ts's withUnitLabel.
+    expect(beds).toBe("3 Beds");
+    expect(baths).toBe("2 Baths");
+    expect(sqft).toBe("1,450 sqft");
+  });
+
+  it("leaves a value that already reads as a label untouched", async () => {
+    const feed: BusinessDataFeed = { listings: [{ ...LISTING, beds: "3 Beds", sqft: "1,840 sqft" }] };
+    const resolve = businessDataResolver(feed);
+    expect(await resolve(textPlacement({ id: "home.card.0.beds", role: "propertyMeta" }))).toBe("3 Beds");
+    expect(await resolve(textPlacement({ id: "home.card.0.sqft", role: "propertyMeta" }))).toBe("1,840 sqft");
   });
 
   it("cycles listings by card index so a multi-card grid doesn't repeat the same one", async () => {

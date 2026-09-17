@@ -66,6 +66,20 @@ const TESTIMONIAL_FIELD_BY_ROLE: Partial<Record<string, keyof RealTestimonial>> 
 
 const AGENT_PHOTO_ROLES = new Set(["agentHeadshot", "sidebarAgentPhoto"]);
 
+/** `beds`/`baths`/`sqft` are measured against the template's own original label TEXT ("3 Beds", not
+ *  "3" — confirmed live: a bare "4" is short enough to fail `labelConstraints`' own minChars check
+ *  against a 6-8 char original like "5 Beds", silently rejected and left as the template's own demo
+ *  value with no error anywhere). `fixtures/demo-listings.json` already follows this convention;
+ *  real callers typing the obvious bare-number JSON shouldn't have to know that undocumented reason
+ *  their data silently didn't apply — normalize a purely-numeric value here instead. A value that
+ *  already reads like a label ("3 Beds", "1,840 sqft") is left exactly as given. */
+const CARD_UNIT_SUFFIX: Partial<Record<keyof DemoListing, string>> = { beds: "Beds", baths: "Baths", sqft: "sqft" };
+
+function withUnitLabel(field: keyof DemoListing, value: string): string {
+  const suffix = CARD_UNIT_SUFFIX[field];
+  return suffix && /^[\d,.]+$/.test(value.trim()) ? `${value.trim()} ${suffix}` : value;
+}
+
 /**
  * Builds a `DataResolver` over one business's own real listings/agents/testimonials. Matching
  * mirrors `demoListingsResolver`'s own approach exactly (role, or the id's own trailing suffix for
@@ -94,7 +108,10 @@ export function businessDataResolver(feed: BusinessDataFeed): DataResolver {
       if (CARD_ROLES.has(placement.role)) {
         const suffix = placement.id.match(/\.([^.]+)$/)?.[1] ?? "";
         const field = FIELD_BY_SUFFIX[suffix];
-        if (field) return feed.listings[listingIndexFor(placement.id, feed.listings.length)]![field];
+        if (field) {
+          const value = feed.listings[listingIndexFor(placement.id, feed.listings.length)]![field];
+          return withUnitLabel(field, value);
+        }
       }
       const detailField = DETAIL_ROLE_TO_FIELD[placement.role];
       if (detailField) return feed.listings[0]![detailField];

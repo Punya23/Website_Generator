@@ -542,6 +542,43 @@ textarea:focus {
 }
 .seed-row input { margin-top: 0; }
 
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+.toggle-row input { flex-shrink: 0; }
+
+.page-checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+.page-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-soft);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+.page-chip:has(input:checked) { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }
+.page-chip:has(input:disabled) { opacity: 0.6; cursor: default; }
+
+#business-data { margin-top: 0.5rem; }
+#business-data-error { color: var(--warn); }
+
 .seed-last, .text-btn, .btn-secondary {
   font: inherit;
   cursor: pointer;

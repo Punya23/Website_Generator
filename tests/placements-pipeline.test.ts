@@ -57,6 +57,23 @@ describe("usePlacementsPipeline", () => {
     process.env.PIPELINE_PLACEMENTS = "0";
     expect(usePlacementsPipeline()).toBe(false);
   });
+
+  // Playground's "use curated real-estate templates" checkbox (GenerateSiteOptions.usePlacementsMode)
+  // — a per-request override, so one running server can demo both paths without a restart.
+  it("an explicit override wins outright over the env var, either direction", () => {
+    expect(usePlacementsPipeline(true)).toBe(true);
+    expect(usePlacementsPipeline(false)).toBe(false);
+    process.env.PIPELINE_PLACEMENTS = "1";
+    expect(usePlacementsPipeline(false)).toBe(false);
+    process.env.PIPELINE_PLACEMENTS = "0";
+    expect(usePlacementsPipeline(true)).toBe(true);
+  });
+
+  it("omitting the override falls back to the env var, unchanged from before it existed", () => {
+    expect(usePlacementsPipeline(undefined)).toBe(false);
+    process.env.PIPELINE_PLACEMENTS = "1";
+    expect(usePlacementsPipeline(undefined)).toBe(true);
+  });
 });
 
 describe("usePlacementsCorpusFill", () => {
@@ -87,5 +104,20 @@ describe("usePlacementsCorpusFill", () => {
     process.env.PIPELINE_PLACEMENTS = "1";
     expect(usePlacementsCorpusFill()).toBe(false);
     delete process.env.PIPELINE_PLACEMENTS;
+  });
+
+  it("an explicit override wins outright over the env var, either direction", () => {
+    expect(usePlacementsCorpusFill(true)).toBe(true);
+    expect(usePlacementsCorpusFill(false)).toBe(false);
+    process.env.PIPELINE_PLACEMENTS_CORPUS = "1";
+    expect(usePlacementsCorpusFill(false)).toBe(false);
+    process.env.PIPELINE_PLACEMENTS_CORPUS = "0";
+    expect(usePlacementsCorpusFill(true)).toBe(true);
+  });
+
+  it("omitting the override falls back to the env var, unchanged from before it existed", () => {
+    expect(usePlacementsCorpusFill(undefined)).toBe(false);
+    process.env.PIPELINE_PLACEMENTS_CORPUS = "1";
+    expect(usePlacementsCorpusFill(undefined)).toBe(true);
   });
 });

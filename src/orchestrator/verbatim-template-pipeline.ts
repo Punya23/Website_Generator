@@ -100,6 +100,10 @@ export async function runVerbatimTemplatePipeline(
      *  placement resolves from this before falling to an illustrative example. Omitted, behavior is
      *  byte-identical to before this option existed. */
     businessData?: BusinessDataFeed;
+    /** Per-request override for `usePlacementsCorpusFill()` — see that function's own doc comment
+     *  (`pipeline-speed.ts`). Omitted, the server's own `PIPELINE_PLACEMENTS_CORPUS` env var
+     *  decides, unchanged from before this option existed. */
+    useCorpusPlacementsFill?: boolean;
   }
 ): Promise<VerbatimPipelineResult> {
   const selected = await timedStep("site", "template selection", () =>
@@ -194,7 +198,7 @@ export async function runVerbatimTemplatePipeline(
   // exact same hazard `polishComposedCopy`'s recompose has, on the same mechanism. Placements fill
   // stays this generation's one and only copy pass; QA below still runs and reports issues either
   // way, only the auto-rewrite-and-recompose reaction to them is out of scope for this phase.
-  const placementsFillActive = usePlacementsCorpusFill();
+  const placementsFillActive = usePlacementsCorpusFill(options.useCorpusPlacementsFill);
   // Set inside the branch below, read by the QA loop further down (Phase 4,
   // docs/PLACEMENTS_ORCHESTRATION_PLAN.md: "skipped-selector count surfaced") — kept outside the
   // `if` so the one shared QA loop can attach a page's own skipped/clamped note to its own

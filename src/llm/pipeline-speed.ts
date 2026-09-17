@@ -138,8 +138,14 @@ export function useVerbatimTemplatePipeline(): boolean {
  * has no vision-QA redo loop and no generation-record parity yet (see that module's own doc
  * comment) — opt in per-run with PIPELINE_PLACEMENTS=1 while it proves out, rather than putting
  * every real-estate brief through it by default.
+ *
+ * `override`, when given, wins outright over the env var — a per-request choice (the playground's
+ * own "use curated real-estate templates" checkbox, threaded through `GenerateSiteOptions.
+ * usePlacementsMode`) takes precedence over whatever the server happened to be started with, so one
+ * running playground can demo both paths without a restart. Omitted, behavior is unchanged.
  */
-export function usePlacementsPipeline(): boolean {
+export function usePlacementsPipeline(override?: boolean): boolean {
+  if (override !== undefined) return override;
   if (process.env.PIPELINE_PLACEMENTS === "0") return false;
   if (process.env.PIPELINE_PLACEMENTS === "1") return true;
   return false;
@@ -157,8 +163,13 @@ export function usePlacementsPipeline(): boolean {
  * criteria are green — the 2A spike proved the ENGINE integrates cleanly (100% selector hit rate
  * once nav/footer are excluded), it did not itself prove the `polishComposedCopy` replacement is
  * safe end-to-end on a real generation.
+ *
+ * `override`, when given, wins outright over the env var — same per-request mechanism
+ * `usePlacementsPipeline` documents above, threaded through `GenerateSiteOptions.
+ * useCorpusPlacementsFill`. Omitted, behavior is unchanged.
  */
-export function usePlacementsCorpusFill(): boolean {
+export function usePlacementsCorpusFill(override?: boolean): boolean {
+  if (override !== undefined) return override;
   if (process.env.PIPELINE_PLACEMENTS_CORPUS === "0") return false;
   if (process.env.PIPELINE_PLACEMENTS_CORPUS === "1") return true;
   return false;

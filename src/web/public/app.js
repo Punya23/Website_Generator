@@ -40,6 +40,12 @@ const RECENT_KEY = "wg-recent-briefs";
 const briefEl = document.getElementById("brief");
 const seedEl = document.getElementById("variation-seed");
 const consumerEl = document.getElementById("consumer-id");
+const usePlacementsEl = document.getElementById("use-placements");
+const useCorpusPlacementsEl = document.getElementById("use-corpus-placements");
+const pageSelectionWrap = document.getElementById("page-selection");
+const pageChecklistEl = document.getElementById("page-checklist");
+const businessDataEl = document.getElementById("business-data");
+const businessDataErrorEl = document.getElementById("business-data-error");
 const logoFileEl = document.getElementById("logo-file");
 const photoFilesEl = document.getElementById("photo-files");
 const mediaStatusEl = document.getElementById("media-status");
@@ -262,6 +268,30 @@ logoFileEl?.addEventListener("change", updateMediaStatus);
 photoFilesEl?.addEventListener("change", updateMediaStatus);
 bindDrop(document.getElementById("logo-drop"), logoFileEl);
 bindDrop(document.getElementById("photo-drop"), photoFilesEl);
+
+// Page checklist only means anything on the curated real-estate path — show it only once that's
+// on, so it doesn't read as "these are the pages every site gets" for the corpus default.
+usePlacementsEl?.addEventListener("change", () => {
+  if (pageSelectionWrap) pageSelectionWrap.hidden = !usePlacementsEl.checked;
+});
+
+// Validate business-data JSON as the user types, not silently at submit time — an invalid paste
+// should be obvious before they hit Generate, not discovered from a failed request.
+businessDataEl?.addEventListener("input", () => {
+  const raw = businessDataEl.value.trim();
+  if (!businessDataErrorEl) return;
+  if (!raw) {
+    businessDataErrorEl.hidden = true;
+    return;
+  }
+  try {
+    JSON.parse(raw);
+    businessDataErrorEl.hidden = true;
+  } catch (err) {
+    businessDataErrorEl.textContent = `Invalid JSON: ${err instanceof Error ? err.message : String(err)}`;
+    businessDataErrorEl.hidden = false;
+  }
+});
 
 async function uploadSelectedMedia() {
   const logoFile = logoFileEl?.files?.[0];
@@ -698,6 +728,26 @@ async function generate() {
 
     const mediaId = await uploadSelectedMedia();
     if (mediaId) body.mediaId = mediaId;
+
+    // Real-estate templates & data panel — always send the two toggles explicitly (checkbox
+    // unchecked really does mean "off", not "let the server's env var decide") so the same running
+    // playground can demo both the curated and corpus paths without a restart.
+    body.usePlacements = Boolean(usePlacementsEl?.checked);
+    body.useCorpusPlacementsFill = Boolean(useCorpusPlacementsEl?.checked);
+    if (usePlacementsEl?.checked && pageChecklistEl) {
+      body.selectedPages = Array.from(pageChecklistEl.querySelectorAll("input:checked")).map((el) => el.value);
+    }
+    const businessDataRaw = businessDataEl?.value?.trim();
+    if (businessDataRaw) {
+      try {
+        body.businessData = JSON.parse(businessDataRaw);
+      } catch (err) {
+        appendLog(`Business data JSON is invalid: ${err instanceof Error ? err.message : String(err)}`, true);
+        setLoading(false);
+        setStatus("Idle");
+        return;
+      }
+    }
 
     const res = await fetch("/api/generate", {
       method: "POST",

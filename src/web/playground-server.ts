@@ -4,6 +4,7 @@ import fs from "fs/promises";
 import { fileURLToPath } from "url";
 import { generateReactProject, buildReactProject } from "../react-codegen/assemble-project.js";
 import { generateSite } from "../orchestrator/orchestrator.js";
+import type { BusinessDataFeed } from "../templates/placements/business-data.js";
 import { planRevision } from "../agents/revise-site-agent.js";
 import { applyRevision } from "../editor/apply-revision.js";
 import { writeSiteOutput, type SiteAssetCopy } from "../server/preview-server.js";
@@ -713,6 +714,26 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
 
         const userMedia = takeMediaSession(req.body?.mediaId);
 
+        // Real-estate options panel (index.html's "Real-estate templates & data") — all optional,
+        // all undefined when the caller (or an older client) never sends them, which is what keeps
+        // every one of these byte-identical to before it existed. See each field's own doc comment
+        // on `GenerateSiteOptions` (orchestrator.ts) for exactly what it does.
+        const usePlacementsMode = typeof req.body?.usePlacements === "boolean" ? req.body.usePlacements : undefined;
+        const useCorpusPlacementsFill =
+          typeof req.body?.useCorpusPlacementsFill === "boolean" ? req.body.useCorpusPlacementsFill : undefined;
+        const selectedPages =
+          Array.isArray(req.body?.selectedPages) && req.body.selectedPages.every((p: unknown) => typeof p === "string")
+            ? (req.body.selectedPages as string[])
+            : undefined;
+        let businessData: BusinessDataFeed | undefined;
+        if (req.body?.businessData && typeof req.body.businessData === "object") {
+          // Not schema-validated beyond "is an object" — businessDataResolver (business-data.ts) is
+          // already defensive about missing/malformed fields (every lookup is `feed.x?.length`
+          // guarded), so a malformed shape here degrades to "nothing real resolved", the same safe
+          // default as sending nothing at all, never a crash.
+          businessData = req.body.businessData as BusinessDataFeed;
+        }
+
         const result = await runExclusive(jobId, () =>
           generateSite({
             businessBrief: brief,
@@ -722,6 +743,10 @@ export async function startPlaygroundServer(options: PlaygroundServerOptions = {
             jobId,
             consumerId,
             userMedia,
+            ...(usePlacementsMode !== undefined ? { usePlacementsMode } : {}),
+            ...(useCorpusPlacementsFill !== undefined ? { useCorpusPlacementsFill } : {}),
+            ...(selectedPages ? { selectedPages } : {}),
+            ...(businessData ? { businessData } : {}),
           })
         );
         generationResult = result;

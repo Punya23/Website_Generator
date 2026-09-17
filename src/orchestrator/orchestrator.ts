@@ -104,6 +104,16 @@ export interface GenerateSiteOptions {
    *  generate — see `templates/placements/page-selection.ts`'s `REAL_ESTATE_PAGE_SLUGS`. Omitted,
    *  every page generates, same as before this option existed. */
   selectedPages?: string[];
+  /** Per-request override for `usePlacementsPipeline()` — the playground's "use curated
+   *  real-estate templates" checkbox. Still gated on the brief classifying as real-estate either
+   *  way (see the `placements` line below); forcing this `true` on a non-real-estate brief simply
+   *  has no effect, it does not bypass that classification. Omitted, the server's own
+   *  `PIPELINE_PLACEMENTS` env var decides, unchanged from before this option existed. */
+  usePlacementsMode?: boolean;
+  /** Per-request override for `usePlacementsCorpusFill()` (verbatim/corpus path only) — same
+   *  mechanism as `usePlacementsMode` above, for the OTHER placements flag. Omitted, the server's
+   *  own `PIPELINE_PLACEMENTS_CORPUS` env var decides, unchanged from before this option existed. */
+  useCorpusPlacementsFill?: boolean;
 }
 
 export interface PagePipelineResult {
@@ -366,7 +376,10 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
   // collections, etc.) that real-estate placements sites skip entirely. Takes priority over
   // verbatim/skin-fill when it fires — a real-estate brief with the flag on should not also burn a
   // verbatim-corpus or skin-fill attempt first.
-  const placements = usePlacementsPipeline() && outputMode !== "react" && classifyTaxonomy(options.businessBrief).industry === "real-estate";
+  const placements =
+    usePlacementsPipeline(options.usePlacementsMode) &&
+    outputMode !== "react" &&
+    classifyTaxonomy(options.businessBrief).industry === "real-estate";
   // Verbatim mode owns the default path, but only once templates have actually been ingested —
   // an empty cache falls through to the skin pipeline instead of failing the run.
   const verbatim = !placements && useVerbatimTemplatePipeline() && outputMode !== "react" && (await hasIngestedTemplates());
@@ -626,6 +639,7 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
       variationSeed,
       ...(options.consumerId ? { consumerId: options.consumerId } : {}),
       ...(options.businessData ? { businessData: options.businessData } : {}),
+      ...(options.useCorpusPlacementsFill !== undefined ? { useCorpusPlacementsFill: options.useCorpusPlacementsFill } : {}),
     });
     htmlPages = verbatimResult.htmlPages;
     qaResults = verbatimResult.qaResults;
@@ -892,6 +906,8 @@ export async function generateSite(options: GenerateSiteOptions): Promise<Genera
             variationSeed: baseSeed + 1,
             ...(options.consumerId ? { consumerId: options.consumerId } : {}),
             ...(verbatimAnchorTemplateId ? { excludeAnchorTemplateIds: [verbatimAnchorTemplateId] } : {}),
+            ...(options.businessData ? { businessData: options.businessData } : {}),
+            ...(options.useCorpusPlacementsFill !== undefined ? { useCorpusPlacementsFill: options.useCorpusPlacementsFill } : {}),
           });
           const redoScreenshots = await screenshotVerbatimPages(redoResult.htmlPages, redoResult.files);
           const redoVerdict = await judgeFinalScreenshots(redoScreenshots, designSystem, redoResult.blockManifests);

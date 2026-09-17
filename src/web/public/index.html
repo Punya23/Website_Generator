@@ -107,6 +107,47 @@
             </div>
           </div>
         </details>
+
+        <details class="seed-panel" id="real-estate-panel">
+          <summary class="seed-summary">Real-estate templates &amp; data</summary>
+          <div class="seed-body">
+            <p class="seed-explainer">
+              Only takes effect when the brief classifies as real estate — a non-real-estate brief ignores all of this and uses the auto-selected corpus mix either way.
+            </p>
+
+            <label class="toggle-row">
+              <input type="checkbox" id="use-placements" />
+              Use the 4 curated real-estate templates
+            </label>
+
+            <div id="page-selection" hidden>
+              <span class="seed-field-label">Pages to include</span>
+              <div class="page-checklist" id="page-checklist">
+                <label class="page-chip"><input type="checkbox" value="home" checked disabled /> Home</label>
+                <label class="page-chip"><input type="checkbox" value="about" checked /> About</label>
+                <label class="page-chip"><input type="checkbox" value="services" checked /> Services</label>
+                <label class="page-chip"><input type="checkbox" value="listings" checked /> Listings</label>
+                <label class="page-chip"><input type="checkbox" value="property-detail" checked /> Property detail</label>
+                <label class="page-chip"><input type="checkbox" value="agents" checked /> Agents</label>
+                <label class="page-chip"><input type="checkbox" value="agent-detail" checked /> Agent detail</label>
+                <label class="page-chip"><input type="checkbox" value="contact" checked /> Contact</label>
+              </div>
+            </div>
+
+            <label class="toggle-row">
+              <input type="checkbox" id="use-corpus-placements" />
+              Fill corpus copy via the placements engine
+            </label>
+
+            <label class="seed-field-label" for="business-data">Real listings / agents / testimonials <span class="optional">optional JSON</span></label>
+            <textarea
+              id="business-data"
+              rows="4"
+              placeholder='{"listings":[{"price":"$450,000","location":"Austin, TX","title":"Modern Family Home","beds":"3","baths":"2","sqft":"1,800","badge":"New"}],"agents":[{"name":"Jordan Lee","role":"Agent","photoUrl":"https://..."}],"testimonials":[{"quote":"...","authorName":"..."}]}'
+            ></textarea>
+            <p class="seed-explainer" id="business-data-error" hidden></p>
+          </div>
+        </details>
       </aside>
 
       <section class="workspace">

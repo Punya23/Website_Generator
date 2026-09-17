@@ -64,11 +64,33 @@ export function checkBrandLeak(html: string, ownBrandName: string): BrandLeak[] 
  * an about-page paragraph, an `alt` attribute, a copyright line) — content compose's own copy-slot
  * pass never touches because it was never recognized as "the business name" in the first place.
  */
+/** Guards against a `businessName` slot whose `originalText` is bogus (a misclassified `<img>` tag's
+ *  own tag name, an icon glyph, a single stray character) rather than an actual brand — found live:
+ *  one corpus template's own `businessName` slot resolved to the bare string "img", which then
+ *  matched every literal `<img` tag on the page (`checkBrandLeakAgainst` counts raw substring
+ *  occurrences across the whole HTML string, tags included, not just rendered text — the same
+ *  design `checkBrandLeak`'s 4 hand-typed multi-word names never collides with, but a single
+ *  auto-discovered short common word can). A real template's own demo brand, scraped verbatim, is
+ *  consistently a multi-character invented name ("Nivaya", "Rakar", ...) — 4 chars is a safe floor
+ *  that has never excluded a genuine one in this corpus; the denylist below is an extra, cheap
+ *  backstop against exactly the class of collision that motivated this in the first place. */
+const MIN_BRAND_NAME_LENGTH = 4;
+const HTML_TOKEN_DENYLIST = new Set([
+  "img", "nav", "div", "span", "form", "header", "footer", "button", "input", "label", "script", "style", "svg", "path", "main", "section", "article", "aside", "html", "body", "head", "link", "meta", "title",
+]);
+
+function isPlausibleBrandName(text: string): boolean {
+  if (text.length < MIN_BRAND_NAME_LENGTH) return false;
+  if (HTML_TOKEN_DENYLIST.has(text.toLowerCase())) return false;
+  return true;
+}
+
 function templateOwnBrandNames(manifest: TemplateManifest): string[] {
   const names = new Set<string>();
   for (const section of manifest.sections) {
     for (const slot of section.slots) {
-      if (slot.kind === "businessName" && slot.originalText.trim()) names.add(slot.originalText.trim());
+      const text = slot.kind === "businessName" ? slot.originalText.trim() : "";
+      if (text && isPlausibleBrandName(text)) names.add(text);
     }
   }
   return [...names];

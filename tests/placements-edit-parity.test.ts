@@ -92,6 +92,32 @@ describe("brand-leak.ts: corpus generalization", () => {
   it("reports clean when none of the composition's own brand names appear", () => {
     expect(checkBrandLeakAgainst("<footer>Harbor Homes</footer>", ["Rakar", "Some Other Brand"], "Harbor Homes")).toEqual([]);
   });
+
+  // Found live: a corpus template's own businessName slot resolved to the bare string "img" (a
+  // misclassified <img> tag), which then matched every literal <img tag on the page — checkBrandLeakAgainst
+  // counts raw substring occurrences across the whole HTML string, tags included, not just rendered
+  // text. A real fake store proves the FILTER, not just the matcher, since templateOwnBrandNames
+  // (the collector this exercises) is what's supposed to keep "img" from ever becoming a candidate.
+  it("never collects a bogus short/HTML-token businessName slot as a candidate brand", async () => {
+    const fakeManifest = {
+      templateId: "tpl_fake",
+      sections: [
+        {
+          id: "sec_1",
+          slots: [
+            { kind: "businessName", originalText: "img", selector: "img" },
+            { kind: "businessName", originalText: "Nivaya", selector: ".logo" },
+          ],
+        },
+      ],
+    };
+    const fakeStore = { manifest: async () => fakeManifest } as unknown as Parameters<typeof collectTemplateBrandNames>[1];
+    const names = await collectTemplateBrandNames(["tpl_fake"], fakeStore);
+    expect(names).toEqual(["Nivaya"]);
+
+    const leaks = checkBrandLeakAgainst('<img src="x.jpg" class="hero-img">', names, "Solstice Yoga Studio");
+    expect(leaks).toEqual([]);
+  });
 });
 
 describe("edit/recompose parity: a placements-filled site keeps its real copy through a recompose", () => {

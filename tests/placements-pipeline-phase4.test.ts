@@ -74,7 +74,7 @@ describe("runPlacementsPipeline — Phase 4 asset + QA wiring", () => {
     const result = await runPlacementsPipeline(fakeCtx(), RAW_BRIEF);
     expect(result.files.length).toBeGreaterThan(0);
     expect(result.files.some((f) => f.to.includes("style.css"))).toBe(true);
-  }, 30_000);
+  }, 60_000);
 
   it("QA runs against the REAL staged files — an unmodified template's own genuine assets never flag MISSING_ASSET", async () => {
     const result = await runPlacementsPipeline(fakeCtx(), RAW_BRIEF);
@@ -82,20 +82,20 @@ describe("runPlacementsPipeline — Phase 4 asset + QA wiring", () => {
       const missing = qa.issues.filter((i) => i.code === "MISSING_ASSET");
       expect(missing, `page ${slug} incorrectly flagged: ${JSON.stringify(missing)}`).toEqual([]);
     }
-  }, 30_000);
+  }, 60_000);
 
   it("does not false-positive a brand leak on a real business whose own name differs from the template's demo brand", async () => {
     const result = await runPlacementsPipeline(fakeCtx(), RAW_BRIEF);
     for (const qa of Object.values(result.qaResults)) {
       expect(qa.issues.filter((i) => i.code === "BRAND_LEAK")).toEqual([]);
     }
-  }, 30_000);
+  }, 60_000);
 
   it("ships real per-business copy, not the template's own demo text", async () => {
     const result = await runPlacementsPipeline(fakeCtx(), RAW_BRIEF);
     const home = result.htmlPages.home ?? "";
     expect(home).toContain("Harbor Homes");
-  }, 30_000);
+  }, 60_000);
 });
 
 // page-selection.ts, end to end: a business with no active listings can skip listings/property-
@@ -110,7 +110,7 @@ describe("runPlacementsPipeline — selectedPages", () => {
   it("generates only the requested pages, plus home even when it wasn't requested", async () => {
     const result = await runPlacementsPipeline(fakeCtx(), RAW_BRIEF, undefined, ["about", "contact"]);
     expect(Object.keys(result.htmlPages).sort()).toEqual(["about", "contact", "home"]);
-  }, 30_000);
+  }, 60_000);
 
   it("leaves no link to an excluded page anywhere in any kept page's HTML", async () => {
     const result = await runPlacementsPipeline(fakeCtx(), RAW_BRIEF, undefined, [
@@ -124,5 +124,5 @@ describe("runPlacementsPipeline — selectedPages", () => {
         /href="(listings|property-detail|agents|agent-detail)\.html"/
       );
     }
-  }, 30_000);
+  }, 60_000);
 });

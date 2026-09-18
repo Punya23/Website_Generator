@@ -115,11 +115,30 @@ export async function polishComposedCopy(
     return { overrides: {}, skipped: true };
   }
 
-  const overrides: Record<string, string> = {};
+  const pagesRuns = new Map<string, EditableRun[]>();
   for (const [slug, html] of Object.entries(htmlPages)) {
     const runs = collectEditableRuns(html);
-    if (runs.length === 0) continue;
-    const runsById = new Map(runs.map((r) => [r.id, r.text]));
+    if (runs.length > 0) pagesRuns.set(slug, runs);
+  }
+
+  // compose.ts is deterministic, so the same brand copy (e.g. the hero tagline) lands as the exact
+  // same literal string on multiple pages. Polishing each page as its own independent LLM call
+  // rewords identical input differently per page. Ask about each unique text only once — on
+  // whichever page first has it — then apply that one accepted edit everywhere that text occurs.
+  const idsByText = new Map<string, string[]>();
+  for (const runs of pagesRuns.values()) {
+    for (const r of runs) {
+      const ids = idsByText.get(r.text);
+      if (ids) ids.push(r.id);
+      else idsByText.set(r.text, [r.id]);
+    }
+  }
+
+  const overrides: Record<string, string> = {};
+  for (const [slug, runs] of pagesRuns) {
+    const dedupedRuns = runs.filter((r) => idsByText.get(r.text)![0] === r.id);
+    if (dedupedRuns.length === 0) continue;
+    const runsById = new Map(dedupedRuns.map((r) => [r.id, r.text]));
 
     try {
       const accepted = await chatJsonWithRetry(
@@ -129,12 +148,14 @@ export async function polishComposedCopy(
           const suffix = parseError
             ? `\n\nPRIOR RESPONSE WAS INVALID JSON (${parseError}). Output valid JSON only.`
             : "";
-          return buildUserPrompt(brief, runs) + suffix;
+          return buildUserPrompt(brief, dedupedRuns) + suffix;
         },
         { tokenRole: "section", model: llm.getSectionModel(), initialTemperature: 0.5 },
         (raw) => parseEdits(raw, runsById)
       );
-      Object.assign(overrides, accepted);
+      for (const [id, text] of Object.entries(accepted)) {
+        for (const dupeId of idsByText.get(runsById.get(id)!)!) overrides[dupeId] = text;
+      }
     } catch (err) {
       recordFallback("copy_polish", slug);
       pipelineLog(

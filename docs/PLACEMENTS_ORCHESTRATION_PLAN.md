@@ -28,6 +28,17 @@
 >   plumbing for a caller who already has real listings/agents/testimonials to hand them to
 >   `fill.ts`'s existing `resolveData` hook instead of leaving `data` placements to
 >   `illustrativeFill`'s example. `demo-data.ts`'s fixture resolver stays demo-only, unchanged.
+>   **Partial on the corpus path, found verifying the UI wiring end to end (rev 8):** listings
+>   resolve fully there (`propertyMeta`-role text has always existed generically); agent/testimonial
+>   PHOTOS resolve too (`teamPhoto`/`testimonialsPhoto` — corpus's own role naming, added to
+>   `AGENT_PHOTO_ROLES`/`TESTIMONIAL_PHOTO_ROLES`), but agent/testimonial TEXT does not — corpus
+>   `PEOPLE_SECTION_ROLES` forces every text slot in a testimonials/team section to `fillSource:
+>   "fixed"` unconditionally (never written by `fill.ts` no matter what a caller supplies), so no
+>   `data`-sourced text placement exists there for a real quote/name to land on. Closing it means
+>   giving that text its own `data` fillSource AND extending `fill-real-estate-template.ts`'s
+>   `PEOPLE_ROLES` exclusion set so an unsupplied field still can't get an LLM-fabricated illustrative
+>   example — a real, scoped follow-up, not attempted under demo time pressure to avoid rushing a
+>   change to that safety guarantee. See `business-data.ts`'s own top-of-file comment.
 >
 > Tests: `tests/placements-edit-parity.test.ts`, `tests/business-data.test.ts`, plus additions to
 > `tests/placements.test.ts` (`manualOverrideKeys`, `appliedImageUrls`).  

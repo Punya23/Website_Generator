@@ -20,6 +20,20 @@
  * a silent fallback would put canned fictional content ("Jennifer Lawson, Palo Alto") into a REAL
  * generated site whenever a business's real feed was merely incomplete, which is a worse outcome
  * than the honest "no real record yet" `illustrativeFill` already produces.
+ *
+ * **Known gap, found verifying this end to end, not yet closed:** on the curated `real-estate/*`
+ * path this resolves `listings`/`agents`/`testimonials` fully (text and photos both) — that's what
+ * `real-estate-map.ts` was built against. On the CORPUS path (`useCorpusPlacementsFill`), only
+ * PHOTOS resolve (`teamPhoto`/`testimonialsPhoto` — see `AGENT_PHOTO_ROLES`/`TESTIMONIAL_PHOTO_ROLES`
+ * below); text never will, and it's not a bug in this resolver. `from-corpus.ts`'s
+ * `PEOPLE_SECTION_ROLES` forces every text slot in a testimonials/team section to `fillSource:
+ * "fixed"` unconditionally — `fixed` is never written by `fill.ts` no matter what a caller supplies
+ * (see `fill.ts`'s own enforcement) — so there is no `data`-sourced text placement on the corpus path
+ * for a real quote/name to land on at all. Closing this properly means giving corpus people-section
+ * text its own `data` fillSource AND extending `fill-real-estate-template.ts`'s `PEOPLE_ROLES`
+ * exclusion set so an un-supplied field still can't get an LLM-fabricated illustrative example
+ * (exactly the regression `PEOPLE_SECTION_ROLES` exists to prevent) — a real, scoped change, not
+ * attempted here to avoid rushing a change to that safety guarantee.
  */
 import type { DataResolver } from "./fill.js";
 import type { DemoListing } from "./demo-data.js";
@@ -64,7 +78,15 @@ const TESTIMONIAL_FIELD_BY_ROLE: Partial<Record<string, keyof RealTestimonial>> 
   testimonialAuthorRole: "authorRole",
 };
 
-const AGENT_PHOTO_ROLES = new Set(["agentHeadshot", "sidebarAgentPhoto"]);
+// "agentHeadshot"/"sidebarAgentPhoto" are the curated real-estate/* role names (real-estate-map.ts);
+// "teamPhoto" is the corpus path's own naming for the identical concept (from-corpus.ts's
+// `${section.role}Photo`, section.role === "team") — found while verifying businessData actually
+// reaches the corpus path: without this, a real agent photo silently never applied there even
+// though the wiring (GenerateSiteOptions.businessData -> useCorpusPlacementsFill) was correct.
+const AGENT_PHOTO_ROLES = new Set(["agentHeadshot", "sidebarAgentPhoto", "teamPhoto"]);
+// Same story for testimonials: "testimonialAvatar" (curated) vs "testimonialsPhoto" (corpus,
+// section.role === "testimonials").
+const TESTIMONIAL_PHOTO_ROLES = new Set(["testimonialAvatar", "testimonialsPhoto"]);
 
 /** `beds`/`baths`/`sqft` are measured against the template's own original label TEXT ("3 Beds", not
  *  "3" — confirmed live: a bare "4" is short enough to fail `labelConstraints`' own minChars check
@@ -98,7 +120,7 @@ export function businessDataResolver(feed: BusinessDataFeed): DataResolver {
       if (AGENT_PHOTO_ROLES.has(placement.role) && feed.agents?.length) {
         return feed.agents[listingIndexFor(placement.id, feed.agents.length)]!.photoUrl ?? null;
       }
-      if (placement.role === "testimonialAvatar" && feed.testimonials?.length) {
+      if (TESTIMONIAL_PHOTO_ROLES.has(placement.role) && feed.testimonials?.length) {
         return feed.testimonials[listingIndexFor(placement.id, feed.testimonials.length)]!.photoUrl ?? null;
       }
       return null;

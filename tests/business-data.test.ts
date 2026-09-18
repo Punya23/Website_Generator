@@ -136,6 +136,17 @@ describe("businessDataResolver: agents", () => {
     const resolve = businessDataResolver(feed);
     expect(await resolve(imagePlacement({ id: "home.testimonials.0.avatar", role: "testimonialAvatar" }))).toBeNull();
   });
+
+  // The corpus path (from-corpus.ts) names this same photo slot "teamPhoto", not "agentHeadshot" —
+  // found while verifying businessData actually reaches PIPELINE_PLACEMENTS_CORPUS end to end, not
+  // just the curated real-estate path this resolver was originally built against.
+  it("resolves the same real agent photo for the corpus path's own 'teamPhoto' role", async () => {
+    const feed: BusinessDataFeed = { agents: [{ name: "Priya Shah", photoUrl: "https://cdn.example.com/priya.jpg" }] };
+    const resolve = businessDataResolver(feed);
+    expect(await resolve(imagePlacement({ id: "tpl_x:sec_team.photo.0", role: "teamPhoto" }))).toBe(
+      "https://cdn.example.com/priya.jpg"
+    );
+  });
 });
 
 describe("businessDataResolver: testimonials", () => {
@@ -160,5 +171,23 @@ describe("businessDataResolver: testimonials", () => {
     expect(await resolve(imagePlacement({ id: "home.testimonials.0.avatar", role: "testimonialAvatar" }))).toBe(
       "https://cdn.example.com/customer.jpg"
     );
+  });
+
+  // Corpus path's own naming (from-corpus.ts: `${section.role}Photo`, section.role === "testimonials").
+  it("resolves the same real testimonial photo for the corpus path's own 'testimonialsPhoto' role", async () => {
+    const feed: BusinessDataFeed = { testimonials: [{ quote: "Great!", authorName: "A. Customer", photoUrl: "https://cdn.example.com/customer.jpg" }] };
+    const resolve = businessDataResolver(feed);
+    expect(await resolve(imagePlacement({ id: "tpl_x:sec_testi.photo.0", role: "testimonialsPhoto" }))).toBe(
+      "https://cdn.example.com/customer.jpg"
+    );
+  });
+
+  it("still returns null for corpus testimonial/team TEXT — no data-sourced text placement exists there yet (see this module's own doc comment)", async () => {
+    const feed: BusinessDataFeed = { testimonials: [{ quote: "Great!", authorName: "A. Customer" }] };
+    const resolve = businessDataResolver(feed);
+    // The corpus path would never even construct a "testimonialQuote"-role TextPlacement to ask this
+    // (from-corpus.ts forces fillSource "fixed" for every text slot in a people section) — this just
+    // documents that the resolver itself has no special corpus text handling to fall back on either.
+    expect(await resolve(textPlacement({ id: "tpl_x:sec_testi.quote", role: "sectionBody" }))).toBeNull();
   });
 });

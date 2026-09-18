@@ -37,20 +37,25 @@ export interface CopyContext {
    *  and just repoints `src` at it, preserving the template's own logo sizing/placement CSS.
    *  Absent, it falls back to a text wordmark rather than shipping the template author's mark. */
   logoSrc?: string;
-  /** Shared across every section composed onto the SAME page, so a heading/narrative fallback
-   *  never writes a string this page has already used elsewhere. Omit for an isolated call (each
-   *  unit test gets its own fresh state, matching the old always-first-candidate behavior); a
-   *  real page composition threads one instance through every section it places — see
-   *  `createCopyRunState()` and its use in `compose.ts`. */
+  /** Shared across every section composed onto the SAME SITE (every page), so a heading/narrative
+   *  fallback never writes a string this site has already used elsewhere — a per-page-only state
+   *  fixed same-page repeats but left every page independently walking the same small pool from
+   *  index 0, so a short brief still repeated its `elevatorPitch` sentence once per page, just no
+   *  longer back-to-back. Omit for an isolated call (each unit test gets its own fresh state,
+   *  matching the old always-first-candidate behavior); a real site composition threads one
+   *  instance through every section on every page — see `createCopyRunState()` and its use in
+   *  `compose.ts`. */
   runState?: CopyRunState;
 }
 
-/** Cross-section, page-scoped memory for fallback copy: which fallback strings have already been
- *  written onto this page, and where the rotation through the brief's sentence pool last left off.
- *  Fixes the collapse where every unclaimed heading and every filler paragraph independently
- *  defaulted to the same first candidate (`brief.tagline`, or `sentences[0]`) — confirmed live: one
- *  real generation wrote the identical sentence into a sectionHeading, a sectionBody, a
- *  filler:narrative AND a filler:longHeading, all within reach of one page. */
+/** Cross-section, site-scoped memory for fallback copy: which fallback strings have already been
+ *  written anywhere on this site, and where the rotation through the brief's sentence pool last
+ *  left off. Fixes the collapse where every unclaimed heading and every filler paragraph
+ *  independently defaulted to the same first candidate (`brief.tagline`, or `sentences[0]`) —
+ *  confirmed live: one real generation wrote the identical sentence into a sectionHeading, a
+ *  sectionBody, a filler:narrative AND a filler:longHeading, all within reach of one page; the same
+ *  collapse then reproduced across separate pages once the same-page case was fixed, since each
+ *  page started the same deterministic pool over from index 0. */
 export interface CopyRunState {
   usedStrings: Set<string>;
   cursor: number;

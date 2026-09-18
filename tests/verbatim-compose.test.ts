@@ -852,4 +852,72 @@ describe("verbatim selection + composition", () => {
     );
     expect(recomposed.stats.editsApplied).toBeGreaterThan(0);
   });
+
+  it("does not repeat the same fallback sentence across different pages of one site", async () => {
+    // Same bug family as the sectionBody-repeats-within-a-page fix, one scope wider: a copyRunState
+    // created fresh per page fixed same-page repeats but left every page independently walking the
+    // same small fallback pool from index 0 — for a short brief (expand-brief-agent.ts's no-LLM
+    // path collapses tagline/elevatorPitch/expandedBrief onto one source string), every page's first
+    // unclaimed sectionBody landed on the identical `elevatorPitch` sentence. Reproduced live with
+    // this exact brief before compose.ts's copyRunState was hoisted above the per-page loop.
+    const { composeSite } = await import("../src/templates/compose.js");
+    const templateId = "tpl_dedup_site";
+    const manifest: TemplateManifest = {
+      templateId,
+      name: "Dedup Co",
+      sourceZipPath: `/tmp/${templateId}.zip`,
+      sourceRootRelPath: "root",
+      status: "ready",
+      paletteId: "all-black",
+      cssCachePath: "styles.css",
+      sourceCssHash: "hash",
+      assets: [],
+      sections: [
+        {
+          id: "sec_hero",
+          templateId,
+          role: "hero",
+          roleConfidence: 0.9,
+          roleSource: "heuristic",
+          htmlCachePath: path.join("sections", "sec_hero.html"),
+          slots: [{ kind: "sectionBody", selector: ".blurb", originalText: "Blurb" }],
+          sourceOrder: 0,
+        },
+      ],
+      createdAt: 1_700_000_000_000,
+      updatedAt: 1_700_000_000_000,
+    };
+
+    await withIsolatedStore([], async (store) => {
+      const dir = path.join(cacheDir, templateId);
+      await fs.mkdir(path.join(dir, "sections"), { recursive: true });
+      await fs.writeFile(path.join(dir, "manifest.json"), JSON.stringify(manifest), "utf8");
+      await fs.writeFile(path.join(dir, "styles.css"), "", "utf8");
+      await fs.writeFile(
+        path.join(dir, "sections", "sec_hero.html"),
+        `<section class="hero"><p class="blurb">Blurb</p></section>`,
+        "utf8"
+      );
+      await store.rebuild();
+
+      const brief = expandBriefFromInput("Ironclad Bakery — sourdough baked fresh every morning in Bristol.");
+      const placed = { templateId, sectionId: "sec_hero", role: "hero" as const };
+      const composed = await composeSite({
+        brief,
+        rawBrief: brief.expandedBrief,
+        pages: { home: [placed], about: [placed], services: [placed] },
+        store,
+      });
+
+      const bodyTextFor = (slug: string): string =>
+        composed.provenance[slug]!.find((row) => row.sectionId === "sec_hero")!.changes.find(
+          (c) => c.kind === "sectionBody"
+        )!.after;
+
+      const home = bodyTextFor("home");
+      const about = bodyTextFor("about");
+      const services = bodyTextFor("services");
+      expect(new Set([home, about, services]).size).toBe(3);
+    });
+  });
 });

@@ -761,6 +761,17 @@ export async function composeSite(options: ComposeOptions): Promise<ComposedSite
     : undefined;
 
   const provenance: Record<string, SectionProvenance[]> = {};
+  // Shared across EVERY page of this site, not just within one: a heading/narrative fallback that
+  // has already written one sentence anywhere on the site will not write it again on the next page
+  // either. A per-page-only state (created fresh inside the loop below) fixed same-page repeats but
+  // left same-site ones: for a short brief, `briefSentences()`'s pool is small and deterministic, so
+  // each page's first unclaimed sectionBody/sectionHeading independently walked the SAME pool from
+  // index 0 and landed on the SAME fallback sentence — confirmed by reproducing the exact Ironclad
+  // Bakery brief from the sectionBody fix: home/about/services all rendered the identical
+  // `elevatorPitch` sentence in their own hero's sectionBody, just no longer back-to-back on one page.
+  // Every current caller (`revise.ts`, `verbatim-template-pipeline.ts`) already composes a site's
+  // entire page set in one `composeSite()` call, so nothing relies on per-page isolation.
+  const copyRunState = createCopyRunState();
 
   for (const slug of slugs) {
     const placed = options.pages[slug] ?? [];
@@ -770,10 +781,6 @@ export async function composeSite(options: ComposeOptions): Promise<ComposedSite
     // Per template, the union of everything its sections put on THIS page — the input to reducing
     // its stylesheet to the rules that can actually match here.
     const tokensByTemplate = new Map<string, MarkupTokens>();
-    // Shared across every section on THIS page: a heading/narrative fallback that has already
-    // written one sentence onto the page will not write it again in the next section — the fix
-    // for a real generation where one sentence was pasted into four different slots on one page.
-    const copyRunState = createCopyRunState();
 
     for (const section of placed) {
       const manifest = await loadManifest(section.templateId);

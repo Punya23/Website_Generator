@@ -172,7 +172,7 @@ function valueForSlot(slot: SlotLocator, context: CopyContext, contact: Business
       return brief.differentiators.length > 0
         ? brief.differentiators[index % brief.differentiators.length]!
         : null;
-    case "sectionBody":
+    case "sectionBody": {
       // Denylist, not allowlist — matches `neutralizeTemplateFiller`'s own narrative-substitution
       // rule below. This used to be a 5-role allowlist (hero/story/cta/contact/features), so a
       // sectionBody slot CLASSIFIED (not just left alone) in a pricing/faq/team/stats/gallery
@@ -180,7 +180,21 @@ function valueForSlot(slot: SlotLocator, context: CopyContext, contact: Business
       // filler sweep to still catch it (which it usually does, but only for text over 60 chars; a
       // short classified sectionBody could fall through both). Only testimonials — no legitimate
       // brief-sourced substitute for a customer's own words — stays carved out.
-      return NO_NARRATIVE_SUBSTITUTION_ROLES.has(role) ? null : markUsed(context, brief.elevatorPitch);
+      if (NO_NARRATIVE_SUBSTITUTION_ROLES.has(role)) return null;
+      // A fixed `markUsed(context, brief.elevatorPitch)` here always returned the identical
+      // string, unconditionally, for every sectionBody slot on the page — even ones sitting a few
+      // nodes apart. Fine when `elevatorPitch` is real distinct copy, but for a short, single-
+      // sentence brief (`expandBriefFromInput`'s no-LLM path) `tagline`/`elevatorPitch`/
+      // `expandedBrief` all collapse to the same source string, so a hero's `tagline` slot and its
+      // neighboring `sectionBody` slot showed the exact same sentence twice — confirmed live
+      // (Ironclad Bakery: the raw brief repeated verbatim across hero, about, and services).
+      // Routing through the same `nextFreshText` pool `sectionHeading` already uses lets a
+      // sectionBody slot skip past whatever a sibling slot (tagline, another sectionBody, a
+      // heading) already placed on this page, falling through to `briefSentences`' real sentences,
+      // differentiators, and target audience instead of repeating.
+      const state = context.runState ?? createCopyRunState();
+      return nextFreshText(briefSentences(brief), state, brief.elevatorPitch);
+    }
     case "address":
       // Never invent a street address, and never keep the template author's.
       return null;

@@ -37,6 +37,23 @@ export async function generateContent(
   brief: ExpandedBrief,
   pagePlan: PagePlan
 ): Promise<ContentBlock[]> {
+  const blocks = await generateContentBlocks(brief, pagePlan);
+  return applyCanonicalTagline(blocks, brief);
+}
+
+// Hero subtext is brand copy, not per-page copy — the LLM regenerates it fresh for every page
+// (temperature 0.85), which paraphrases the same facts differently on each page. Pin it to the
+// one canonical tagline everywhere instead of letting the model reword it per call.
+function applyCanonicalTagline(blocks: ContentBlock[], brief: ExpandedBrief): ContentBlock[] {
+  const headline = blocks.find((b) => b.type === "headline");
+  if (headline) headline.subtext = brief.tagline;
+  return blocks;
+}
+
+async function generateContentBlocks(
+  brief: ExpandedBrief,
+  pagePlan: PagePlan
+): Promise<ContentBlock[]> {
   requireLlm("content generation");
 
   if (llm.isAvailable) {
@@ -82,7 +99,7 @@ function mockContent(brief: ExpandedBrief, plan: PagePlan): ContentBlock[] {
     id: `${p}_headline`,
     type: "headline",
     text: plan.slug === "home" ? brief.businessName : plan.title,
-    subtext: plan.slug === "home" ? brief.tagline : brief.elevatorPitch,
+    subtext: brief.tagline, // overwritten identically by applyCanonicalTagline; kept for shape
   });
 
   if (plan.slug === "home") {
